@@ -26,7 +26,7 @@ export const useUnitsStore = defineStore('units', () => {
         .order('unit_number', { ascending: true })
       if (err)
         throw err
-      units.value = (data as Unit[]) ?? []
+      units.value = (data as unknown as Unit[]) ?? []
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al cargar departamentos')
@@ -47,8 +47,8 @@ export const useUnitsStore = defineStore('units', () => {
         .single()
       if (err)
         throw err
-      units.value.unshift(data as Unit)
-      return data as Unit
+      units.value.unshift(data as unknown as Unit)
+      return data as unknown as Unit
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al crear departamento')
@@ -73,8 +73,8 @@ export const useUnitsStore = defineStore('units', () => {
         throw err
       const idx = units.value.findIndex(u => u.id === id)
       if (idx !== -1)
-        units.value[idx] = data as Unit
-      return data as Unit
+        units.value[idx] = data as unknown as Unit
+      return data as unknown as Unit
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al actualizar departamento')
