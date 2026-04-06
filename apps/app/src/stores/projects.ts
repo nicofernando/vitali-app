@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
 
-const SELECT_FIELDS = 'id, name, description, location, currency_id, annual_interest_rate, french_credit_enabled, smart_credit_enabled, created_at, currency:currencies(id, code, name, symbol)'
+const SELECT_FIELDS = 'id, name, description, location, currency_id, annual_interest_rate, french_credit_enabled, smart_credit_enabled, created_at, currency:currencies(id, code, name, symbol, decimal_places)'
 
 export const useProjectsStore = defineStore('projects', () => {
   const projects = ref<Project[]>([])
@@ -21,7 +21,7 @@ export const useProjectsStore = defineStore('projects', () => {
         .order('created_at', { ascending: false })
       if (err)
         throw err
-      projects.value = (data as Project[]) ?? []
+      projects.value = (data as unknown as Project[]) ?? []
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al cargar proyectos')
@@ -42,8 +42,8 @@ export const useProjectsStore = defineStore('projects', () => {
         .single()
       if (err)
         throw err
-      projects.value.unshift(data as Project)
-      return data as Project
+      projects.value.unshift(data as unknown as Project)
+      return data as unknown as Project
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al crear proyecto')
@@ -68,8 +68,8 @@ export const useProjectsStore = defineStore('projects', () => {
         throw err
       const idx = projects.value.findIndex(p => p.id === id)
       if (idx !== -1)
-        projects.value[idx] = data as Project
-      return data as Project
+        projects.value[idx] = data as unknown as Project
+      return data as unknown as Project
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al actualizar proyecto')

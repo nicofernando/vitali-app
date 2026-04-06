@@ -41,7 +41,7 @@ export const useTypologiesStore = defineStore('typologies', () => {
         .eq('project_id', projectId)
       if (err)
         throw err
-      typologies.value = (data?.map((r: { typology: Typology }) => r.typology) ?? []) as Typology[]
+      typologies.value = (data?.map((r: { typology: unknown }) => r.typology) ?? []) as unknown as Typology[]
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al cargar tipologías del proyecto')
