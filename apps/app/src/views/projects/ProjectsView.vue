@@ -381,6 +381,7 @@ function deleteUnit(unitId: string) {
       v-if="selectedTower"
       v-model:open="showUnitForm"
       :tower-id="selectedTower.id"
+      :decimal-places="selectedProject?.currency?.decimal_places"
     />
 
     <!-- Confirmación de eliminación -->

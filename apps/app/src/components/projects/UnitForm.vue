@@ -2,7 +2,7 @@
 import { toTypedSchema } from '@vee-validate/zod'
 import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -28,6 +28,7 @@ import { useUnitsStore } from '@/stores/units'
 const props = defineProps<{
   towerId: string
   open: boolean
+  decimalPlaces?: number
 }>()
 
 const emit = defineEmits<{
@@ -38,6 +39,13 @@ const unitsStore = useUnitsStore()
 const typologiesStore = useTypologiesStore()
 const { typologies } = storeToRefs(typologiesStore)
 const submitting = ref(false)
+
+// step dinámico según decimales de la moneda del proyecto
+// decimalPlaces=0 → "1", decimalPlaces=2 → "0.01", decimalPlaces=4 → "0.0001"
+const priceStep = computed(() => {
+  const d = props.decimalPlaces ?? 2
+  return d === 0 ? '1' : `0.${'0'.repeat(d - 1)}1`
+})
 
 onMounted(() => typologiesStore.fetchAll())
 
@@ -142,8 +150,8 @@ const onSubmit = handleSubmit(async (values) => {
               <Input
                 type="number"
                 min="0"
-                step="1000"
-                placeholder="Ej: 5000000"
+                :step="priceStep"
+                :placeholder="(props.decimalPlaces ?? 2) === 0 ? 'Ej: 5000000' : 'Ej: 2455.50'"
                 v-bind="componentField"
                 :value="componentField.modelValue"
                 @input="componentField['onUpdate:modelValue']?.(parseFloat(($event.target as HTMLInputElement).value))"
