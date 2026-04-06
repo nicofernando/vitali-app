@@ -27,7 +27,6 @@ import { useUnitsStore } from '@/stores/units'
 
 const props = defineProps<{
   towerId: string
-  projectId: string
   open: boolean
 }>()
 
@@ -40,7 +39,7 @@ const typologiesStore = useTypologiesStore()
 const { typologies } = storeToRefs(typologiesStore)
 const submitting = ref(false)
 
-onMounted(() => typologiesStore.fetchByProject(props.projectId))
+onMounted(() => typologiesStore.fetchAll())
 
 const schema = toTypedSchema(z.object({
   unit_number: z.string().min(1, 'El número es requerido'),

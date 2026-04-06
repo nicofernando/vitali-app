@@ -378,10 +378,9 @@ function deleteUnit(unitId: string) {
     />
 
     <UnitForm
-      v-if="selectedTower && selectedProject"
+      v-if="selectedTower"
       v-model:open="showUnitForm"
       :tower-id="selectedTower.id"
-      :project-id="selectedProject.id"
     />
 
     <!-- Confirmación de eliminación -->
