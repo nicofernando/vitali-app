@@ -1,0 +1,112 @@
+# vitali-app — Contexto del Proyecto
+
+## Descripción
+
+Plataforma interna para Vitali Suites (empresa de senior living de lujo con proyectos en Chile, México y Colombia). La app centraliza todas las operaciones internas del equipo comercial: simulador/cotizador de departamentos, gestión de clientes, emisión de cotizaciones en PDF, administración de proyectos inmobiliarios, y en el futuro el CMS del sitio público vitalisuites.com.
+
+**Sitio público**: vitalisuites.com (no es parte de este proyecto todavía)
+**App interna**: app.vitalisuites.com (este proyecto — prioridad)
+**Staging**: staging.vitalisuites.com
+
+## Stack
+
+- **Frontend**: Vue 3.5 + Vite 6 + Tailwind CSS v4 + shadcn-vue (reka-ui v2)
+- **Estado**: Pinia v3 (Composition API style)
+- **Router**: Vue Router 4
+- **Validación**: Vee-Validate + Zod
+- **Utilidades**: VueUse
+- **Testing**: Vitest + Vue Test Utils
+- **Linting**: @antfu/eslint-config
+- **Backend**: Supabase (PostgreSQL 17 + Auth + Storage + Edge Functions en Deno)
+- **Paquetes**: pnpm (monorepo con workspaces)
+
+## Monorepo
+
+```
+vitali-app/
+├── apps/
+│   ├── app/          ← Vue SPA — prioridad actual
+│   └── web/          ← Astro — sitio marketing (futuro sprint)
+├── packages/
+│   └── brand/        ← tokens de color, tipografías, logo compartido
+├── supabase/         ← migraciones SQL + Edge Functions
+├── .claude/          ← skills y settings del proyecto
+├── .atl/             ← skill-registry SDD
+└── pnpm-workspace.yaml
+```
+
+## Arquitectura Clave
+
+- **Plataforma única con RBAC**: un solo login en app.vitalisuites.com. Los roles determinan los módulos visibles.
+- **Cliente tonto**: el frontend NUNCA calcula. Solo hace CRUD de inputs y lee resultados de Edge Functions.
+- **Lógica de cálculo en Edge Functions**: crédito francés, crédito inteligente, cálculo de cuotas del cotizador — todo en Deno, nunca en Vue.
+- **RLS en todas las tablas**: desde el día 1, sin excepciones.
+- **Permisos atómicos por módulo**: cada acción (leer, crear, editar, eliminar) es un permiso separado. Se agrupan en roles asignables a usuarios.
+
+## Supabase — Proyectos
+
+| Entorno | Proyecto | Ref | Uso |
+|---------|---------|-----|-----|
+| Dev | vitali-app-dev | `bwiozqzevpmxjnwsjeuj` | Desarrollo y staging |
+| Prod | vitali-app | `cwbppfodpuknxqwrhoev` | Producción (main) |
+
+**MCP configurado en `.claude/settings.json`** — dos servidores: `supabase-dev` y `supabase-prod`.
+**Regla de hierro**: Claude solo usa `supabase-dev` por defecto. Para tocar prod, el usuario debe escribir explícitamente "aplicar a prod".
+
+## Entornos y Despliegue
+
+| Rama git | Supabase | Frontend | Trigger deploy |
+|---------|----------|----------|---------------|
+| `feat/*` | dev | no se despliega | — |
+| `qa` | dev | staging.vitalisuites.com | push a qa |
+| `main` | prod | app.vitalisuites.com | push a main |
+
+Deploy via **GitHub Actions + SFTP** al hosting compartido. Credenciales en GitHub Secrets.
+
+## Identidad de Marca
+
+- **Vitali Blue**: `#002B5B` — fondos, headers
+- **Vitali Gold**: `#D4BE77` — CTAs, acentos
+- **Heading**: Raleway (Google Fonts)
+- **Body**: Lato (Google Fonts)
+- **Logo**: `assets/logo_vitalisuites_blanco.webp` (sobre fondo azul)
+- **UI**: bordes redondeados full (`rounded-full`), sombras suaves, espaciado amplio, minimalismo
+
+## Reglas de Desarrollo
+
+- `<script setup lang="ts">` siempre — nunca Options API
+- Conventional Commits en español: `feat(scope): descripción`
+- **NO buildear** después de cambios — el usuario lo hace
+- Pre-commit: `pnpm typecheck && pnpm lint && pnpm test:run`
+- **TDD** para todo lo que tenga comportamiento verificable: Edge Functions, composables, stores con lógica, permisos, componentes con comportamiento. No para CRUD simple ni componentes presentacionales.
+- Strict TDD Mode: ENABLED
+- Ramas: `feat/*` (local) → `qa` (staging) → `main` (producción)
+- Un commit = un cambio lógico completo
+
+## Memoria Persistente — Engram
+
+Este proyecto usa Engram para memoria persistente entre sesiones.
+
+### PRIMERA ACCIÓN al abrir este proyecto
+
+1. Llamar `mem_context` para ver historial reciente
+2. Llamar `mem_search` con keywords del tema antes de empezar cualquier tarea
+
+### Topic keys principales
+
+| Topic | Contenido |
+|-------|-----------|
+| `sdd-init/vitali-app` | Contexto arquitectural completo |
+| `sdd/vitali-app/testing-capabilities` | Capacidades de testing |
+| `skill-registry` (project: vitali-app) | Registry de skills |
+| `sdd/{change}/proposal` | Propuesta de cada change |
+| `sdd/{change}/spec` | Specs de cada change |
+| `sdd/{change}/tasks` | Tareas de cada change |
+
+## Ver también
+
+- `docs/REQUIREMENTS.md` — requerimientos de negocio completos
+- `docs/ARCHITECTURE.md` — decisiones técnicas con justificación
+- `docs/SPRINT-PLAN.md` — plan de sprints y alcance
+- `brand_identity.md` — guía visual completa
+- `.atl/skill-registry.md` — skills disponibles y compact rules

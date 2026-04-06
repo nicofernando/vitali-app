@@ -1,0 +1,11 @@
+{
+  "name": "vitali-app",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -F @vitali/app dev",
+    "build": "pnpm -F @vitali/app build",
+    "typecheck": "pnpm -F @vitali/app typecheck",
+    "lint": "pnpm -F @vitali/app lint",
+    "test:run": "pnpm -F @vitali/app test:run"
+  }
+}
