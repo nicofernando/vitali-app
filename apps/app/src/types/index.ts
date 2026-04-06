@@ -86,6 +86,7 @@ export interface UserProfile {
   id: string
   user_id: string
   full_name: string | null
+  phone: string | null
   created_at: string
 }
 
@@ -93,6 +94,7 @@ export interface UserWithRoles {
   id: string
   email: string
   full_name: string | null
+  phone: string | null
   roles: Role[]
 }
 

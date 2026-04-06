@@ -15,16 +15,16 @@ export const useUsersStore = defineStore('users', () => {
     try {
       const { data, error: dbError } = await supabase
         .from('users_with_roles')
-        .select('id, email, full_name, user_roles(roles(id, name, description, created_at))')
-        .order('full_name')
+        .select('id, email, full_name, phone, user_roles(roles(id, name, description, created_at))')
+        .order('full_name', { nullsFirst: false })
 
       if (dbError)
         throw dbError
-      // Aplanar la relación user_roles[{roles: {...}}] → roles[{...}]
       users.value = (data ?? []).map((u: any) => ({
         id: u.id,
         email: u.email,
         full_name: u.full_name,
+        phone: u.phone,
         roles: (u.user_roles ?? []).map((r: any) => r.roles).filter(Boolean),
       }))
     }
@@ -34,6 +34,27 @@ export const useUsersStore = defineStore('users', () => {
     finally {
       loading.value = false
     }
+  }
+
+  async function createUser(payload: { email: string, full_name: string | null, phone: string | null }) {
+    const { error: fnError } = await supabase.functions.invoke('admin-create-user', {
+      body: payload,
+    })
+    if (fnError)
+      throw fnError
+    await fetchAll()
+  }
+
+  async function updateProfile(userId: string, data: { full_name?: string | null, phone?: string | null }) {
+    const { error: dbError } = await supabase
+      .from('user_profiles')
+      .update(data)
+      .eq('user_id', userId)
+    if (dbError)
+      throw dbError
+    const user = users.value.find(u => u.id === userId)
+    if (user)
+      Object.assign(user, data)
   }
 
   async function assignRole(userId: string, roleId: string, role?: Role) {
@@ -46,9 +67,8 @@ export const useUsersStore = defineStore('users', () => {
 
     if (role) {
       const user = users.value.find(u => u.id === userId)
-      if (user && !user.roles.some(r => r.id === roleId)) {
+      if (user && !user.roles.some(r => r.id === roleId))
         user.roles.push(role)
-      }
     }
   }
 
@@ -61,10 +81,9 @@ export const useUsersStore = defineStore('users', () => {
       throw rpcError
 
     const user = users.value.find(u => u.id === userId)
-    if (user) {
+    if (user)
       user.roles = user.roles.filter(r => r.id !== roleId)
-    }
   }
 
-  return { users, loading, error, fetchAll, assignRole, removeRole }
+  return { users, loading, error, fetchAll, createUser, updateProfile, assignRole, removeRole }
 })

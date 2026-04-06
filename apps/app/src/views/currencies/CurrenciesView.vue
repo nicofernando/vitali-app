@@ -252,7 +252,7 @@ async function confirmDelete() {
     </Sheet>
 
     <!-- Confirmación eliminación -->
-    <AlertDialog :open="!!pendingDelete" @update:open="(v) => { if (!v) pendingDelete = null }">
+    <AlertDialog :open="!!pendingDelete">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Eliminar moneda?</AlertDialogTitle>

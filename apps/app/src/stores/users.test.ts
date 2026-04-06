@@ -85,7 +85,7 @@ describe('useUsersStore', () => {
     vi.mocked(supabase.rpc).mockResolvedValue({ error: null } as any)
 
     const store = useUsersStore()
-    store.users = [{ id: 'u1', email: 'a@test.com', full_name: 'Ana', roles: [] }]
+    store.users = [{ id: 'u1', email: 'a@test.com', full_name: 'Ana', phone: null, roles: [] }]
     await store.assignRole('u1', 'r1', role)
 
     expect(store.users[0].roles).toContainEqual(role)
@@ -97,7 +97,7 @@ describe('useUsersStore', () => {
     vi.mocked(supabase.rpc).mockResolvedValue({ error: null } as any)
 
     const store = useUsersStore()
-    store.users = [{ id: 'u1', email: 'a@test.com', full_name: 'Ana', roles: [role] }]
+    store.users = [{ id: 'u1', email: 'a@test.com', full_name: 'Ana', phone: null, roles: [role] }]
     await store.removeRole('u1', 'r1')
 
     expect(store.users[0].roles).toHaveLength(0)
