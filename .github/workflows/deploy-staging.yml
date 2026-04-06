@@ -42,5 +42,5 @@ jobs:
           username: ${{ secrets.STAGING_FTP_USER }}
           password: ${{ secrets.STAGING_FTP_PASS }}
           local-dir: apps/app/dist/
-          server-dir: ./staging.vitalisuites.com/
+          server-dir: ./
           protocol: ftps
