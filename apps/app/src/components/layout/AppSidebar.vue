@@ -11,6 +11,7 @@ import {
   Users,
   Settings,
   LogOut,
+  Layers,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -28,6 +29,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: 'Dashboard', to: '/', icon: LayoutDashboard },
   { name: 'Proyectos', to: '/projects', icon: Building2, permission: 'projects.read' },
+  { name: 'Tipologías', to: '/typologies', icon: Layers, permission: 'typologies.read' },
   { name: 'Cotizador', to: '/simulator', icon: Calculator, permission: 'simulator.use' },
   { name: 'Cotizaciones', to: '/quotes', icon: FileText, permission: 'quotes.read' },
   { name: 'Clientes', to: '/clients', icon: Users, permission: 'clients.read' },

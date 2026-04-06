@@ -29,6 +29,30 @@ const router = createRouter({
           name: 'dashboard',
           component: () => import('@/views/DashboardView.vue'),
         },
+        {
+          path: 'projects',
+          name: 'projects',
+          component: () => import('@/views/projects/ProjectsView.vue'),
+          meta: { permission: 'projects.read' },
+        },
+        {
+          path: 'typologies',
+          name: 'typologies',
+          component: () => import('@/views/projects/TypologiesView.vue'),
+          meta: { permission: 'typologies.read' },
+        },
+        {
+          path: 'simulator',
+          name: 'simulator',
+          component: () => import('@/views/simulator/SimulatorView.vue'),
+          meta: { permission: 'simulator.use' },
+        },
+        {
+          path: 'users',
+          name: 'users',
+          component: () => import('@/views/users/UsersView.vue'),
+          meta: { permission: 'users.read' },
+        },
       ],
     },
     {
