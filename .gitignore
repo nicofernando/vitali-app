@@ -31,8 +31,12 @@ supabase/.temp/
 .DS_Store
 Thumbs.db
 
-# Claude
-.claude/settings.json
+# Claude / tooling local
+.claude/
+.atl/
+
+# Assets fuente (el logo ya está en apps/app/public/)
+assets/
 
 # Logs
 logs/
