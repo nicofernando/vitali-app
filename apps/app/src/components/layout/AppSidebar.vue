@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionsStore } from '@/stores/permissions'
 import {
@@ -14,6 +14,7 @@ import {
 } from 'lucide-vue-next'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const permissionsStore = usePermissionsStore()
 
@@ -47,6 +48,7 @@ function isActive(to: string) {
 async function handleLogout() {
   await authStore.logout()
   permissionsStore.reset()
+  router.push({ name: 'login' })
 }
 </script>
 
