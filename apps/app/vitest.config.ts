@@ -8,6 +8,10 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    include: [
+      'src/**/*.test.ts',
+      '../../supabase/functions/**/*.vitest.ts',
+    ],
   },
   resolve: {
     alias: {
