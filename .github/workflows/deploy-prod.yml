@@ -28,11 +28,6 @@ jobs:
       - name: Instalar dependencias
         run: pnpm install --frozen-lockfile
 
-      - name: Verificar secrets
-        run: |
-          echo "URL set: ${{ secrets.PROD_SUPABASE_URL != '' }}"
-          echo "KEY set: ${{ secrets.PROD_SUPABASE_ANON_KEY != '' }}"
-
       - name: Build
         working-directory: apps/app
         env:
