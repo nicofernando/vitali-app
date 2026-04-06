@@ -1,0 +1,8 @@
+skills:
+  shadcn-vue-skilld:
+    repo: harlan-zw/vue-ecosystem-skills
+    source: github
+    syncedAt: 2026-03-27
+    generator: external
+    path: skills/shadcn-vue-skilld
+    ref: main

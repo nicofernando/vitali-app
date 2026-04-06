@@ -31,9 +31,9 @@ supabase/.temp/
 .DS_Store
 Thumbs.db
 
-# Claude / tooling local
-.claude/
-.atl/
+# Claude — solo excluir archivos con credenciales
+.claude/settings.json
+.claude/settings.local.json
 
 # Assets fuente (el logo ya está en apps/app/public/)
 assets/
