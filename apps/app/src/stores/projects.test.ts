@@ -6,36 +6,51 @@ vi.mock('@/lib/supabase', () => ({
   supabase: { from: vi.fn() },
 }))
 
+const basePayload = {
+  name: 'Torre del Sol',
+  description: null,
+  location: null,
+  currency_id: 'uuid-currency',
+  annual_interest_rate: 0.08,
+  french_credit_enabled: true,
+  smart_credit_enabled: true,
+}
+
+const fakeProject = { id: '1', ...basePayload, created_at: '', currency: { code: 'CLP' } }
+const fakeProject2 = { id: '2', ...basePayload, name: 'Torre Luna', created_at: '', currency: { code: 'CLP' } }
+
 describe('useProjectsStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 
-  it('inicia con lista vacía y sin errores', () => {
+  // ── Estado inicial ───────────────────────────────────────────
+  it('inicia con lista vacía, sin loading ni error', () => {
     const store = useProjectsStore()
     expect(store.projects).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
 
-  it('fetchAll carga proyectos y los guarda', async () => {
+  // ── fetchAll ─────────────────────────────────────────────────
+  it('fetchAll: carga proyectos y limpia loading', async () => {
     const { supabase } = await import('@/lib/supabase')
-    const fakeProjects = [{ id: '1', name: 'Torre del Sol', currency: { code: 'CLP' } }]
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: fakeProjects, error: null }),
+        order: vi.fn().mockResolvedValue({ data: [fakeProject], error: null }),
       }),
     } as any)
 
     const store = useProjectsStore()
     await store.fetchAll()
 
-    expect(store.projects).toEqual(fakeProjects)
+    expect(store.projects).toEqual([fakeProject])
     expect(store.error).toBeNull()
+    expect(store.loading).toBe(false)
   })
 
-  it('fetchAll guarda el error si supabase falla', async () => {
+  it('fetchAll: si falla, guarda error y lista queda vacía', async () => {
     const { supabase } = await import('@/lib/supabase')
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn().mockReturnValue({
@@ -50,33 +65,27 @@ describe('useProjectsStore', () => {
     expect(store.error).toBe('DB error')
   })
 
-  it('create agrega el proyecto al inicio de la lista', async () => {
+  // ── create ───────────────────────────────────────────────────
+  it('create: agrega proyecto al inicio de la lista y lo retorna', async () => {
     const { supabase } = await import('@/lib/supabase')
-    const newProject = { id: '2', name: 'Nuevo', currency: { code: 'MXN' } }
     vi.mocked(supabase.from).mockReturnValue({
       insert: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ data: newProject, error: null }),
+          single: vi.fn().mockResolvedValue({ data: fakeProject, error: null }),
         }),
       }),
     } as any)
 
     const store = useProjectsStore()
-    const result = await store.create({
-      name: 'Nuevo',
-      description: null,
-      location: null,
-      currency_id: 'uuid',
-      annual_interest_rate: 0.08,
-      french_credit_enabled: true,
-      smart_credit_enabled: true,
-    })
+    store.projects = [fakeProject2]
+    const result = await store.create(basePayload)
 
-    expect(result).toEqual(newProject)
-    expect(store.projects[0]).toEqual(newProject)
+    expect(result).toEqual(fakeProject)
+    expect(store.projects[0]).toEqual(fakeProject)
+    expect(store.projects).toHaveLength(2)
   })
 
-  it('create re-lanza el error para que el componente lo capture', async () => {
+  it('create: si falla, relanza el error y la lista queda intacta', async () => {
     const { supabase } = await import('@/lib/supabase')
     vi.mocked(supabase.from).mockReturnValue({
       insert: vi.fn().mockReturnValue({
@@ -87,18 +96,53 @@ describe('useProjectsStore', () => {
     } as any)
 
     const store = useProjectsStore()
-    await expect(store.create({
-      name: 'X',
-      description: null,
-      location: null,
-      currency_id: 'uuid',
-      annual_interest_rate: 0.08,
-      french_credit_enabled: true,
-      smart_credit_enabled: true,
-    })).rejects.toThrow()
+    store.projects = [fakeProject]
+    await expect(store.create(basePayload)).rejects.toThrow()
+    expect(store.projects).toHaveLength(1)
   })
 
-  it('remove elimina el proyecto de la lista local', async () => {
+  // ── update ───────────────────────────────────────────────────
+  it('update: modifica el proyecto correcto en la lista', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    const updated = { ...fakeProject, name: 'Torre del Sol Actualizado' }
+    vi.mocked(supabase.from).mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: updated, error: null }),
+          }),
+        }),
+      }),
+    } as any)
+
+    const store = useProjectsStore()
+    store.projects = [{ ...fakeProject }, fakeProject2]
+    await store.update('1', { name: 'Torre del Sol Actualizado' })
+
+    expect(store.projects.find(p => p.id === '1')?.name).toBe('Torre del Sol Actualizado')
+    expect(store.projects).toHaveLength(2)
+  })
+
+  it('update: si falla, relanza el error y el proyecto queda sin cambios', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.from).mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: null, error: { message: 'RLS violation' } }),
+          }),
+        }),
+      }),
+    } as any)
+
+    const store = useProjectsStore()
+    store.projects = [{ ...fakeProject }]
+    await expect(store.update('1', { name: 'X' })).rejects.toThrow()
+    expect(store.projects.find(p => p.id === '1')?.name).toBe('Torre del Sol')
+  })
+
+  // ── remove ───────────────────────────────────────────────────
+  it('remove: elimina el proyecto de la lista', async () => {
     const { supabase } = await import('@/lib/supabase')
     vi.mocked(supabase.from).mockReturnValue({
       delete: vi.fn().mockReturnValue({
@@ -107,14 +151,24 @@ describe('useProjectsStore', () => {
     } as any)
 
     const store = useProjectsStore()
-    store.projects = [
-      { id: '1', name: 'A', description: null, location: null, currency_id: 'x', annual_interest_rate: 0.08, french_credit_enabled: true, smart_credit_enabled: true, created_at: '' },
-      { id: '2', name: 'B', description: null, location: null, currency_id: 'x', annual_interest_rate: 0.08, french_credit_enabled: true, smart_credit_enabled: true, created_at: '' },
-    ]
-
+    store.projects = [{ ...fakeProject }, fakeProject2]
     await store.remove('1')
 
+    expect(store.projects.find(p => p.id === '1')).toBeUndefined()
     expect(store.projects).toHaveLength(1)
-    expect(store.projects[0].id).toBe('2')
+  })
+
+  it('remove: si falla, relanza el error y la lista queda intacta', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.from).mockReturnValue({
+      delete: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: { message: 'Proyecto en uso' } }),
+      }),
+    } as any)
+
+    const store = useProjectsStore()
+    store.projects = [{ ...fakeProject }, fakeProject2]
+    await expect(store.remove('1')).rejects.toThrow()
+    expect(store.projects).toHaveLength(2)
   })
 })

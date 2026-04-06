@@ -1,0 +1,5 @@
+#!/bin/sh
+# Exporta memorias Engram al repo antes de cada commit.
+# Requiere activación una vez por máquina: git config core.hooksPath .githooks
+engram export .claude/engram-export.json 2>/dev/null || echo "[engram] export skipped (engram CLI not available)"
+git add .claude/engram-export.json 2>/dev/null || true
