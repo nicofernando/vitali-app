@@ -90,7 +90,13 @@ router.beforeEach(async (to) => {
   if (to.meta.permission && authStore.user) {
     const permStore = usePermissionsStore()
     if (!permStore.loaded) {
-      await permStore.load(authStore.user.id)
+      try {
+        await permStore.load(authStore.user.id)
+      }
+      catch {
+        // If load fails, deny access rather than crashing navigation
+        return { name: 'dashboard' }
+      }
     }
     if (!permStore.can(to.meta.permission)) {
       return { name: 'dashboard' }
