@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Project, Tower } from '@/types'
+import type { Project, Tower, Unit } from '@/types'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 import ProjectForm from '@/components/projects/ProjectForm.vue'
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -51,6 +52,7 @@ const showTowerForm = ref(false)
 const editingTower = ref<Tower | null>(null)
 
 const showUnitForm = ref(false)
+const editingUnit = ref<Unit | null>(null)
 
 onMounted(() => projectsStore.fetchAll())
 
@@ -86,6 +88,16 @@ function openEditTower(tower: Tower) {
   showTowerForm.value = true
 }
 
+function openNewUnit() {
+  editingUnit.value = null
+  showUnitForm.value = true
+}
+
+function openEditUnit(unit: Unit) {
+  editingUnit.value = unit
+  showUnitForm.value = true
+}
+
 function deleteProject(project: Project) {
   pendingDelete.value = {
     message: `¿Eliminar "${project.name}"? Se eliminarán todas sus torres y departamentos.`,
@@ -112,10 +124,10 @@ function deleteTower(tower: Tower) {
   }
 }
 
-function deleteUnit(unitId: string) {
+function deleteUnit(unit: Unit) {
   pendingDelete.value = {
-    message: '¿Eliminar este departamento?',
-    onConfirm: () => unitsStore.remove(unitId),
+    message: `¿Eliminar departamento ${unit.unit_number}?`,
+    onConfirm: () => unitsStore.remove(unit.id),
   }
 }
 </script>
@@ -171,18 +183,10 @@ function deleteUnit(unitId: string) {
             <TableRow
               v-for="project in projects"
               :key="project.id"
-              :class="selectedProject?.id === project.id ? 'bg-accent/40 border-l-2 border-l-primary' : 'hover:bg-muted/40'"
-              class="cursor-pointer transition-colors"
-              @click="selectProject(project)"
+              :class="selectedProject?.id === project.id ? 'bg-accent/40' : ''"
             >
               <TableCell class="font-medium">
-                <span class="flex items-center gap-2">
-                  <span
-                    v-if="selectedProject?.id === project.id"
-                    class="w-1.5 h-1.5 rounded-full bg-primary inline-block"
-                  />
-                  {{ project.name }}
-                </span>
+                {{ project.name }}
               </TableCell>
               <TableCell>{{ project.location ?? '—' }}</TableCell>
               <TableCell>{{ project.currency?.code ?? '—' }}</TableCell>
@@ -198,7 +202,14 @@ function deleteUnit(unitId: string) {
                 </div>
               </TableCell>
               <TableCell class="text-right">
-                <div class="flex justify-end gap-2" @click.stop>
+                <div class="flex justify-end gap-2">
+                  <Button
+                    size="sm"
+                    :variant="selectedProject?.id === project.id ? 'default' : 'outline'"
+                    @click="selectProject(project)"
+                  >
+                    Torres →
+                  </Button>
                   <Button size="sm" variant="outline" @click="openEditProject(project)">
                     Editar
                   </Button>
@@ -213,18 +224,19 @@ function deleteUnit(unitId: string) {
       </Table>
     </div>
 
-    <!-- Hint cuando no hay proyecto seleccionado -->
-    <p v-if="projects.length > 0 && !selectedProject" class="text-sm text-muted-foreground text-center py-2">
-      ↑ Hacé click en un proyecto para ver sus torres y departamentos
-    </p>
-
-    <!-- Torres (visible solo si hay proyecto seleccionado) -->
+    <!-- Torres del proyecto seleccionado -->
     <template v-if="selectedProject">
+      <Separator />
       <div class="space-y-4">
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-heading font-semibold">
-            Torres — {{ selectedProject.name }}
-          </h2>
+          <div>
+            <h2 class="text-lg font-heading font-semibold">
+              Torres
+            </h2>
+            <p class="text-sm text-muted-foreground">
+              {{ selectedProject.name }}
+            </p>
+          </div>
           <Button size="sm" @click="openNewTower">
             + Nueva torre
           </Button>
@@ -262,24 +274,23 @@ function deleteUnit(unitId: string) {
                 <TableRow
                   v-for="tower in towers"
                   :key="tower.id"
-                  :class="selectedTower?.id === tower.id ? 'bg-accent/40 border-l-2 border-l-primary' : 'hover:bg-muted/40'"
-                  class="cursor-pointer transition-colors"
-                  @click="selectTower(tower)"
+                  :class="selectedTower?.id === tower.id ? 'bg-accent/40' : ''"
                 >
                   <TableCell class="font-medium">
-                    <span class="flex items-center gap-2">
-                      <span
-                        v-if="selectedTower?.id === tower.id"
-                        class="w-1.5 h-1.5 rounded-full bg-primary inline-block"
-                      />
-                      {{ tower.name }}
-                    </span>
+                    {{ tower.name }}
                   </TableCell>
                   <TableCell>{{ tower.delivery_date ?? '—' }}</TableCell>
                   <TableCell>{{ tower.max_financing_years }} años</TableCell>
                   <TableCell>{{ tower.min_pie_percentage }}%</TableCell>
                   <TableCell class="text-right">
-                    <div class="flex justify-end gap-2" @click.stop>
+                    <div class="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        :variant="selectedTower?.id === tower.id ? 'default' : 'outline'"
+                        @click="selectTower(tower)"
+                      >
+                        Deptos →
+                      </Button>
                       <Button size="sm" variant="outline" @click="openEditTower(tower)">
                         Editar
                       </Button>
@@ -296,19 +307,20 @@ function deleteUnit(unitId: string) {
       </div>
     </template>
 
-    <!-- Hint cuando no hay torre seleccionada -->
-    <p v-if="selectedProject && towers.length > 0 && !selectedTower" class="text-sm text-muted-foreground text-center py-2">
-      ↑ Hacé click en una torre para ver sus departamentos
-    </p>
-
-    <!-- Departamentos (visible solo si hay torre seleccionada) -->
+    <!-- Departamentos de la torre seleccionada -->
     <template v-if="selectedTower">
+      <Separator />
       <div class="space-y-4">
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-heading font-semibold">
-            Departamentos — {{ selectedTower.name }}
-          </h2>
-          <Button size="sm" @click="showUnitForm = true">
+          <div>
+            <h2 class="text-lg font-heading font-semibold">
+              Departamentos
+            </h2>
+            <p class="text-sm text-muted-foreground">
+              {{ selectedProject?.name }} — {{ selectedTower.name }}
+            </p>
+          </div>
+          <Button size="sm" @click="openNewUnit">
             + Nuevo depto
           </Button>
         </div>
@@ -352,9 +364,14 @@ function deleteUnit(unitId: string) {
                   <TableCell>{{ unit.typology?.surface_m2 ?? '—' }} m²</TableCell>
                   <TableCell>{{ unit.list_price.toLocaleString('es-CL') }}</TableCell>
                   <TableCell class="text-right">
-                    <Button size="sm" variant="destructive" @click="deleteUnit(unit.id)">
-                      Eliminar
-                    </Button>
+                    <div class="flex justify-end gap-2">
+                      <Button size="sm" variant="outline" @click="openEditUnit(unit)">
+                        Editar
+                      </Button>
+                      <Button size="sm" variant="destructive" @click="deleteUnit(unit)">
+                        Eliminar
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               </template>
@@ -364,11 +381,8 @@ function deleteUnit(unitId: string) {
       </div>
     </template>
 
-    <!-- Formularios en Sheet -->
-    <ProjectForm
-      v-model:open="showProjectForm"
-      :project="editingProject"
-    />
+    <!-- Formularios -->
+    <ProjectForm v-model:open="showProjectForm" :project="editingProject" />
 
     <TowerForm
       v-if="selectedProject"
@@ -381,6 +395,7 @@ function deleteUnit(unitId: string) {
       v-if="selectedTower"
       v-model:open="showUnitForm"
       :tower-id="selectedTower.id"
+      :unit="editingUnit"
       :decimal-places="selectedProject?.currency?.decimal_places"
     />
 

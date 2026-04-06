@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Unit } from '@/types'
 import { toTypedSchema } from '@vee-validate/zod'
 import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
@@ -28,6 +29,7 @@ import { useUnitsStore } from '@/stores/units'
 const props = defineProps<{
   towerId: string
   open: boolean
+  unit?: Unit | null
   decimalPlaces?: number
 }>()
 
@@ -40,14 +42,12 @@ const typologiesStore = useTypologiesStore()
 const { typologies } = storeToRefs(typologiesStore)
 const submitting = ref(false)
 
-// step dinámico según decimales de la moneda del proyecto
-// decimalPlaces=0 → "1", decimalPlaces=2 → "0.01", decimalPlaces=4 → "0.0001"
+const isEditing = computed(() => !!props.unit)
+
 const priceStep = computed(() => {
   const d = props.decimalPlaces ?? 2
   return d === 0 ? '1' : `0.${'0'.repeat(d - 1)}1`
 })
-
-onMounted(() => typologiesStore.fetchAll())
 
 const schema = toTypedSchema(z.object({
   unit_number: z.string().min(1, 'El número es requerido'),
@@ -58,29 +58,47 @@ const schema = toTypedSchema(z.object({
 
 const { handleSubmit, resetForm } = useForm({ validationSchema: schema })
 
+onMounted(() => typologiesStore.fetchAll())
+
 watch(() => props.open, (open) => {
   if (open) {
-    resetForm({
-      values: { unit_number: '', floor: null, typology_id: '', list_price: 0 },
-    })
+    if (props.unit) {
+      resetForm({
+        values: {
+          unit_number: props.unit.unit_number,
+          floor: props.unit.floor ?? null,
+          typology_id: props.unit.typology_id,
+          list_price: props.unit.list_price,
+        },
+      })
+    }
+    else {
+      resetForm({ values: { unit_number: '', floor: null, typology_id: '', list_price: 0 } })
+    }
   }
 })
 
 const onSubmit = handleSubmit(async (values) => {
   submitting.value = true
   try {
-    await unitsStore.create({
-      tower_id: props.towerId,
-      typology_id: values.typology_id,
-      unit_number: values.unit_number,
-      floor: values.floor ?? null,
-      list_price: values.list_price,
-    })
-    toast.success('Departamento creado')
+    if (isEditing.value && props.unit) {
+      await unitsStore.update(props.unit.id, values)
+      toast.success('Departamento actualizado')
+    }
+    else {
+      await unitsStore.create({
+        tower_id: props.towerId,
+        typology_id: values.typology_id,
+        unit_number: values.unit_number,
+        floor: values.floor ?? null,
+        list_price: values.list_price,
+      })
+      toast.success('Departamento creado')
+    }
     emit('update:open', false)
   }
   catch {
-    toast.error('Error al crear el departamento')
+    toast.error(isEditing.value ? 'Error al actualizar el departamento' : 'Error al crear el departamento')
   }
   finally {
     submitting.value = false
@@ -92,8 +110,8 @@ const onSubmit = handleSubmit(async (values) => {
   <Sheet :open="open" @update:open="emit('update:open', $event)">
     <SheetContent class="overflow-y-auto">
       <SheetHeader>
-        <SheetTitle>Nuevo departamento</SheetTitle>
-        <SheetDescription>Completá los datos del departamento</SheetDescription>
+        <SheetTitle>{{ isEditing ? 'Editar departamento' : 'Nuevo departamento' }}</SheetTitle>
+        <SheetDescription>{{ isEditing ? 'Modificá los datos del departamento' : 'Completá los datos del departamento' }}</SheetDescription>
       </SheetHeader>
 
       <form class="space-y-4 mt-6" @submit="onSubmit">
@@ -166,7 +184,7 @@ const onSubmit = handleSubmit(async (values) => {
             Cancelar
           </Button>
           <Button type="submit" :disabled="submitting">
-            {{ submitting ? 'Guardando...' : 'Crear departamento' }}
+            {{ submitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Crear departamento' }}
           </Button>
         </div>
       </form>
