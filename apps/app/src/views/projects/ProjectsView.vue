@@ -171,12 +171,18 @@ function deleteUnit(unitId: string) {
             <TableRow
               v-for="project in projects"
               :key="project.id"
-              :class="{ 'bg-accent/30': selectedProject?.id === project.id }"
-              class="cursor-pointer"
+              :class="selectedProject?.id === project.id ? 'bg-accent/40 border-l-2 border-l-primary' : 'hover:bg-muted/40'"
+              class="cursor-pointer transition-colors"
               @click="selectProject(project)"
             >
               <TableCell class="font-medium">
-                {{ project.name }}
+                <span class="flex items-center gap-2">
+                  <span
+                    v-if="selectedProject?.id === project.id"
+                    class="w-1.5 h-1.5 rounded-full bg-primary inline-block"
+                  />
+                  {{ project.name }}
+                </span>
               </TableCell>
               <TableCell>{{ project.location ?? '—' }}</TableCell>
               <TableCell>{{ project.currency?.code ?? '—' }}</TableCell>
@@ -206,6 +212,11 @@ function deleteUnit(unitId: string) {
         </TableBody>
       </Table>
     </div>
+
+    <!-- Hint cuando no hay proyecto seleccionado -->
+    <p v-if="projects.length > 0 && !selectedProject" class="text-sm text-muted-foreground text-center py-2">
+      ↑ Hacé click en un proyecto para ver sus torres y departamentos
+    </p>
 
     <!-- Torres (visible solo si hay proyecto seleccionado) -->
     <template v-if="selectedProject">
@@ -251,12 +262,18 @@ function deleteUnit(unitId: string) {
                 <TableRow
                   v-for="tower in towers"
                   :key="tower.id"
-                  :class="{ 'bg-accent/30': selectedTower?.id === tower.id }"
-                  class="cursor-pointer"
+                  :class="selectedTower?.id === tower.id ? 'bg-accent/40 border-l-2 border-l-primary' : 'hover:bg-muted/40'"
+                  class="cursor-pointer transition-colors"
                   @click="selectTower(tower)"
                 >
                   <TableCell class="font-medium">
-                    {{ tower.name }}
+                    <span class="flex items-center gap-2">
+                      <span
+                        v-if="selectedTower?.id === tower.id"
+                        class="w-1.5 h-1.5 rounded-full bg-primary inline-block"
+                      />
+                      {{ tower.name }}
+                    </span>
                   </TableCell>
                   <TableCell>{{ tower.delivery_date ?? '—' }}</TableCell>
                   <TableCell>{{ tower.max_financing_years }} años</TableCell>
@@ -278,6 +295,11 @@ function deleteUnit(unitId: string) {
         </div>
       </div>
     </template>
+
+    <!-- Hint cuando no hay torre seleccionada -->
+    <p v-if="selectedProject && towers.length > 0 && !selectedTower" class="text-sm text-muted-foreground text-center py-2">
+      ↑ Hacé click en una torre para ver sus departamentos
+    </p>
 
     <!-- Departamentos (visible solo si hay torre seleccionada) -->
     <template v-if="selectedTower">
