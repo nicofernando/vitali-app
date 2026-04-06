@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionsStore } from '@/stores/permissions'
+import { supabase } from '@/lib/supabase'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -41,9 +42,7 @@ router.beforeEach(async (to) => {
   const authStore = useAuthStore()
 
   if (!authStore.session) {
-    const { data } = await import('@/lib/supabase').then(m =>
-      m.supabase.auth.getSession(),
-    )
+    const { data } = await supabase.auth.getSession()
     authStore.session = data.session
     authStore.user = data.session?.user ?? null
   }
