@@ -7,7 +7,11 @@ export interface Currency {
   code: string
   name: string
   symbol: string
+  decimal_places: number
 }
+
+export type CurrencyInsert = Omit<Currency, 'id'>
+export type CurrencyUpdate = Partial<CurrencyInsert>
 
 export interface Project {
   id: string

@@ -24,20 +24,23 @@ describe('useUsersStore', () => {
 
   it('fetchAll carga usuarios con roles', async () => {
     const { supabase } = await import('@/lib/supabase')
-    const fakeUsers = [
-      { id: 'u1', email: 'a@test.com', full_name: 'Ana', roles: [{ id: 'r1', name: 'admin', description: null, created_at: '' }] },
-      { id: 'u2', email: 'b@test.com', full_name: 'Bob', roles: [] },
+    const role = { id: 'r1', name: 'admin', description: null, created_at: '' }
+    // Supabase devuelve user_roles:[{roles:{...}}], el store lo aplana a roles:[{...}]
+    const rawData = [
+      { id: 'u1', email: 'a@test.com', full_name: 'Ana', user_roles: [{ roles: role }] },
+      { id: 'u2', email: 'b@test.com', full_name: 'Bob', user_roles: [] },
     ]
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: fakeUsers, error: null }),
+        order: vi.fn().mockResolvedValue({ data: rawData, error: null }),
       }),
     } as any)
 
     const store = useUsersStore()
     await store.fetchAll()
 
-    expect(store.users).toEqual(fakeUsers)
+    expect(store.users[0].roles).toEqual([role])
+    expect(store.users[1].roles).toEqual([])
     expect(store.loading).toBe(false)
   })
 

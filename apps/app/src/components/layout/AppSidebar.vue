@@ -2,6 +2,7 @@
 import {
   Building2,
   Calculator,
+  Coins,
   FileText,
   Layers,
   LayoutDashboard,
@@ -33,6 +34,7 @@ const navItems: NavItem[] = [
   { name: 'Cotizador', to: '/simulator', icon: Calculator, permission: 'simulator.use' },
   { name: 'Cotizaciones', to: '/quotes', icon: FileText, permission: 'quotes.read' },
   { name: 'Clientes', to: '/clients', icon: Users, permission: 'clients.read' },
+  { name: 'Monedas', to: '/currencies', icon: Coins, permission: 'settings.read' },
   { name: 'Usuarios', to: '/users', icon: Users, permission: 'users.read' },
   { name: 'Configuración', to: '/settings', icon: Settings, permission: 'settings.read' },
 ]
