@@ -1,22 +1,29 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useSimulatorStore } from '@/stores/simulator'
-import { useProjectsStore } from '@/stores/projects'
-import { useTowersStore } from '@/stores/towers'
-import { useUnitsStore } from '@/stores/units'
+import { computed, onMounted, ref } from 'vue'
 import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
-import {
-  Card, CardContent, CardHeader, CardTitle, CardDescription,
-} from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
-import type { Project, Tower, Unit } from '@/types'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useProjectsStore } from '@/stores/projects'
+import { useSimulatorStore } from '@/stores/simulator'
+import { useTowersStore } from '@/stores/towers'
+import { useUnitsStore } from '@/stores/units'
 
 const simulatorStore = useSimulatorStore()
 const projectsStore = useProjectsStore()
@@ -59,7 +66,8 @@ function onProjectChange(projectId: string) {
   selectedUnitId.value = ''
   unitsStore.units = []
   simulatorStore.reset()
-  if (projectId) towersStore.fetchByProject(projectId)
+  if (projectId)
+    towersStore.fetchByProject(projectId)
 }
 
 function onTowerChange(towerId: string) {
@@ -84,7 +92,8 @@ function onUnitChange(unitId: string) {
 }
 
 async function handleCalculate() {
-  if (!canCalculate.value) return
+  if (!canCalculate.value)
+    return
 
   await simulatorStore.calculate({
     unit_id: selectedUnitId.value,
@@ -103,14 +112,20 @@ function formatCurrency(amount: number, symbol = '$') {
 <template>
   <div class="p-6 max-w-4xl mx-auto space-y-6">
     <div>
-      <h1 class="text-2xl font-heading font-bold text-foreground">Cotizador</h1>
-      <p class="text-sm text-muted-foreground mt-1">Simulá opciones de financiamiento para un departamento</p>
+      <h1 class="text-2xl font-heading font-bold text-foreground">
+        Cotizador
+      </h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Simulá opciones de financiamiento para un departamento
+      </p>
     </div>
 
     <!-- Selección de proyecto → torre → depto -->
     <Card>
       <CardHeader>
-        <CardTitle class="text-base">Selección de departamento</CardTitle>
+        <CardTitle class="text-base">
+          Selección de departamento
+        </CardTitle>
       </CardHeader>
       <CardContent class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -171,25 +186,43 @@ function formatCurrency(amount: number, symbol = '$') {
           <Separator />
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <p class="text-muted-foreground">Tipología</p>
-              <p class="font-medium">{{ selectedUnit.typology?.name ?? '—' }}</p>
+              <p class="text-muted-foreground">
+                Tipología
+              </p>
+              <p class="font-medium">
+                {{ selectedUnit.typology?.name ?? '—' }}
+              </p>
             </div>
             <div>
-              <p class="text-muted-foreground">Superficie</p>
-              <p class="font-medium">{{ selectedUnit.typology?.surface_m2 ?? '—' }} m²</p>
+              <p class="text-muted-foreground">
+                Superficie
+              </p>
+              <p class="font-medium">
+                {{ selectedUnit.typology?.surface_m2 ?? '—' }} m²
+              </p>
             </div>
             <div>
-              <p class="text-muted-foreground">Piso</p>
-              <p class="font-medium">{{ selectedUnit.floor ?? '—' }}</p>
+              <p class="text-muted-foreground">
+                Piso
+              </p>
+              <p class="font-medium">
+                {{ selectedUnit.floor ?? '—' }}
+              </p>
             </div>
             <div>
-              <p class="text-muted-foreground">Entrega</p>
-              <p class="font-medium">{{ selectedTower?.delivery_date ?? '—' }}</p>
+              <p class="text-muted-foreground">
+                Entrega
+              </p>
+              <p class="font-medium">
+                {{ selectedTower?.delivery_date ?? '—' }}
+              </p>
             </div>
           </div>
           <div class="flex items-center gap-4">
             <div>
-              <p class="text-muted-foreground text-sm">Precio de lista</p>
+              <p class="text-muted-foreground text-sm">
+                Precio de lista
+              </p>
               <p class="text-xl font-semibold font-heading">
                 {{ formatCurrency(selectedUnit.list_price, selectedProject?.currency?.symbol) }}
                 <span class="text-sm font-normal text-muted-foreground ml-1">{{ selectedProject?.currency?.code }}</span>
@@ -203,7 +236,9 @@ function formatCurrency(amount: number, symbol = '$') {
     <!-- Parámetros de financiamiento -->
     <Card v-if="selectedUnit">
       <CardHeader>
-        <CardTitle class="text-base">Parámetros de financiamiento</CardTitle>
+        <CardTitle class="text-base">
+          Parámetros de financiamiento
+        </CardTitle>
       </CardHeader>
       <CardContent class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -217,7 +252,9 @@ function formatCurrency(amount: number, symbol = '$') {
               step="0.5"
               :class="pieError ? 'border-destructive' : ''"
             />
-            <p v-if="pieError" class="text-xs text-destructive">{{ pieError }}</p>
+            <p v-if="pieError" class="text-xs text-destructive">
+              {{ pieError }}
+            </p>
             <p v-else-if="selectedUnit" class="text-xs text-muted-foreground">
               = {{ formatCurrency(selectedUnit.list_price * piePercentage / 100, selectedProject?.currency?.symbol) }}
             </p>
@@ -289,7 +326,9 @@ function formatCurrency(amount: number, symbol = '$') {
           {{ calculating ? 'Calculando...' : 'Calcular financiamiento' }}
         </Button>
 
-        <p v-if="calcError" class="text-sm text-destructive text-center">{{ calcError }}</p>
+        <p v-if="calcError" class="text-sm text-destructive text-center">
+          {{ calcError }}
+        </p>
       </CardContent>
     </Card>
 
@@ -318,29 +357,49 @@ function formatCurrency(amount: number, symbol = '$') {
           </CardHeader>
           <CardContent class="space-y-4">
             <div>
-              <p class="text-sm text-muted-foreground">Cuota mensual</p>
+              <p class="text-sm text-muted-foreground">
+                Cuota mensual
+              </p>
               <p class="text-3xl font-bold font-heading text-primary">
                 {{ formatCurrency(result.french.monthly_payment, result.project.currency.symbol) }}
               </p>
-              <p class="text-xs text-muted-foreground mt-1">{{ result.project.currency.code }}</p>
+              <p class="text-xs text-muted-foreground mt-1">
+                {{ result.project.currency.code }}
+              </p>
             </div>
             <Separator />
             <div class="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <p class="text-muted-foreground">Plazo</p>
-                <p class="font-medium">{{ termYears }} años ({{ result.french.term_months }} cuotas)</p>
+                <p class="text-muted-foreground">
+                  Plazo
+                </p>
+                <p class="font-medium">
+                  {{ termYears }} años ({{ result.french.term_months }} cuotas)
+                </p>
               </div>
               <div>
-                <p class="text-muted-foreground">Tasa mensual</p>
-                <p class="font-medium">{{ (result.french.monthly_rate * 100).toFixed(4) }}%</p>
+                <p class="text-muted-foreground">
+                  Tasa mensual
+                </p>
+                <p class="font-medium">
+                  {{ (result.french.monthly_rate * 100).toFixed(4) }}%
+                </p>
               </div>
               <div>
-                <p class="text-muted-foreground">Total pagado</p>
-                <p class="font-medium">{{ formatCurrency(result.french.total_paid, result.project.currency.symbol) }}</p>
+                <p class="text-muted-foreground">
+                  Total pagado
+                </p>
+                <p class="font-medium">
+                  {{ formatCurrency(result.french.total_paid, result.project.currency.symbol) }}
+                </p>
               </div>
               <div>
-                <p class="text-muted-foreground">Intereses totales</p>
-                <p class="font-medium">{{ formatCurrency(result.french.total_paid - result.financing_amount, result.project.currency.symbol) }}</p>
+                <p class="text-muted-foreground">
+                  Intereses totales
+                </p>
+                <p class="font-medium">
+                  {{ formatCurrency(result.french.total_paid - result.financing_amount, result.project.currency.symbol) }}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -355,13 +414,17 @@ function formatCurrency(amount: number, symbol = '$') {
           <CardContent class="space-y-4">
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <p class="text-sm text-muted-foreground">Cuotas (meses 1–{{ result.smart.term_months - 1 }})</p>
+                <p class="text-sm text-muted-foreground">
+                  Cuotas (meses 1–{{ result.smart.term_months - 1 }})
+                </p>
                 <p class="text-2xl font-bold font-heading text-primary">
                   {{ formatCurrency(result.smart.cuotas_payment, result.project.currency.symbol) }}
                 </p>
               </div>
               <div>
-                <p class="text-sm text-muted-foreground">Cuota final (mes {{ result.smart.term_months }})</p>
+                <p class="text-sm text-muted-foreground">
+                  Cuota final (mes {{ result.smart.term_months }})
+                </p>
                 <p class="text-2xl font-bold font-heading">
                   {{ formatCurrency(result.smart.balloon_payment, result.project.currency.symbol) }}
                 </p>
@@ -370,20 +433,36 @@ function formatCurrency(amount: number, symbol = '$') {
             <Separator />
             <div class="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <p class="text-muted-foreground">% en cuotas</p>
-                <p class="font-medium">{{ result.smart.cuotas_percentage }}%</p>
+                <p class="text-muted-foreground">
+                  % en cuotas
+                </p>
+                <p class="font-medium">
+                  {{ result.smart.cuotas_percentage }}%
+                </p>
               </div>
               <div>
-                <p class="text-muted-foreground">% balloon</p>
-                <p class="font-medium">{{ result.smart.balloon_percentage }}%</p>
+                <p class="text-muted-foreground">
+                  % balloon
+                </p>
+                <p class="font-medium">
+                  {{ result.smart.balloon_percentage }}%
+                </p>
               </div>
               <div>
-                <p class="text-muted-foreground">Total pagado</p>
-                <p class="font-medium">{{ formatCurrency(result.smart.total_paid, result.project.currency.symbol) }}</p>
+                <p class="text-muted-foreground">
+                  Total pagado
+                </p>
+                <p class="font-medium">
+                  {{ formatCurrency(result.smart.total_paid, result.project.currency.symbol) }}
+                </p>
               </div>
               <div>
-                <p class="text-muted-foreground">Plazo</p>
-                <p class="font-medium">{{ termYears }} años</p>
+                <p class="text-muted-foreground">
+                  Plazo
+                </p>
+                <p class="font-medium">
+                  {{ termYears }} años
+                </p>
               </div>
             </div>
           </CardContent>

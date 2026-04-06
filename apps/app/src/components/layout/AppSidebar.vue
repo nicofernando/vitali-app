@@ -1,18 +1,18 @@
 <script setup lang="ts">
+import {
+  Building2,
+  Calculator,
+  FileText,
+  Layers,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Users,
+} from 'lucide-vue-next'
 import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionsStore } from '@/stores/permissions'
-import {
-  LayoutDashboard,
-  Building2,
-  Calculator,
-  FileText,
-  Users,
-  Settings,
-  LogOut,
-  Layers,
-} from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -61,7 +61,7 @@ async function handleLogout() {
         src="/logo_vitalisuites_blanco.webp"
         alt="Vitali Suites"
         class="h-8 object-contain"
-      />
+      >
     </div>
 
     <nav class="flex-1 py-6 px-3 space-y-0.5 overflow-y-auto">
@@ -81,7 +81,9 @@ async function handleLogout() {
 
     <div class="border-t border-white/10 px-3 py-4">
       <div class="px-3 py-2 mb-1">
-        <p class="text-xs text-white/40 truncate">{{ authStore.user?.email }}</p>
+        <p class="text-xs text-white/40 truncate">
+          {{ authStore.user?.email }}
+        </p>
       </div>
       <button
         class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"

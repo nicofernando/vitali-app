@@ -14,7 +14,8 @@ const submitting = ref(false)
 const errorMessage = ref('')
 
 async function handleSubmit() {
-  if (!email.value || !password.value) return
+  if (!email.value || !password.value)
+    return
 
   submitting.value = true
   errorMessage.value = ''
@@ -43,7 +44,7 @@ async function handleSubmit() {
           src="/logo_vitalisuites_blanco.webp"
           alt="Vitali Suites"
           class="h-16 object-contain mb-4"
-        />
+        >
         <p class="text-white/60 text-sm font-body">
           Plataforma Interna
         </p>
@@ -73,7 +74,7 @@ async function handleSubmit() {
               required
               placeholder="nombre@vitalisuites.com"
               class="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm outline-none transition focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20"
-            />
+            >
           </div>
 
           <div>
@@ -91,7 +92,7 @@ async function handleSubmit() {
               required
               placeholder="••••••••"
               class="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm outline-none transition focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20"
-            />
+            >
           </div>
 
           <div

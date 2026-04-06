@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTowersStore } from './towers'
 
 vi.mock('@/lib/supabase', () => ({
@@ -68,8 +68,12 @@ describe('useTowersStore', () => {
 
     const store = useTowersStore()
     const result = await store.create({
-      project_id: 'p1', name: 'Torre B', description: null,
-      delivery_date: null, max_financing_years: 20, min_pie_percentage: 20,
+      project_id: 'p1',
+      name: 'Torre B',
+      description: null,
+      delivery_date: null,
+      max_financing_years: 20,
+      min_pie_percentage: 20,
     })
 
     expect(result).toEqual(newTower)

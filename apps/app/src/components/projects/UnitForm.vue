@@ -1,21 +1,29 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import { useUnitsStore } from '@/stores/units'
-import { useTypologiesStore } from '@/stores/typologies'
+import { toTypedSchema } from '@vee-validate/zod'
 import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
-import { toTypedSchema } from '@vee-validate/zod'
-import { z } from 'zod'
+import { onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from '@/components/ui/sheet'
+import { z } from 'zod'
+import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { useTypologiesStore } from '@/stores/typologies'
+import { useUnitsStore } from '@/stores/units'
 
 const props = defineProps<{
   towerId: string

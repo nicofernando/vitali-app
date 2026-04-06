@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
 import type { Session, User } from '@supabase/supabase-js'
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -30,7 +30,8 @@ export const useAuthStore = defineStore('auth', () => {
         email,
         password,
       })
-      if (authError) throw authError
+      if (authError)
+        throw authError
       session.value = data.session
       user.value = data.user
     }

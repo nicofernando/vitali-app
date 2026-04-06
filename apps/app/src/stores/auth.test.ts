@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from './auth'
 
 vi.mock('@/lib/supabase', () => ({
@@ -66,7 +66,7 @@ describe('useAuthStore', () => {
     const { supabase } = await import('@/lib/supabase')
     let resolveLogin!: (v: any) => void
     vi.mocked(supabase.auth.signInWithPassword).mockReturnValueOnce(
-      new Promise(resolve => {
+      new Promise((resolve) => {
         resolveLogin = resolve
       }),
     )

@@ -1,8 +1,8 @@
+import type { Tower, TowerInsert, TowerUpdate } from '@/types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
-import type { Tower, TowerInsert, TowerUpdate } from '@/types'
 
 const SELECT_FIELDS = 'id, project_id, name, description, delivery_date, max_financing_years, min_pie_percentage, created_at'
 
@@ -23,7 +23,8 @@ export const useTowersStore = defineStore('towers', () => {
         .select(SELECT_FIELDS)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false })
-      if (err) throw err
+      if (err)
+        throw err
       towers.value = (data as Tower[]) ?? []
     }
     catch (err) {
@@ -43,7 +44,8 @@ export const useTowersStore = defineStore('towers', () => {
         .insert(payload)
         .select(SELECT_FIELDS)
         .single()
-      if (err) throw err
+      if (err)
+        throw err
       towers.value.unshift(data as Tower)
       return data as Tower
     }
@@ -66,9 +68,11 @@ export const useTowersStore = defineStore('towers', () => {
         .eq('id', id)
         .select(SELECT_FIELDS)
         .single()
-      if (err) throw err
+      if (err)
+        throw err
       const idx = towers.value.findIndex(t => t.id === id)
-      if (idx !== -1) towers.value[idx] = data as Tower
+      if (idx !== -1)
+        towers.value[idx] = data as Tower
       return data as Tower
     }
     catch (err) {
@@ -88,7 +92,8 @@ export const useTowersStore = defineStore('towers', () => {
         .from('towers')
         .delete()
         .eq('id', id)
-      if (err) throw err
+      if (err)
+        throw err
       towers.value = towers.value.filter(t => t.id !== id)
     }
     catch (err) {

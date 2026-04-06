@@ -26,7 +26,8 @@ export const usePermissionsStore = defineStore('permissions', () => {
       `)
       .eq('user_id', userId)
 
-    if (error) throw error
+    if (error)
+      throw error
 
     const perms: string[] = []
     for (const ur of data ?? []) {

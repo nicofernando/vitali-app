@@ -1,8 +1,8 @@
+import type { Project, ProjectInsert, ProjectUpdate } from '@/types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
-import type { Project, ProjectInsert, ProjectUpdate } from '@/types'
 
 const SELECT_FIELDS = 'id, name, description, location, currency_id, annual_interest_rate, french_credit_enabled, smart_credit_enabled, created_at, currency:currencies(id, code, name, symbol)'
 
@@ -19,7 +19,8 @@ export const useProjectsStore = defineStore('projects', () => {
         .from('projects')
         .select(SELECT_FIELDS)
         .order('created_at', { ascending: false })
-      if (err) throw err
+      if (err)
+        throw err
       projects.value = (data as Project[]) ?? []
     }
     catch (err) {
@@ -39,7 +40,8 @@ export const useProjectsStore = defineStore('projects', () => {
         .insert(payload)
         .select(SELECT_FIELDS)
         .single()
-      if (err) throw err
+      if (err)
+        throw err
       projects.value.unshift(data as Project)
       return data as Project
     }
@@ -62,9 +64,11 @@ export const useProjectsStore = defineStore('projects', () => {
         .eq('id', id)
         .select(SELECT_FIELDS)
         .single()
-      if (err) throw err
+      if (err)
+        throw err
       const idx = projects.value.findIndex(p => p.id === id)
-      if (idx !== -1) projects.value[idx] = data as Project
+      if (idx !== -1)
+        projects.value[idx] = data as Project
       return data as Project
     }
     catch (err) {
@@ -84,7 +88,8 @@ export const useProjectsStore = defineStore('projects', () => {
         .from('projects')
         .delete()
         .eq('id', id)
-      if (err) throw err
+      if (err)
+        throw err
       projects.value = projects.value.filter(p => p.id !== id)
     }
     catch (err) {

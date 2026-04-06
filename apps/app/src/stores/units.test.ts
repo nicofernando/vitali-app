@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useUnitsStore } from './units'
 
 vi.mock('@/lib/supabase', () => ({
@@ -51,8 +51,11 @@ describe('useUnitsStore', () => {
 
     const store = useUnitsStore()
     const result = await store.create({
-      tower_id: 't1', typology_id: 'ty1',
-      unit_number: '102', floor: 1, list_price: 5000000,
+      tower_id: 't1',
+      typology_id: 'ty1',
+      unit_number: '102',
+      floor: 1,
+      list_price: 5000000,
     })
 
     expect(result).toEqual(newUnit)

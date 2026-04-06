@@ -1,8 +1,8 @@
+import type { Typology, TypologyInsert, TypologyUpdate } from '@/types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
-import type { Typology, TypologyInsert, TypologyUpdate } from '@/types'
 
 const SELECT_FIELDS = 'id, name, surface_m2, description, created_at'
 
@@ -19,7 +19,8 @@ export const useTypologiesStore = defineStore('typologies', () => {
         .from('typologies')
         .select(SELECT_FIELDS)
         .order('name', { ascending: true })
-      if (err) throw err
+      if (err)
+        throw err
       typologies.value = (data as Typology[]) ?? []
     }
     catch (err) {
@@ -38,7 +39,8 @@ export const useTypologiesStore = defineStore('typologies', () => {
         .from('project_typologies')
         .select(`typology:typologies(${SELECT_FIELDS})`)
         .eq('project_id', projectId)
-      if (err) throw err
+      if (err)
+        throw err
       typologies.value = (data?.map((r: { typology: Typology }) => r.typology) ?? []) as Typology[]
     }
     catch (err) {
@@ -58,7 +60,8 @@ export const useTypologiesStore = defineStore('typologies', () => {
         .insert(payload)
         .select(SELECT_FIELDS)
         .single()
-      if (err) throw err
+      if (err)
+        throw err
       typologies.value.unshift(data as Typology)
       return data as Typology
     }
@@ -81,9 +84,11 @@ export const useTypologiesStore = defineStore('typologies', () => {
         .eq('id', id)
         .select(SELECT_FIELDS)
         .single()
-      if (err) throw err
+      if (err)
+        throw err
       const idx = typologies.value.findIndex(t => t.id === id)
-      if (idx !== -1) typologies.value[idx] = data as Typology
+      if (idx !== -1)
+        typologies.value[idx] = data as Typology
       return data as Typology
     }
     catch (err) {
@@ -103,7 +108,8 @@ export const useTypologiesStore = defineStore('typologies', () => {
         .from('typologies')
         .delete()
         .eq('id', id)
-      if (err) throw err
+      if (err)
+        throw err
       typologies.value = typologies.value.filter(t => t.id !== id)
     }
     catch (err) {
@@ -119,7 +125,8 @@ export const useTypologiesStore = defineStore('typologies', () => {
     const { error: err } = await supabase
       .from('project_typologies')
       .insert({ project_id: projectId, typology_id: typologyId })
-    if (err) throw err
+    if (err)
+      throw err
   }
 
   async function removeFromProject(projectId: string, typologyId: string) {
@@ -128,7 +135,8 @@ export const useTypologiesStore = defineStore('typologies', () => {
       .delete()
       .eq('project_id', projectId)
       .eq('typology_id', typologyId)
-    if (err) throw err
+    if (err)
+      throw err
   }
 
   return {

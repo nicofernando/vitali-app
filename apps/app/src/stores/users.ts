@@ -1,8 +1,8 @@
+import type { Role, UserWithRoles } from '@/types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
-import type { Role, UserWithRoles } from '@/types'
 
 export const useUsersStore = defineStore('users', () => {
   const users = ref<UserWithRoles[]>([])
@@ -18,7 +18,8 @@ export const useUsersStore = defineStore('users', () => {
         .select('id, email, full_name, roles:user_roles(role:roles(id, name, description, created_at))')
         .order('full_name')
 
-      if (dbError) throw dbError
+      if (dbError)
+        throw dbError
       // Aplanar la relación roles[{role: {...}}] → roles[{...}]
       users.value = (data ?? []).map((u: any) => ({
         ...u,
@@ -38,7 +39,8 @@ export const useUsersStore = defineStore('users', () => {
       p_user_id: userId,
       p_role_id: roleId,
     })
-    if (rpcError) throw rpcError
+    if (rpcError)
+      throw rpcError
 
     if (role) {
       const user = users.value.find(u => u.id === userId)
@@ -53,7 +55,8 @@ export const useUsersStore = defineStore('users', () => {
       p_user_id: userId,
       p_role_id: roleId,
     })
-    if (rpcError) throw rpcError
+    if (rpcError)
+      throw rpcError
 
     const user = users.value.find(u => u.id === userId)
     if (user) {

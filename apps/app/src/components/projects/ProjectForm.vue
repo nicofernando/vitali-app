@@ -1,24 +1,32 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import { useProjectsStore } from '@/stores/projects'
-import { supabase } from '@/lib/supabase'
-import { useForm } from 'vee-validate'
+import type { Project } from '@/types'
 import { toTypedSchema } from '@vee-validate/zod'
-import { z } from 'zod'
+import { useForm } from 'vee-validate'
+import { onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from '@/components/ui/sheet'
+import { z } from 'zod'
+import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
-import type { Project } from '@/types'
+import { supabase } from '@/lib/supabase'
+import { useProjectsStore } from '@/stores/projects'
 
-interface Currency { id: string; code: string; name: string }
+interface Currency { id: string, code: string, name: string }
 
 const props = defineProps<{
   project: Project | null
@@ -187,7 +195,9 @@ const onSubmit = handleSubmit(async (values) => {
 
         <FormField v-slot="{ value, handleChange }" name="french_credit_enabled">
           <FormItem class="flex items-center justify-between rounded-lg border p-3">
-            <FormLabel class="cursor-pointer">Crédito francés habilitado</FormLabel>
+            <FormLabel class="cursor-pointer">
+              Crédito francés habilitado
+            </FormLabel>
             <FormControl>
               <Switch :checked="value" @update:checked="handleChange" />
             </FormControl>
@@ -196,7 +206,9 @@ const onSubmit = handleSubmit(async (values) => {
 
         <FormField v-slot="{ value, handleChange }" name="smart_credit_enabled">
           <FormItem class="flex items-center justify-between rounded-lg border p-3">
-            <FormLabel class="cursor-pointer">Crédito inteligente habilitado</FormLabel>
+            <FormLabel class="cursor-pointer">
+              Crédito inteligente habilitado
+            </FormLabel>
             <FormControl>
               <Switch :checked="value" @update:checked="handleChange" />
             </FormControl>

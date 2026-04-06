@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useProjectsStore } from './projects'
 
 vi.mock('@/lib/supabase', () => ({
@@ -88,8 +88,13 @@ describe('useProjectsStore', () => {
 
     const store = useProjectsStore()
     await expect(store.create({
-      name: 'X', description: null, location: null, currency_id: 'uuid',
-      annual_interest_rate: 0.08, french_credit_enabled: true, smart_credit_enabled: true,
+      name: 'X',
+      description: null,
+      location: null,
+      currency_id: 'uuid',
+      annual_interest_rate: 0.08,
+      french_credit_enabled: true,
+      smart_credit_enabled: true,
     })).rejects.toThrow()
   })
 

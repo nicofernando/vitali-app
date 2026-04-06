@@ -1,22 +1,41 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useTypologiesStore } from '@/stores/typologies'
+import type { Typology } from '@/types'
+import { toTypedSchema } from '@vee-validate/zod'
 import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
-import { toTypedSchema } from '@vee-validate/zod'
-import { z } from 'zod'
+import { onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
+import { z } from 'zod'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
 } from '@/components/ui/sheet'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
-import type { Typology } from '@/types'
+import { useTypologiesStore } from '@/stores/typologies'
 
 const typologiesStore = useTypologiesStore()
 const { typologies, loading } = storeToRefs(typologiesStore)
@@ -47,14 +66,24 @@ function openEdit(typology: Typology) {
   showForm.value = true
 }
 
-async function deleteTypology(typology: Typology) {
-  if (!confirm(`¿Eliminar tipología "${typology.name}"?`)) return
+const pendingDeleteTypology = ref<Typology | null>(null)
+
+function deleteTypology(typology: Typology) {
+  pendingDeleteTypology.value = typology
+}
+
+async function confirmDeleteTypology() {
+  if (!pendingDeleteTypology.value)
+    return
   try {
-    await typologiesStore.remove(typology.id)
+    await typologiesStore.remove(pendingDeleteTypology.value.id)
     toast.success('Tipología eliminada')
   }
   catch {
     toast.error('Error al eliminar la tipología')
+  }
+  finally {
+    pendingDeleteTypology.value = null
   }
 }
 
@@ -85,10 +114,16 @@ const onSubmit = handleSubmit(async (values) => {
   <div class="p-6 space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-heading font-bold text-foreground">Tipologías</h1>
-        <p class="text-sm text-muted-foreground mt-1">Catálogo global de tipos de departamento</p>
+        <h1 class="text-2xl font-heading font-bold text-foreground">
+          Tipologías
+        </h1>
+        <p class="text-sm text-muted-foreground mt-1">
+          Catálogo global de tipos de departamento
+        </p>
       </div>
-      <Button @click="openNew">+ Nueva tipología</Button>
+      <Button @click="openNew">
+        + Nueva tipología
+      </Button>
     </div>
 
     <div class="rounded-lg border bg-card">
@@ -98,13 +133,17 @@ const onSubmit = handleSubmit(async (values) => {
             <TableHead>Nombre</TableHead>
             <TableHead>Superficie (m²)</TableHead>
             <TableHead>Descripción</TableHead>
-            <TableHead class="text-right">Acciones</TableHead>
+            <TableHead class="text-right">
+              Acciones
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <template v-if="loading">
             <TableRow v-for="i in 3" :key="i">
-              <TableCell colspan="4"><Skeleton class="h-4 w-full" /></TableCell>
+              <TableCell colspan="4">
+                <Skeleton class="h-4 w-full" />
+              </TableCell>
             </TableRow>
           </template>
           <template v-else-if="typologies.length === 0">
@@ -116,13 +155,19 @@ const onSubmit = handleSubmit(async (values) => {
           </template>
           <template v-else>
             <TableRow v-for="typology in typologies" :key="typology.id">
-              <TableCell class="font-medium">{{ typology.name }}</TableCell>
+              <TableCell class="font-medium">
+                {{ typology.name }}
+              </TableCell>
               <TableCell>{{ typology.surface_m2 }}</TableCell>
               <TableCell>{{ typology.description ?? '—' }}</TableCell>
               <TableCell class="text-right">
                 <div class="flex justify-end gap-2">
-                  <Button size="sm" variant="outline" @click="openEdit(typology)">Editar</Button>
-                  <Button size="sm" variant="destructive" @click="deleteTypology(typology)">Eliminar</Button>
+                  <Button size="sm" variant="outline" @click="openEdit(typology)">
+                    Editar
+                  </Button>
+                  <Button size="sm" variant="destructive" @click="deleteTypology(typology)">
+                    Eliminar
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>
@@ -181,7 +226,9 @@ const onSubmit = handleSubmit(async (values) => {
           </FormField>
 
           <div class="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" @click="showForm = false">Cancelar</Button>
+            <Button type="button" variant="outline" @click="showForm = false">
+              Cancelar
+            </Button>
             <Button type="submit" :disabled="submitting">
               {{ submitting ? 'Guardando...' : editingTypology ? 'Guardar cambios' : 'Crear tipología' }}
             </Button>
@@ -189,5 +236,28 @@ const onSubmit = handleSubmit(async (values) => {
         </form>
       </SheetContent>
     </Sheet>
+
+    <!-- Confirmación de eliminación -->
+    <AlertDialog :open="!!pendingDeleteTypology" @update:open="(v) => { if (!v) pendingDeleteTypology = null }">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Eliminar tipología?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Se eliminará "{{ pendingDeleteTypology?.name }}". Esta acción no se puede deshacer.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="pendingDeleteTypology = null">
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction
+            class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            @click="confirmDeleteTypology"
+          >
+            Eliminar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

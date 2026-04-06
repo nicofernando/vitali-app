@@ -1,19 +1,27 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import type { Role } from '@/types'
 import { storeToRefs } from 'pinia'
-import { useUsersStore } from '@/stores/users'
-import { supabase } from '@/lib/supabase'
-import {
-  Card, CardContent, CardHeader, CardTitle, CardDescription,
-} from '@/components/ui/card'
+import { onMounted, ref } from 'vue'
+import { toast } from 'vue-sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
-import { toast } from 'vue-sonner'
-import type { Role } from '@/types'
+import { Skeleton } from '@/components/ui/skeleton'
+import { supabase } from '@/lib/supabase'
+import { useUsersStore } from '@/stores/users'
 
 const usersStore = useUsersStore()
 const { users, loading, error } = storeToRefs(usersStore)
@@ -30,10 +38,12 @@ onMounted(async () => {
 
 async function handleAssignRole(userId: string) {
   const roleId = selectedRole.value[userId]
-  if (!roleId) return
+  if (!roleId)
+    return
 
   const role = roles.value.find(r => r.id === roleId)
-  if (!role) return
+  if (!role)
+    return
 
   assigning.value[userId] = true
   try {
@@ -65,7 +75,8 @@ async function handleRemoveRole(userId: string, roleId: string, roleName: string
 
 function availableRoles(userId: string): Role[] {
   const user = users.value.find(u => u.id === userId)
-  if (!user) return roles.value
+  if (!user)
+    return roles.value
   const assignedIds = new Set(user.roles.map(r => r.id))
   return roles.value.filter(r => !assignedIds.has(r.id))
 }
@@ -74,11 +85,17 @@ function availableRoles(userId: string): Role[] {
 <template>
   <div class="p-6 max-w-4xl mx-auto space-y-6">
     <div>
-      <h1 class="text-2xl font-heading font-bold text-foreground">Usuarios y Roles</h1>
-      <p class="text-sm text-muted-foreground mt-1">Gestioná los roles de acceso de cada usuario</p>
+      <h1 class="text-2xl font-heading font-bold text-foreground">
+        Usuarios y Roles
+      </h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Gestioná los roles de acceso de cada usuario
+      </p>
     </div>
 
-    <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
+    <p v-if="error" class="text-sm text-destructive">
+      {{ error }}
+    </p>
 
     <!-- Skeletons -->
     <template v-if="loading">
@@ -95,13 +112,17 @@ function availableRoles(userId: string): Role[] {
     <template v-else>
       <Card v-for="user in users" :key="user.id">
         <CardHeader class="pb-3">
-          <CardTitle class="text-base">{{ user.full_name ?? '—' }}</CardTitle>
+          <CardTitle class="text-base">
+            {{ user.full_name ?? '—' }}
+          </CardTitle>
           <CardDescription>{{ user.email }}</CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
           <!-- Roles actuales -->
           <div>
-            <p class="text-xs text-muted-foreground mb-2">Roles asignados</p>
+            <p class="text-xs text-muted-foreground mb-2">
+              Roles asignados
+            </p>
             <div v-if="user.roles.length === 0" class="text-sm text-muted-foreground italic">
               Sin roles asignados
             </div>

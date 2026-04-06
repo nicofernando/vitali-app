@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useTowersStore } from '@/stores/towers'
-import { useForm } from 'vee-validate'
+import type { Tower } from '@/types'
 import { toTypedSchema } from '@vee-validate/zod'
-import { z } from 'zod'
+import { useForm } from 'vee-validate'
+import { ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from '@/components/ui/sheet'
+import { z } from 'zod'
+import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import type { Tower } from '@/types'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { useTowersStore } from '@/stores/towers'
 
 const props = defineProps<{
   tower: Tower | null

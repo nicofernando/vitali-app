@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionsStore } from '@/stores/permissions'
-import { supabase } from '@/lib/supabase'
 
 declare module 'vue-router' {
   interface RouteMeta {

@@ -1,8 +1,8 @@
+import type { CalculateQuoteRequest, CalculateQuoteResponse, Project, Tower, Unit } from '@/types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
-import type { Project, Tower, Unit, CalculateQuoteRequest, CalculateQuoteResponse } from '@/types'
 
 export const useSimulatorStore = defineStore('simulator', () => {
   const selectedProject = ref<Project | null>(null)
@@ -20,7 +20,8 @@ export const useSimulatorStore = defineStore('simulator', () => {
       const { data, error: fnError } = await supabase.functions.invoke('calculate-quote', {
         body: request,
       })
-      if (fnError) throw fnError
+      if (fnError)
+        throw fnError
       result.value = data as CalculateQuoteResponse
     }
     catch (err) {
