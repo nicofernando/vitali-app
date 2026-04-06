@@ -15,15 +15,17 @@ export const useUsersStore = defineStore('users', () => {
     try {
       const { data, error: dbError } = await supabase
         .from('users_with_roles')
-        .select('id, email, full_name, roles:user_roles(role:roles(id, name, description, created_at))')
+        .select('id, email, full_name, user_roles(roles(id, name, description, created_at))')
         .order('full_name')
 
       if (dbError)
         throw dbError
-      // Aplanar la relación roles[{role: {...}}] → roles[{...}]
+      // Aplanar la relación user_roles[{roles: {...}}] → roles[{...}]
       users.value = (data ?? []).map((u: any) => ({
-        ...u,
-        roles: (u.roles ?? []).map((r: any) => r.role ?? r),
+        id: u.id,
+        email: u.email,
+        full_name: u.full_name,
+        roles: (u.user_roles ?? []).map((r: any) => r.roles).filter(Boolean),
       }))
     }
     catch (err) {
