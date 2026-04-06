@@ -60,7 +60,8 @@ const canCalculate = computed(() =>
 
 onMounted(() => projectsStore.fetchAll())
 
-function onProjectChange(projectId: string) {
+function onProjectChange(value: unknown) {
+  const projectId = value as string
   selectedProjectId.value = projectId
   selectedTowerId.value = ''
   selectedUnitId.value = ''
@@ -70,14 +71,14 @@ function onProjectChange(projectId: string) {
     towersStore.fetchByProject(projectId)
 }
 
-function onTowerChange(towerId: string) {
+function onTowerChange(value: unknown) {
+  const towerId = value as string
   selectedTowerId.value = towerId
   selectedUnitId.value = ''
   simulatorStore.reset()
 
   if (towerId) {
     unitsStore.fetchByTower(towerId)
-    // Actualizar defaults desde la torre
     const tower = towers.value.find(t => t.id === towerId)
     if (tower) {
       piePercentage.value = tower.min_pie_percentage
@@ -86,8 +87,8 @@ function onTowerChange(towerId: string) {
   }
 }
 
-function onUnitChange(unitId: string) {
-  selectedUnitId.value = unitId
+function onUnitChange(value: unknown) {
+  selectedUnitId.value = value as string
   simulatorStore.reset()
 }
 
