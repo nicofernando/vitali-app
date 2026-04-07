@@ -12,17 +12,43 @@ Cerrar el ciclo del cotizador: vendedor calcula → guarda con datos del cliente
 
 | Rama | Supabase | Frontend desplegado |
 |------|----------|---------------------|
-| `feat/s2` | dev (`bwiozqzevpmxjnwsjeuj`) | Solo local (`pnpm dev`) |
-| `qa` | dev (`bwiozqzevpmxjnwsjeuj`) | staging.vitalisuites.com |
-| `main` | prod (`cwbppfodpuknxqwrhoev`) | app.vitalisuites.com |
+| `feat/*` | **local** (`127.0.0.1:54321`) | Solo local (`pnpm dev`) |
+| `qa` | dev cloud (`bwiozqzevpmxjnwsjeuj`) | staging.vitalisuites.com |
+| `main` | prod cloud (`cwbppfodpuknxqwrhoev`) | app.vitalisuites.com |
 
-**Por qué compartir dev Supabase entre feat/s2 y qa:**
-- Las migraciones de S2 son ADITIVAS (`ALTER TABLE ADD COLUMN IF NOT EXISTS`, tablas nuevas)
-- No rompen la funcionalidad de S1 en staging
-- QA no despliega el código de S2, así que las rutas nuevas no son accesibles en staging
-- Cuando S2 esté listo: `feat/s2` → `qa` → probar en staging → `main`
+### Setup inicial (una vez por máquina)
 
-**Regla**: las migraciones de S2 se aplican al Supabase dev con MCP `supabase-dev`. Nunca tocar prod hasta que pase por staging.
+```bash
+# 1. Instalar Supabase CLI (ya está en ~/.local/bin en la máquina de desarrollo)
+# Si es una máquina nueva, descargar desde: https://github.com/supabase/cli/releases
+
+# 2. Levantar Supabase local (desde la raíz del monorepo)
+supabase start
+
+# 3. Copiar las keys que muestra en pantalla al .env.local
+# apps/app/.env.local ya tiene el formato correcto — actualizar con las keys de `supabase status`
+
+# 4. Aplicar migraciones
+supabase db reset
+```
+
+### Workflow diario
+
+```bash
+supabase start        # al empezar (si no está corriendo)
+pnpm dev              # el frontend conecta al Supabase local automáticamente
+supabase db reset     # si agregaste migraciones nuevas o querés estado limpio
+supabase stop         # al terminar el día (opcional)
+```
+
+### Reglas de migraciones
+
+- Las migraciones se desarrollan y prueban en local (`feat/*`)
+- **NO se aplican a supabase-dev** hasta hacer merge a `qa`
+- Al mergear `feat/s2` → `qa`: CI aplica las migraciones a supabase-dev automáticamente
+- Al mergear `qa` → `main`: CI aplica las migraciones a supabase-prod
+
+**Las migraciones SIEMPRE son aditivas** — nunca DROP de columnas o tablas en uso, nunca RENAME directo. Si hay que renombrar: ADD nueva columna → migrar datos → DROP vieja (en migraciones separadas).
 
 ## Arquitectura de generación de documentos
 
