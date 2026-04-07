@@ -4,6 +4,9 @@ import { useSimulatorStore } from './simulator'
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'fake-token' } } }),
+    },
     functions: { invoke: vi.fn() },
   },
 }))
@@ -38,6 +41,7 @@ describe('useSimulatorStore', () => {
 
     expect(supabase.functions.invoke).toHaveBeenCalledWith('calculate-quote', {
       body: { unit_id: 'u1', pie_percentage: 20, term_years: 20, credit_type: 'french' },
+      headers: { Authorization: 'Bearer fake-token' },
     })
     expect(store.result).toEqual(fakeResult)
     expect(store.loading).toBe(false)

@@ -17,8 +17,12 @@ export const useSimulatorStore = defineStore('simulator', () => {
     error.value = null
     result.value = null
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const { data, error: fnError } = await supabase.functions.invoke('calculate-quote', {
         body: request,
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
       })
       if (fnError)
         throw fnError
