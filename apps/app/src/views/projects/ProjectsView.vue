@@ -2,6 +2,7 @@
 import type { Project, Tower, Unit } from '@/types'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
+import { toast } from 'vue-sonner'
 import ProjectForm from '@/components/projects/ProjectForm.vue'
 import TowerForm from '@/components/projects/TowerForm.vue'
 import UnitForm from '@/components/projects/UnitForm.vue'
@@ -38,7 +39,7 @@ const projectsStore = useProjectsStore()
 const towersStore = useTowersStore()
 const unitsStore = useUnitsStore()
 
-const { projects, loading: projectsLoading } = storeToRefs(projectsStore)
+const { projects, loading: projectsLoading, error: projectsError } = storeToRefs(projectsStore)
 const { towers, loading: towersLoading } = storeToRefs(towersStore)
 const { units, loading: unitsLoading } = storeToRefs(unitsStore)
 
@@ -55,6 +56,10 @@ const showUnitForm = ref(false)
 const editingUnit = ref<Unit | null>(null)
 
 onMounted(() => projectsStore.fetchAll())
+
+function formatPrice(amount: number, symbol = '$', decimalPlaces = 0) {
+  return `${symbol} ${amount.toLocaleString('es-CL', { minimumFractionDigits: decimalPlaces, maximumFractionDigits: decimalPlaces })}`
+}
 
 function selectProject(project: Project) {
   selectedProject.value = project
@@ -103,6 +108,10 @@ function deleteProject(project: Project) {
     message: `¿Eliminar "${project.name}"? Se eliminarán todas sus torres y departamentos.`,
     onConfirm: async () => {
       await projectsStore.remove(project.id)
+      if (projectsStore.error) {
+        toast.error(projectsStore.error)
+        return
+      }
       if (selectedProject.value?.id === project.id) {
         selectedProject.value = null
         selectedTower.value = null
@@ -116,6 +125,10 @@ function deleteTower(tower: Tower) {
     message: `¿Eliminar torre "${tower.name}"?`,
     onConfirm: async () => {
       await towersStore.remove(tower.id)
+      if (towersStore.error) {
+        toast.error(towersStore.error)
+        return
+      }
       if (selectedTower.value?.id === tower.id) {
         selectedTower.value = null
         unitsStore.units = []
@@ -127,7 +140,26 @@ function deleteTower(tower: Tower) {
 function deleteUnit(unit: Unit) {
   pendingDelete.value = {
     message: `¿Eliminar departamento ${unit.unit_number}?`,
-    onConfirm: () => unitsStore.remove(unit.id),
+    onConfirm: async () => {
+      await unitsStore.remove(unit.id)
+      if (unitsStore.error) {
+        toast.error(unitsStore.error)
+      }
+    },
+  }
+}
+
+async function handleConfirmDelete() {
+  if (!pendingDelete.value)
+    return
+  try {
+    await pendingDelete.value.onConfirm()
+  }
+  catch {
+    // error ya lo maneja el store
+  }
+  finally {
+    pendingDelete.value = null
   }
 }
 </script>
@@ -148,6 +180,11 @@ function deleteUnit(unit: Unit) {
         + Nuevo proyecto
       </Button>
     </div>
+
+    <!-- Error de carga -->
+    <p v-if="projectsError" class="text-sm text-destructive">
+      {{ projectsError }}
+    </p>
 
     <!-- Tabla de proyectos -->
     <div class="rounded-lg border bg-card">
@@ -362,7 +399,7 @@ function deleteUnit(unit: Unit) {
                   <TableCell>{{ unit.floor ?? '—' }}</TableCell>
                   <TableCell>{{ unit.typology?.name ?? '—' }}</TableCell>
                   <TableCell>{{ unit.typology?.surface_m2 ?? '—' }} m²</TableCell>
-                  <TableCell>{{ unit.list_price.toLocaleString('es-CL') }}</TableCell>
+                  <TableCell>{{ formatPrice(unit.list_price, selectedProject?.currency?.symbol, selectedProject?.currency?.decimal_places) }}</TableCell>
                   <TableCell class="text-right">
                     <div class="flex justify-end gap-2">
                       <Button size="sm" variant="outline" @click="openEditUnit(unit)">
@@ -412,7 +449,7 @@ function deleteUnit(unit: Unit) {
           </AlertDialogCancel>
           <AlertDialogAction
             class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            @click="pendingDelete?.onConfirm(); pendingDelete = null"
+            @click="handleConfirmDelete"
           >
             Eliminar
           </AlertDialogAction>

@@ -37,4 +37,8 @@ describe('calculateFrench', () => {
     const result = calculateFrench(12_000, 0, 1)
     expect(result.monthly_payment).toBeCloseTo(1000, 1)
   })
+
+  it('lanza error si principal es negativo', () => {
+    expect(() => calculateFrench(-1, 0.08, 20)).toThrow('El monto a financiar no puede ser negativo')
+  })
 })

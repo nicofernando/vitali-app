@@ -52,9 +52,18 @@ const maxTerm = computed(() => selectedTower.value?.max_financing_years ?? 30)
 const pieError = computed(() => piePercentage.value < minPie.value ? `El PIE mínimo es ${minPie.value}%` : null)
 
 const showSmartParams = computed(() => creditType.value === 'smart' || creditType.value === 'both')
+
+const balloonError = computed(() => {
+  if (!showSmartParams.value) return null
+  const balloon = 100 - piePercentage.value - smartCuotasPercentage.value
+  if (balloon <= 0) return `La suma de PIE (${piePercentage.value}%) + cuotas (${smartCuotasPercentage.value}%) no puede superar 99%`
+  return null
+})
+
 const canCalculate = computed(() =>
   selectedUnitId.value
   && !pieError.value
+  && !balloonError.value
   && termYears.value > 0,
 )
 
@@ -89,6 +98,15 @@ function onTowerChange(value: unknown) {
 
 function onUnitChange(value: unknown) {
   selectedUnitId.value = value as string
+  simulatorStore.reset()
+}
+
+function handleReset() {
+  selectedProjectId.value = ''
+  selectedTowerId.value = ''
+  selectedUnitId.value = ''
+  towersStore.towers = []
+  unitsStore.units = []
   simulatorStore.reset()
 }
 
@@ -133,7 +151,7 @@ function formatCurrency(amount: number, symbol = '$') {
           <!-- Proyecto -->
           <div class="space-y-2">
             <Label>Proyecto</Label>
-            <Select :disabled="loadingProjects" @update:model-value="onProjectChange">
+            <Select :model-value="selectedProjectId" :disabled="loadingProjects" @update:model-value="onProjectChange">
               <SelectTrigger>
                 <SelectValue :placeholder="loadingProjects ? 'Cargando...' : 'Seleccioná el proyecto'" />
               </SelectTrigger>
@@ -149,6 +167,7 @@ function formatCurrency(amount: number, symbol = '$') {
           <div class="space-y-2">
             <Label>Torre</Label>
             <Select
+              :model-value="selectedTowerId"
               :disabled="!selectedProjectId || loadingTowers"
               @update:model-value="onTowerChange"
             >
@@ -167,6 +186,7 @@ function formatCurrency(amount: number, symbol = '$') {
           <div class="space-y-2">
             <Label>Departamento</Label>
             <Select
+              :model-value="selectedUnitId"
               :disabled="!selectedTowerId || loadingUnits"
               @update:model-value="onUnitChange"
             >
@@ -301,8 +321,18 @@ function formatCurrency(amount: number, symbol = '$') {
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="space-y-2">
               <Label>% a pagar en cuotas</Label>
-              <Input v-model.number="smartCuotasPercentage" type="number" min="1" max="79" step="1" />
-              <p class="text-xs text-muted-foreground">
+              <Input
+                v-model.number="smartCuotasPercentage"
+                type="number"
+                min="1"
+                :max="Math.max(1, 99 - piePercentage)"
+                step="1"
+                :class="balloonError ? 'border-destructive' : ''"
+              />
+              <p v-if="balloonError" class="text-xs text-destructive">
+                {{ balloonError }}
+              </p>
+              <p v-else class="text-xs text-muted-foreground">
                 Balloon = {{ 100 - piePercentage - smartCuotasPercentage }}%
                 ({{ formatCurrency(selectedUnit.list_price * (100 - piePercentage - smartCuotasPercentage) / 100, selectedProject?.currency?.symbol) }})
               </p>
@@ -332,6 +362,13 @@ function formatCurrency(amount: number, symbol = '$') {
         </p>
       </CardContent>
     </Card>
+
+    <!-- Nueva simulación -->
+    <div v-if="result" class="flex justify-end">
+      <Button variant="outline" @click="handleReset">
+        Nueva simulación
+      </Button>
+    </div>
 
     <!-- Skeleton mientras calcula -->
     <template v-if="calculating">

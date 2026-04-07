@@ -6,6 +6,16 @@ import { computed, onMounted, ref } from 'vue'
 import { useForm } from 'vee-validate'
 import { toast } from 'vue-sonner'
 import { z } from 'zod'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -39,6 +49,9 @@ import { useUsersStore } from '@/stores/users'
 
 const usersStore = useUsersStore()
 const { users, loading, error } = storeToRefs(usersStore)
+
+interface PendingRemoveRole { userId: string, roleId: string, roleName: string }
+const pendingRemoveRole = ref<PendingRemoveRole | null>(null)
 
 const roles = ref<Role[]>([])
 const search = ref('')
@@ -172,7 +185,15 @@ async function handleAssignRole(userId: string) {
   }
 }
 
-async function handleRemoveRole(userId: string, roleId: string, roleName: string) {
+function handleRemoveRole(userId: string, roleId: string, roleName: string) {
+  pendingRemoveRole.value = { userId, roleId, roleName }
+}
+
+async function confirmRemoveRole() {
+  if (!pendingRemoveRole.value)
+    return
+  const { userId, roleId, roleName } = pendingRemoveRole.value
+  pendingRemoveRole.value = null
   assigning.value[userId] = true
   try {
     await usersStore.removeRole(userId, roleId)
@@ -381,6 +402,29 @@ function getInitials(user: UserWithRoles): string {
         </form>
       </SheetContent>
     </Sheet>
+
+    <!-- Confirmación eliminar rol -->
+    <AlertDialog :open="!!pendingRemoveRole" @update:open="(v) => { if (!v) pendingRemoveRole = null }">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Remover rol?</AlertDialogTitle>
+          <AlertDialogDescription>
+            ¿Estás seguro que querés remover el rol "{{ pendingRemoveRole?.roleName }}" de este usuario?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="pendingRemoveRole = null">
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction
+            class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            @click="confirmRemoveRole"
+          >
+            Remover
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     <!-- Sheet: editar usuario -->
     <Sheet :open="!!editingUserId" @update:open="(v) => { if (!v) editingUserId = null }">

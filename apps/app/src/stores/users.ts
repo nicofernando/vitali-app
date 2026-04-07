@@ -13,20 +13,43 @@ export const useUsersStore = defineStore('users', () => {
     loading.value = true
     error.value = null
     try {
-      const { data, error: dbError } = await supabase
-        .from('users_with_roles')
-        .select('id, email, full_name, phone, user_roles(roles(id, name, description, created_at))')
-        .order('full_name', { nullsFirst: false })
+      const [{ data: usersData, error: usersError }, { data: rolesData, error: rolesError }] = await Promise.all([
+        supabase.rpc('get_users_with_roles'),
+        supabase.from('user_roles').select('user_id, roles(id, name, description, created_at)'),
+      ])
 
-      if (dbError)
-        throw dbError
-      users.value = (data ?? []).map((u: any) => ({
-        id: u.id,
-        email: u.email,
-        full_name: u.full_name,
-        phone: u.phone,
-        roles: (u.user_roles ?? []).map((r: any) => r.roles).filter(Boolean),
-      }))
+      if (usersError)
+        throw usersError
+      if (rolesError)
+        throw rolesError
+
+      const rolesByUser = new Map<string, Role[]>()
+      for (const row of (rolesData ?? []) as any[]) {
+        if (!row.roles)
+          continue
+        const userId: string = row.user_id
+        if (!rolesByUser.has(userId))
+          rolesByUser.set(userId, [])
+        rolesByUser.get(userId)!.push(row.roles as Role)
+      }
+
+      users.value = ((usersData ?? []) as any[])
+        .map(u => ({
+          id: u.id as string,
+          email: u.email as string,
+          full_name: u.full_name as string | null,
+          phone: u.phone as string | null,
+          roles: rolesByUser.get(u.id) ?? [],
+        }))
+        .sort((a, b) => {
+          if (!a.full_name && !b.full_name)
+            return 0
+          if (!a.full_name)
+            return 1
+          if (!b.full_name)
+            return -1
+          return a.full_name.localeCompare(b.full_name, 'es')
+        })
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al cargar usuarios')

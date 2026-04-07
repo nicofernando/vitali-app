@@ -27,6 +27,9 @@ export function calculateFrench(
   if (annualRate < 0) {
     throw new Error('La tasa de interés no puede ser negativa')
   }
+  if (principal < 0) {
+    throw new Error('El monto a financiar no puede ser negativo')
+  }
   if (principal === 0) {
     return {
       monthly_payment: 0,

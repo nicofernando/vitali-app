@@ -46,7 +46,7 @@ const schema = toTypedSchema(z.object({
   description: z.string().nullable().optional(),
   location: z.string().nullable().optional(),
   currency_id: z.string().uuid('Seleccioná una moneda'),
-  annual_interest_rate: z.number().min(0).max(1, 'Debe estar entre 0 y 1'),
+  annual_interest_rate: z.number().min(0).max(100, 'Debe ser un porcentaje entre 0 y 100'),
   french_credit_enabled: z.boolean(),
   smart_credit_enabled: z.boolean(),
 }))
@@ -66,7 +66,7 @@ watch(() => props.open, (open) => {
         description: props.project.description ?? '',
         location: props.project.location ?? '',
         currency_id: props.project.currency_id,
-        annual_interest_rate: props.project.annual_interest_rate,
+        annual_interest_rate: props.project.annual_interest_rate * 100,
         french_credit_enabled: props.project.french_credit_enabled,
         smart_credit_enabled: props.project.smart_credit_enabled,
       })
@@ -78,7 +78,7 @@ watch(() => props.open, (open) => {
           description: '',
           location: '',
           currency_id: '',
-          annual_interest_rate: 0.08,
+          annual_interest_rate: 8,
           french_credit_enabled: true,
           smart_credit_enabled: true,
         },
@@ -94,6 +94,7 @@ const onSubmit = handleSubmit(async (values) => {
       ...values,
       description: values.description || null,
       location: values.location || null,
+      annual_interest_rate: values.annual_interest_rate / 100,
     }
     if (props.project) {
       await projectsStore.update(props.project.id, payload)
@@ -180,15 +181,18 @@ const onSubmit = handleSubmit(async (values) => {
             <FormControl>
               <Input
                 type="number"
-                step="0.001"
+                step="0.1"
                 min="0"
-                max="1"
-                placeholder="Ej: 0.08 (= 8%)"
+                max="100"
+                placeholder="Ej: 8.5 (= 8.5% anual)"
                 v-bind="componentField"
                 :value="componentField.modelValue"
                 @input="componentField['onUpdate:modelValue']?.(parseFloat(($event.target as HTMLInputElement).value))"
               />
             </FormControl>
+            <p class="text-xs text-muted-foreground mt-1">
+              Ingresá el valor como porcentaje. Por ejemplo, <strong>8.5</strong> equivale a 8.5% anual.
+            </p>
             <FormMessage />
           </FormItem>
         </FormField>

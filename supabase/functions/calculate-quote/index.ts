@@ -36,8 +36,17 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    const body: CalculateQuoteRequest = await req.json()
-    const { unit_id, pie_percentage, term_years, credit_type, smart_cuotas_percentage } = body
+    let body: unknown
+    try {
+      body = await req.json()
+    }
+    catch {
+      return new Response(
+        JSON.stringify({ error: 'Request body inválido — se esperaba JSON' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+    const { unit_id, pie_percentage, term_years, credit_type, smart_cuotas_percentage } = body as CalculateQuoteRequest
 
     // Validaciones básicas
     if (!unit_id || pie_percentage == null || !term_years || !credit_type) {
@@ -88,6 +97,15 @@ Deno.serve(async (req: Request) => {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+    }
+
+    // Validar plazo máximo de financiamiento
+    const maxYears = (tower as { max_financing_years: number }).max_financing_years
+    if (term_years > maxYears) {
+      return new Response(
+        JSON.stringify({ error: `El plazo máximo permitido es ${maxYears} años` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
     }
 
     // Validar créditos habilitados

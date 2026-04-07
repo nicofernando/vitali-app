@@ -31,13 +31,17 @@ describe('useUsersStore', () => {
   // ── fetchAll ─────────────────────────────────────────────────
   it('fetchAll: carga usuarios aplanando la relación user_roles', async () => {
     const { supabase } = await import('@/lib/supabase')
-    const rawData = [
-      { id: 'u1', email: 'a@test.com', full_name: 'Ana', phone: null, user_roles: [{ roles: role }] },
-      { id: 'u2', email: 'b@test.com', full_name: 'Bob', phone: null, user_roles: [] },
-    ]
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({
+      data: [
+        { id: 'u1', email: 'a@test.com', full_name: 'Ana', phone: null },
+        { id: 'u2', email: 'b@test.com', full_name: 'Bob', phone: null },
+      ],
+      error: null,
+    } as any)
     vi.mocked(supabase.from).mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: rawData, error: null }),
+      select: vi.fn().mockResolvedValue({
+        data: [{ user_id: 'u1', roles: role }],
+        error: null,
       }),
     } as any)
 
@@ -52,10 +56,12 @@ describe('useUsersStore', () => {
 
   it('fetchAll: si falla, guarda error y lista queda vacía', async () => {
     const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({
+      data: null,
+      error: { message: 'No autorizado' },
+    } as any)
     vi.mocked(supabase.from).mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: null, error: { message: 'No autorizado' } }),
-      }),
+      select: vi.fn().mockResolvedValue({ data: [], error: null }),
     } as any)
 
     const store = useUsersStore()
@@ -69,10 +75,9 @@ describe('useUsersStore', () => {
   it('createUser: llama a la edge function con los parámetros correctos', async () => {
     const { supabase } = await import('@/lib/supabase')
     vi.mocked(supabase.functions.invoke).mockResolvedValue({ error: null } as any)
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [], error: null } as any)
     vi.mocked(supabase.from).mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: [], error: null }),
-      }),
+      select: vi.fn().mockResolvedValue({ data: [], error: null }),
     } as any)
 
     const store = useUsersStore()

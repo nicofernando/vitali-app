@@ -78,6 +78,11 @@ export const usePermissionsStore = defineStore('permissions', () => {
     _loadPromise = null
   }
 
+  async function reload(userId: string): Promise<void> {
+    loaded.value = false
+    return load(userId)
+  }
+
   return {
     permissions,
     loaded,
@@ -85,6 +90,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
     can,
     canAny,
     load,
+    reload,
     reset,
   }
 })
