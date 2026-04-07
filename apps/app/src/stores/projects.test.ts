@@ -16,8 +16,9 @@ const basePayload = {
   smart_credit_enabled: true,
 }
 
-const fakeProject = { id: '1', ...basePayload, created_at: '', currency: { code: 'CLP' } }
-const fakeProject2 = { id: '2', ...basePayload, name: 'Torre Luna', created_at: '', currency: { code: 'CLP' } }
+const fakeCurrency = { id: 'uuid-currency', code: 'CLP', name: 'Peso Chileno', symbol: '$', decimal_places: 0 }
+const fakeProject = { id: '1', ...basePayload, created_at: '', currency: fakeCurrency }
+const fakeProject2 = { id: '2', ...basePayload, name: 'Torre Luna', created_at: '', currency: fakeCurrency }
 
 describe('useProjectsStore', () => {
   beforeEach(() => {

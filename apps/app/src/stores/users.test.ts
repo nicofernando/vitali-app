@@ -12,7 +12,6 @@ vi.mock('@/lib/supabase', () => ({
 
 const role = { id: 'r1', name: 'Admin', description: null, created_at: '' }
 const baseUser = { id: 'u1', email: 'a@test.com', full_name: 'Ana', phone: null, roles: [] }
-const fakeUsers = [baseUser, { ...baseUser, id: 'u2', email: 'b@test.com', full_name: 'Bob' }]
 
 describe('useUsersStore', () => {
   beforeEach(() => {

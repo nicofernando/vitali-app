@@ -11,9 +11,6 @@ const fakeCurrencies = [
   { id: 'c2', code: 'USD', name: 'Dólar', symbol: 'US$', decimal_places: 2 },
 ]
 
-function mockFrom(chain: Record<string, any>) {
-  return { from: vi.fn().mockReturnValue(chain) }
-}
 
 describe('useCurrenciesStore', () => {
   beforeEach(() => {
