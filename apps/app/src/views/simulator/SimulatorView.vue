@@ -140,7 +140,7 @@ function formatCurrency(amount: number, symbol = '$') {
 </script>
 
 <template>
-  <div class="p-6 max-w-4xl mx-auto space-y-6">
+  <div class="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
     <div>
       <h1 class="text-2xl font-heading font-bold text-foreground">
         Cotizador

@@ -54,7 +54,7 @@ const visibleCards = computed(() =>
 </script>
 
 <template>
-  <div class="p-8">
+  <div class="p-4 md:p-8">
     <h1 class="font-heading text-2xl font-semibold mb-2 text-sidebar">
       Dashboard
     </h1>

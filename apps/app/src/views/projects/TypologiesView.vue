@@ -111,7 +111,7 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <div class="p-6 space-y-6">
+  <div class="p-4 md:p-6 space-y-6">
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-heading font-bold text-foreground">
@@ -126,7 +126,7 @@ const onSubmit = handleSubmit(async (values) => {
       </Button>
     </div>
 
-    <div class="rounded-lg border bg-card">
+    <div class="rounded-lg border bg-card overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>

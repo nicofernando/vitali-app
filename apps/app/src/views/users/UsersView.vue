@@ -222,7 +222,7 @@ function getInitials(user: UserWithRoles): string {
 </script>
 
 <template>
-  <div class="p-6 max-w-5xl mx-auto space-y-6">
+  <div class="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
@@ -250,7 +250,7 @@ function getInitials(user: UserWithRoles): string {
     />
 
     <!-- Tabla -->
-    <div class="rounded-lg border bg-card">
+    <div class="rounded-lg border bg-card overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
