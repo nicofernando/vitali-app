@@ -57,11 +57,15 @@ vitali-app/
 
 | Rama git | Supabase | Frontend | Trigger deploy |
 |---------|----------|----------|---------------|
-| `feat/*` | dev | no se despliega | — |
-| `qa` | dev | staging.vitalisuites.com | push a qa |
-| `main` | prod | app.vitalisuites.com | push a main |
+| `feat/*` | **local** (`supabase start`) | no se despliega | — |
+| `qa` | dev cloud | staging.vitalisuites.com | push a qa |
+| `main` | prod cloud | app.vitalisuites.com | push a main |
 
 Deploy via **GitHub Actions + SFTP** al hosting compartido. Credenciales en GitHub Secrets.
+
+**Regla de Supabase local**: en `feat/*` el frontend SIEMPRE conecta al Supabase local. El `.env.local` apunta a `127.0.0.1:54321`. Nunca commitear `.env.local`. Las migraciones se aplican a supabase-dev recién al hacer merge a `qa`.
+
+Setup en máquina nueva: `supabase start && supabase db reset` — ver `docs/S2-PLAN.md` para workflow completo.
 
 ## Identidad de Marca
 
