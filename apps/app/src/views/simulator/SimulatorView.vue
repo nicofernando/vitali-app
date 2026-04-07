@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -68,6 +68,17 @@ const canCalculate = computed(() =>
 )
 
 onMounted(() => projectsStore.fetchAll())
+
+watch(selectedProject, (project) => {
+  if (!project)
+    return
+  if (project.french_credit_enabled && project.smart_credit_enabled)
+    creditType.value = 'both'
+  else if (project.french_credit_enabled)
+    creditType.value = 'french'
+  else
+    creditType.value = 'smart'
+})
 
 function onProjectChange(value: unknown) {
   const projectId = value as string

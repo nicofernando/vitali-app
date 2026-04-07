@@ -108,10 +108,6 @@ function deleteProject(project: Project) {
     message: `¿Eliminar "${project.name}"? Se eliminarán todas sus torres y departamentos.`,
     onConfirm: async () => {
       await projectsStore.remove(project.id)
-      if (projectsStore.error) {
-        toast.error(projectsStore.error)
-        return
-      }
       if (selectedProject.value?.id === project.id) {
         selectedProject.value = null
         selectedTower.value = null
@@ -125,10 +121,6 @@ function deleteTower(tower: Tower) {
     message: `¿Eliminar torre "${tower.name}"?`,
     onConfirm: async () => {
       await towersStore.remove(tower.id)
-      if (towersStore.error) {
-        toast.error(towersStore.error)
-        return
-      }
       if (selectedTower.value?.id === tower.id) {
         selectedTower.value = null
         unitsStore.units = []
@@ -142,9 +134,6 @@ function deleteUnit(unit: Unit) {
     message: `¿Eliminar departamento ${unit.unit_number}?`,
     onConfirm: async () => {
       await unitsStore.remove(unit.id)
-      if (unitsStore.error) {
-        toast.error(unitsStore.error)
-      }
     },
   }
 }
@@ -155,8 +144,8 @@ async function handleConfirmDelete() {
   try {
     await pendingDelete.value.onConfirm()
   }
-  catch {
-    // error ya lo maneja el store
+  catch (err) {
+    toast.error(err instanceof Error ? err.message : 'Error al eliminar')
   }
   finally {
     pendingDelete.value = null
