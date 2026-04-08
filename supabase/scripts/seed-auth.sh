@@ -18,22 +18,25 @@ RESPONSE=$(curl -s -X POST "$API_URL/auth/v1/admin/users" \
 
 USER_ID=$(echo "$RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
+# Si el usuario ya existe, obtenemos su ID via la API de admin
 if [ -z "$USER_ID" ]; then
-  echo "Error creando usuario: $RESPONSE"
+  echo "Usuario ya existe, obteniendo ID..."
+  LIST_RESPONSE=$(curl -s "$API_URL/auth/v1/admin/users" \
+    -H "apikey: $SERVICE_KEY" \
+    -H "Authorization: Bearer $SERVICE_KEY")
+  USER_ID=$(echo "$LIST_RESPONSE" | grep -o "\"id\":\"[^\"]*\"" | head -1 | cut -d'"' -f4)
+fi
+
+if [ -z "$USER_ID" ]; then
+  echo "Error: no se pudo obtener el ID del usuario"
   exit 1
 fi
 
-echo "Usuario creado: $USER_ID"
+echo "Usuario ID: $USER_ID"
 echo "Asignando rol Super Admin..."
 
-supabase db query --local "
-  INSERT INTO user_profiles (user_id, full_name)
-  VALUES ('$USER_ID', 'Nicolás Dev')
-  ON CONFLICT (user_id) DO NOTHING;
+supabase db query --local "INSERT INTO user_profiles (user_id, full_name) VALUES ('$USER_ID', 'Nicolás Dev') ON CONFLICT (user_id) DO NOTHING;" 2>&1
 
-  INSERT INTO user_roles (user_id, role_id)
-  VALUES ('$USER_ID', (SELECT id FROM roles WHERE name = 'Super Admin'))
-  ON CONFLICT DO NOTHING;
-" 2>&1
+supabase db query --local "INSERT INTO user_roles (user_id, role_id) VALUES ('$USER_ID', (SELECT id FROM roles WHERE name = 'Super Admin')) ON CONFLICT DO NOTHING;" 2>&1
 
 echo "Listo. Login: $DEV_EMAIL / $DEV_PASSWORD"
