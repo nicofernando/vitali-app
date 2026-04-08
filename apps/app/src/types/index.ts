@@ -99,6 +99,89 @@ export interface UserWithRoles {
 }
 
 // ============================================================
+// S2 — Clientes
+// ============================================================
+
+export interface Client {
+  id: string
+  full_name: string
+  rut: string | null
+  address: string | null
+  commune: string | null
+  phone: string | null
+  email: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export type ClientInsert = Omit<Client, 'id' | 'created_by' | 'created_at'>
+export type ClientUpdate = Partial<ClientInsert>
+
+// ============================================================
+// S2 — Cotizaciones
+// ============================================================
+
+export type QuoteStatus = 'draft' | 'sent' | 'expired'
+
+export interface QuoteSummary {
+  id: string
+  status: QuoteStatus
+  credit_type: 'french' | 'smart' | 'both'
+  pie_percentage: number
+  pie_amount: number
+  financing_amount: number
+  term_years: number
+  monthly_payment: number | null
+  balloon_payment: number | null
+  smart_cuotas_percentage: number | null
+  pdf_path: string | null
+  created_at: string
+  created_by: string | null
+  client_id: string
+  client_name: string
+  client_rut: string | null
+  unit_id: string
+  unit_number: string
+  floor: number | null
+  list_price: number
+  tower_id: string
+  tower_name: string
+  project_id: string
+  project_name: string
+  currency_symbol: string
+}
+
+export interface QuoteInsert {
+  client_id: string
+  unit_id: string
+  pie_percentage: number
+  pie_amount: number
+  financing_amount: number
+  credit_type: 'french' | 'smart' | 'both'
+  term_years: number
+  monthly_rate: number
+  monthly_payment?: number | null
+  balloon_payment?: number | null
+  smart_cuotas_percentage?: number | null
+  quote_data_snapshot: object
+  status?: QuoteStatus
+}
+
+// ============================================================
+// S2 — Edge Function: generate-pdf
+// ============================================================
+
+export interface GeneratePdfRequest {
+  quote_id: string
+}
+
+export interface GeneratePdfResponse {
+  url: string
+  pdf_path: string
+  expires_at: string
+}
+
+// ============================================================
 // Edge Function: calculate-quote
 // ============================================================
 
