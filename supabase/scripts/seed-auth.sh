@@ -6,7 +6,7 @@
 SERVICE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU"
 API_URL="http://127.0.0.1:54321"
 DEV_EMAIL="nicolas@vitalisuites.com"
-DEV_PASSWORD="dev1234"
+DEV_PASSWORD="Marmoti2110!"
 
 echo "Creando usuario de desarrollo..."
 
@@ -26,7 +26,7 @@ fi
 echo "Usuario creado: $USER_ID"
 echo "Asignando rol Super Admin..."
 
-supabase db query "
+supabase db query --local "
   INSERT INTO user_profiles (user_id, full_name)
   VALUES ('$USER_ID', 'Nicolás Dev')
   ON CONFLICT (user_id) DO NOTHING;
