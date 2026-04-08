@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
+import SaveQuoteDialog from '@/components/quotes/SaveQuoteDialog.vue'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -54,9 +55,11 @@ const pieError = computed(() => piePercentage.value < minPie.value ? `El PIE mí
 const showSmartParams = computed(() => creditType.value === 'smart' || creditType.value === 'both')
 
 const balloonError = computed(() => {
-  if (!showSmartParams.value) return null
+  if (!showSmartParams.value)
+    return null
   const balloon = 100 - piePercentage.value - smartCuotasPercentage.value
-  if (balloon <= 0) return `La suma de PIE (${piePercentage.value}%) + cuotas (${smartCuotasPercentage.value}%) no puede superar 99%`
+  if (balloon <= 0)
+    return `La suma de PIE (${piePercentage.value}%) + cuotas (${smartCuotasPercentage.value}%) no puede superar 99%`
   return null
 })
 
@@ -133,6 +136,8 @@ async function handleCalculate() {
     smart_cuotas_percentage: showSmartParams.value ? smartCuotasPercentage.value : undefined,
   })
 }
+
+const saveDialogOpen = ref(false)
 
 function formatCurrency(amount: number, symbol = '$') {
   return `${symbol} ${amount.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
@@ -374,12 +379,22 @@ function formatCurrency(amount: number, symbol = '$') {
       </CardContent>
     </Card>
 
-    <!-- Nueva simulación -->
-    <div v-if="result" class="flex justify-end">
+    <!-- Acciones post-resultado -->
+    <div v-if="result" class="flex items-center justify-between gap-4">
       <Button variant="outline" @click="handleReset">
         Nueva simulación
       </Button>
+      <Button @click="saveDialogOpen = true">
+        Guardar cotización
+      </Button>
     </div>
+
+    <SaveQuoteDialog
+      v-model:open="saveDialogOpen"
+      :result="result"
+      :smart-cuotas-percentage="showSmartParams ? smartCuotasPercentage : undefined"
+      @saved="handleReset"
+    />
 
     <!-- Skeleton mientras calcula -->
     <template v-if="calculating">

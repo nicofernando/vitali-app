@@ -48,6 +48,18 @@ const router = createRouter({
           meta: { permission: 'simulator.use' },
         },
         {
+          path: 'clients',
+          name: 'clients',
+          component: () => import('@/views/clients/ClientsView.vue'),
+          meta: { permission: 'clients.read' },
+        },
+        {
+          path: 'quotes',
+          name: 'quotes',
+          component: () => import('@/views/quotes/QuotesView.vue'),
+          meta: { permission: 'quotes.read' },
+        },
+        {
           path: 'currencies',
           name: 'currencies',
           component: () => import('@/views/currencies/CurrenciesView.vue'),
@@ -58,6 +70,12 @@ const router = createRouter({
           name: 'users',
           component: () => import('@/views/users/UsersView.vue'),
           meta: { permission: 'users.read' },
+        },
+        {
+          path: 'settings',
+          name: 'settings',
+          component: () => import('@/views/settings/SettingsView.vue'),
+          meta: { permission: 'settings.read' },
         },
       ],
     },
