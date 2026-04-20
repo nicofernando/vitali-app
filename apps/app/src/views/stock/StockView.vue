@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
-import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-vue-next'
+import { computed, onMounted, ref, watch } from 'vue'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -27,6 +28,7 @@ const { allUnits, loadingAll, error } = storeToRefs(unitsStore)
 
 // Centinela para "sin filtro" — string vacío no funciona bien en reka-ui Select
 const ALL = '__all__'
+const PAGE_SIZE = 25
 
 // Filtros
 const filterProjectId = ref<string>('')
@@ -39,7 +41,15 @@ type SortKey = 'project' | 'tower' | 'floor' | 'unit_number' | 'typology' | 'sur
 const sortKey = ref<SortKey | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
 
+// Paginación
+const currentPage = ref(1)
+
 onMounted(() => unitsStore.fetchAll())
+
+// Reset de página al cambiar filtros u orden
+watch([filterProjectId, filterTypologyId, filterFloor, filterSearch, sortKey, sortDir], () => {
+  currentPage.value = 1
+})
 
 // Opciones únicas derivadas del inventario completo
 const projectOptions = computed(() => {
@@ -84,7 +94,7 @@ const filteredUnits = computed(() =>
   }),
 )
 
-const displayedUnits = computed(() => {
+const sortedUnits = computed(() => {
   if (!sortKey.value)
     return filteredUnits.value
 
@@ -109,6 +119,21 @@ const displayedUnits = computed(() => {
     if (av > bv) return sortDir.value === 'asc' ? 1 : -1
     return 0
   })
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(sortedUnits.value.length / PAGE_SIZE)))
+
+const paginatedUnits = computed(() => {
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return sortedUnits.value.slice(start, start + PAGE_SIZE)
+})
+
+const pageRangeLabel = computed(() => {
+  const total = sortedUnits.value.length
+  if (total === 0) return '0 departamentos'
+  const start = (currentPage.value - 1) * PAGE_SIZE + 1
+  const end = Math.min(currentPage.value * PAGE_SIZE, total)
+  return `${start}–${end} de ${total}`
 })
 
 function setProjectFilter(v: unknown) {
@@ -162,10 +187,7 @@ function formatPrice(amount: number, symbol = '$') {
     <div class="flex flex-wrap gap-3 items-end">
       <div class="space-y-1.5 min-w-[160px]">
         <Label class="text-xs text-muted-foreground">Proyecto</Label>
-        <Select
-          :model-value="filterProjectId || ALL"
-          @update:model-value="setProjectFilter"
-        >
+        <Select :model-value="filterProjectId || ALL" @update:model-value="setProjectFilter">
           <SelectTrigger class="h-9">
             <SelectValue />
           </SelectTrigger>
@@ -182,10 +204,7 @@ function formatPrice(amount: number, symbol = '$') {
 
       <div class="space-y-1.5 min-w-[160px]">
         <Label class="text-xs text-muted-foreground">Tipología</Label>
-        <Select
-          :model-value="filterTypologyId || ALL"
-          @update:model-value="setTypologyFilter"
-        >
+        <Select :model-value="filterTypologyId || ALL" @update:model-value="setTypologyFilter">
           <SelectTrigger class="h-9">
             <SelectValue />
           </SelectTrigger>
@@ -202,37 +221,22 @@ function formatPrice(amount: number, symbol = '$') {
 
       <div class="space-y-1.5 w-24">
         <Label class="text-xs text-muted-foreground">Piso</Label>
-        <Input
-          v-model="filterFloor"
-          type="number"
-          placeholder="Todos"
-          class="h-9"
-          min="1"
-        />
+        <Input v-model="filterFloor" type="number" placeholder="Todos" class="h-9" min="1" />
       </div>
 
       <div class="space-y-1.5 min-w-[160px]">
         <Label class="text-xs text-muted-foreground">N° Depto</Label>
-        <Input
-          v-model="filterSearch"
-          placeholder="Buscar..."
-          class="h-9"
-        />
+        <Input v-model="filterSearch" placeholder="Buscar..." class="h-9" />
       </div>
 
       <button
         v-if="hasActiveFilters"
-        class="h-9 px-3 text-sm text-muted-foreground hover:text-foreground transition-colors self-end"
+        class="h-9 px-2 text-sm text-muted-foreground hover:text-foreground transition-colors self-end"
         @click="clearFilters"
       >
         Limpiar
       </button>
     </div>
-
-    <!-- Contador -->
-    <p v-if="!loadingAll" class="text-sm text-muted-foreground">
-      {{ displayedUnits.length }} de {{ allUnits.length }} departamentos
-    </p>
 
     <!-- Error -->
     <p v-if="error" class="text-sm text-destructive">
@@ -243,71 +247,71 @@ function formatPrice(amount: number, symbol = '$') {
     <div class="rounded-lg border overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>
+          <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
+            <TableHead class="font-semibold text-foreground">
               <button
-                class="flex items-center gap-1 hover:text-foreground transition-colors"
-                :class="sortKey === 'project' ? 'text-foreground font-semibold' : ''"
+                class="flex items-center gap-1.5 hover:text-primary transition-colors"
+                :class="sortKey === 'project' ? 'text-primary' : ''"
                 @click="toggleSort('project')"
               >
                 Proyecto
                 <component :is="sortIcon('project')" class="h-3.5 w-3.5 shrink-0" />
               </button>
             </TableHead>
-            <TableHead>
+            <TableHead class="font-semibold text-foreground">
               <button
-                class="flex items-center gap-1 hover:text-foreground transition-colors"
-                :class="sortKey === 'tower' ? 'text-foreground font-semibold' : ''"
+                class="flex items-center gap-1.5 hover:text-primary transition-colors"
+                :class="sortKey === 'tower' ? 'text-primary' : ''"
                 @click="toggleSort('tower')"
               >
                 Torre
                 <component :is="sortIcon('tower')" class="h-3.5 w-3.5 shrink-0" />
               </button>
             </TableHead>
-            <TableHead class="text-center">
+            <TableHead class="font-semibold text-foreground text-center">
               <button
-                class="flex items-center gap-1 hover:text-foreground transition-colors mx-auto"
-                :class="sortKey === 'floor' ? 'text-foreground font-semibold' : ''"
+                class="flex items-center gap-1.5 hover:text-primary transition-colors mx-auto"
+                :class="sortKey === 'floor' ? 'text-primary' : ''"
                 @click="toggleSort('floor')"
               >
                 Piso
                 <component :is="sortIcon('floor')" class="h-3.5 w-3.5 shrink-0" />
               </button>
             </TableHead>
-            <TableHead>
+            <TableHead class="font-semibold text-foreground">
               <button
-                class="flex items-center gap-1 hover:text-foreground transition-colors"
-                :class="sortKey === 'unit_number' ? 'text-foreground font-semibold' : ''"
+                class="flex items-center gap-1.5 hover:text-primary transition-colors"
+                :class="sortKey === 'unit_number' ? 'text-primary' : ''"
                 @click="toggleSort('unit_number')"
               >
                 N° Depto
                 <component :is="sortIcon('unit_number')" class="h-3.5 w-3.5 shrink-0" />
               </button>
             </TableHead>
-            <TableHead>
+            <TableHead class="font-semibold text-foreground">
               <button
-                class="flex items-center gap-1 hover:text-foreground transition-colors"
-                :class="sortKey === 'typology' ? 'text-foreground font-semibold' : ''"
+                class="flex items-center gap-1.5 hover:text-primary transition-colors"
+                :class="sortKey === 'typology' ? 'text-primary' : ''"
                 @click="toggleSort('typology')"
               >
                 Tipología
                 <component :is="sortIcon('typology')" class="h-3.5 w-3.5 shrink-0" />
               </button>
             </TableHead>
-            <TableHead class="text-right">
+            <TableHead class="font-semibold text-foreground text-right">
               <button
-                class="flex items-center gap-1 hover:text-foreground transition-colors ml-auto"
-                :class="sortKey === 'surface' ? 'text-foreground font-semibold' : ''"
+                class="flex items-center gap-1.5 hover:text-primary transition-colors ml-auto"
+                :class="sortKey === 'surface' ? 'text-primary' : ''"
                 @click="toggleSort('surface')"
               >
                 Superficie
                 <component :is="sortIcon('surface')" class="h-3.5 w-3.5 shrink-0" />
               </button>
             </TableHead>
-            <TableHead class="text-right">
+            <TableHead class="font-semibold text-foreground text-right">
               <button
-                class="flex items-center gap-1 hover:text-foreground transition-colors ml-auto"
-                :class="sortKey === 'price' ? 'text-foreground font-semibold' : ''"
+                class="flex items-center gap-1.5 hover:text-primary transition-colors ml-auto"
+                :class="sortKey === 'price' ? 'text-primary' : ''"
                 @click="toggleSort('price')"
               >
                 Precio de lista
@@ -327,14 +331,14 @@ function formatPrice(amount: number, symbol = '$') {
           </template>
 
           <!-- Sin resultados -->
-          <TableRow v-else-if="displayedUnits.length === 0">
+          <TableRow v-else-if="paginatedUnits.length === 0">
             <TableCell colspan="7" class="text-center text-muted-foreground py-12">
               No hay departamentos que coincidan con los filtros
             </TableCell>
           </TableRow>
 
           <!-- Datos -->
-          <TableRow v-for="unit in displayedUnits" :key="unit.id">
+          <TableRow v-for="unit in paginatedUnits" :key="unit.id">
             <TableCell class="font-medium">
               {{ unit.tower.project.name }}
             </TableCell>
@@ -354,6 +358,34 @@ function formatPrice(amount: number, symbol = '$') {
           </TableRow>
         </TableBody>
       </Table>
+    </div>
+
+    <!-- Paginación -->
+    <div v-if="!loadingAll" class="flex items-center justify-between">
+      <p class="text-sm text-muted-foreground">
+        {{ pageRangeLabel }} departamentos
+      </p>
+      <div v-if="totalPages > 1" class="flex items-center gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="currentPage === 1"
+          @click="currentPage--"
+        >
+          <ChevronLeft class="h-4 w-4" />
+        </Button>
+        <span class="text-sm px-2 tabular-nums">
+          {{ currentPage }} / {{ totalPages }}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="currentPage === totalPages"
+          @click="currentPage++"
+        >
+          <ChevronRight class="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   </div>
 </template>
