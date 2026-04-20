@@ -6,13 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Table,
   TableBody,
   TableCell,
@@ -21,17 +14,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
+import FilterCombobox from '@/components/ui/filter-combobox/FilterCombobox.vue'
 import { useUnitsStore } from '@/stores/units'
 
 const unitsStore = useUnitsStore()
 const { allUnits, allUnitsDirty, loadingAll, error } = storeToRefs(unitsStore)
 
-// Centinela para "sin filtro" — string vacío no funciona bien en reka-ui Select
-const ALL = '__all__'
 const PAGE_SIZE = 25
 
 // Filtros
 const filterProjectId = ref<string>('')
+const filterTowerId = ref<string>('')
 const filterTypologyId = ref<string>('')
 const filterFloor = ref<string>('')
 const filterSearch = ref<string>('')
@@ -50,16 +43,41 @@ onMounted(() => {
 })
 
 // Reset de página al cambiar filtros u orden
-watch([filterProjectId, filterTypologyId, filterFloor, filterSearch, sortKey, sortDir], () => {
+watch([filterProjectId, filterTowerId, filterTypologyId, filterFloor, filterSearch, sortKey, sortDir], () => {
   currentPage.value = 1
 })
 
-// Opciones únicas derivadas del inventario completo
+// Si cambia el proyecto, resetear torre si ya no pertenece al nuevo proyecto
+watch(filterProjectId, (newProjectId) => {
+  if (!newProjectId) {
+    filterTowerId.value = ''
+    return
+  }
+  const towerBelongsToProject = allUnits.value.some(
+    u => u.tower.id === filterTowerId.value && u.tower.project.id === newProjectId,
+  )
+  if (!towerBelongsToProject)
+    filterTowerId.value = ''
+})
+
+// Opciones derivadas del inventario
 const projectOptions = computed(() => {
   const seen = new Map<string, string>()
   for (const u of allUnits.value) {
     if (!seen.has(u.tower.project.id))
       seen.set(u.tower.project.id, u.tower.project.name)
+  }
+  return [...seen.entries()].map(([id, name]) => ({ id, name }))
+})
+
+// Opciones de torre: solo las que pertenecen al proyecto filtrado (o todas si no hay filtro)
+const towerOptions = computed(() => {
+  const seen = new Map<string, string>()
+  for (const u of allUnits.value) {
+    if (filterProjectId.value && u.tower.project.id !== filterProjectId.value)
+      continue
+    if (!seen.has(u.tower.id))
+      seen.set(u.tower.id, u.tower.name)
   }
   return [...seen.entries()].map(([id, name]) => ({ id, name }))
 })
@@ -74,12 +92,15 @@ const typologyOptions = computed(() => {
 })
 
 const hasActiveFilters = computed(() =>
-  !!filterProjectId.value || !!filterTypologyId.value || !!filterFloor.value || !!filterSearch.value,
+  !!filterProjectId.value || !!filterTowerId.value || !!filterTypologyId.value
+  || !!filterFloor.value || !!filterSearch.value,
 )
 
 const filteredUnits = computed(() =>
   allUnits.value.filter((u) => {
     if (filterProjectId.value && u.tower.project.id !== filterProjectId.value)
+      return false
+    if (filterTowerId.value && u.tower.id !== filterTowerId.value)
       return false
     if (filterTypologyId.value && u.typology_id !== filterTypologyId.value)
       return false
@@ -141,14 +162,6 @@ const pageRangeLabel = computed(() => {
   return `${start}–${end} de ${total}`
 })
 
-function setProjectFilter(v: unknown) {
-  filterProjectId.value = (v as string) === ALL ? '' : (v as string)
-}
-
-function setTypologyFilter(v: unknown) {
-  filterTypologyId.value = (v as string) === ALL ? '' : (v as string)
-}
-
 function toggleSort(key: SortKey) {
   if (sortKey.value === key) {
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
@@ -167,6 +180,7 @@ function sortIcon(key: SortKey) {
 
 function clearFilters() {
   filterProjectId.value = ''
+  filterTowerId.value = ''
   filterTypologyId.value = ''
   filterFloor.value = ''
   filterSearch.value = ''
@@ -194,46 +208,48 @@ function formatSurface(value: number | string) {
 
     <!-- Filtros -->
     <div class="flex flex-wrap gap-3 items-end">
-      <div class="space-y-1.5 min-w-[160px]">
+      <!-- Proyecto -->
+      <div class="space-y-1.5 min-w-[180px]">
         <Label class="text-xs text-muted-foreground">Proyecto</Label>
-        <Select :model-value="filterProjectId || ALL" @update:model-value="setProjectFilter">
-          <SelectTrigger class="h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem :value="ALL">
-              Todos los proyectos
-            </SelectItem>
-            <SelectItem v-for="p in projectOptions" :key="p.id" :value="p.id">
-              {{ p.name }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <FilterCombobox
+          v-model="filterProjectId"
+          :options="projectOptions"
+          placeholder="Todos los proyectos"
+          all-label="Todos los proyectos"
+        />
       </div>
 
+      <!-- Torre (dependiente de proyecto) -->
+      <div class="space-y-1.5 min-w-[160px]">
+        <Label class="text-xs text-muted-foreground">Torre</Label>
+        <FilterCombobox
+          v-model="filterTowerId"
+          :options="towerOptions"
+          :placeholder="filterProjectId ? 'Todas las torres' : 'Todas las torres'"
+          all-label="Todas las torres"
+          :disabled="towerOptions.length === 0"
+        />
+      </div>
+
+      <!-- Tipología -->
       <div class="space-y-1.5 min-w-[160px]">
         <Label class="text-xs text-muted-foreground">Tipología</Label>
-        <Select :model-value="filterTypologyId || ALL" @update:model-value="setTypologyFilter">
-          <SelectTrigger class="h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem :value="ALL">
-              Todas las tipologías
-            </SelectItem>
-            <SelectItem v-for="t in typologyOptions" :key="t.id" :value="t.id">
-              {{ t.name }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <FilterCombobox
+          v-model="filterTypologyId"
+          :options="typologyOptions"
+          placeholder="Todas las tipologías"
+          all-label="Todas las tipologías"
+        />
       </div>
 
+      <!-- Piso -->
       <div class="space-y-1.5 w-24">
         <Label class="text-xs text-muted-foreground">Piso</Label>
         <Input v-model="filterFloor" type="number" placeholder="Todos" class="h-9" min="0" />
       </div>
 
-      <div class="space-y-1.5 min-w-[160px]">
+      <!-- N° Depto -->
+      <div class="space-y-1.5 min-w-[140px]">
         <Label class="text-xs text-muted-foreground">N° Depto</Label>
         <Input v-model="filterSearch" placeholder="Ej: 101" class="h-9" />
       </div>
