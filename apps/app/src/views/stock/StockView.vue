@@ -37,7 +37,7 @@ const filterFloor = ref<string>('')
 const filterSearch = ref<string>('')
 
 // Ordenamiento
-type SortKey = 'project' | 'tower' | 'floor' | 'unit_number' | 'typology' | 'surface' | 'price'
+type SortKey = 'project' | 'tower' | 'floor' | 'unit_number' | 'typology' | 'surface' | 'min_pie' | 'max_term' | 'delivery_date' | 'price'
 const sortKey = ref<SortKey | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
 
@@ -155,6 +155,9 @@ const sortedUnits = computed(() => {
       case 'unit_number': av = a.unit_number; bv = b.unit_number; break
       case 'typology': av = a.typology?.name ?? null; bv = b.typology?.name ?? null; break
       case 'surface': av = a.typology?.surface_m2 ?? null; bv = b.typology?.surface_m2 ?? null; break
+      case 'min_pie': av = a.tower.min_pie_percentage ?? null; bv = b.tower.min_pie_percentage ?? null; break
+      case 'max_term': av = a.tower.max_financing_years ?? null; bv = b.tower.max_financing_years ?? null; break
+      case 'delivery_date': av = a.tower.delivery_date ?? null; bv = b.tower.delivery_date ?? null; break
       case 'price': av = a.list_price; bv = b.list_price; break
     }
 
@@ -224,6 +227,9 @@ function exportToExcel() {
     'N° Depto': unit.unit_number,
     'Tipología': unit.typology?.name ?? '',
     'Superficie (m2)': unit.typology?.surface_m2 ? Number(unit.typology.surface_m2) : '',
+    'PIE Mínimo (%)': unit.tower.min_pie_percentage,
+    'Plazo Máx. (Años)': unit.tower.max_financing_years,
+    'Entrega': unit.tower.delivery_date ?? 'Inmediata',
     'Precio de lista': unit.list_price,
     'Moneda': unit.tower.project.currency.code,
   }))
@@ -236,12 +242,15 @@ function exportToExcel() {
   worksheet['!cols'] = [
     { wch: 25 }, // Proyecto
     { wch: 15 }, // Torre
-    { wch: 8 },  // Piso
+    { wch: 6 },  // Piso
     { wch: 12 }, // N° Depto
     { wch: 20 }, // Tipología
     { wch: 15 }, // Superficie
+    { wch: 15 }, // PIE Mínimo
+    { wch: 18 }, // Plazo Máx
+    { wch: 18 }, // Entrega
     { wch: 20 }, // Precio
-    { wch: 10 }, // Moneda
+    { wch: 8 }, // Moneda
   ]
 
   XLSX.writeFile(workbook, `Stock_VitaliHogar_${new Date().toISOString().split('T')[0]}.xlsx`)
@@ -398,6 +407,36 @@ function exportToExcel() {
             <TableHead class="font-semibold text-foreground text-right">
               <button
                 class="flex items-center gap-1.5 hover:text-primary transition-colors ml-auto"
+                :class="sortKey === 'min_pie' ? 'text-primary' : ''"
+                @click="toggleSort('min_pie')"
+              >
+                PIE Mín.
+                <component :is="sortIcon('min_pie')" class="h-3.5 w-3.5 shrink-0" />
+              </button>
+            </TableHead>
+            <TableHead class="font-semibold text-foreground text-right">
+              <button
+                class="flex items-center gap-1.5 hover:text-primary transition-colors ml-auto"
+                :class="sortKey === 'max_term' ? 'text-primary' : ''"
+                @click="toggleSort('max_term')"
+              >
+                Plazo Máx.
+                <component :is="sortIcon('max_term')" class="h-3.5 w-3.5 shrink-0" />
+              </button>
+            </TableHead>
+            <TableHead class="font-semibold text-foreground text-center">
+              <button
+                class="flex items-center gap-1.5 hover:text-primary transition-colors mx-auto"
+                :class="sortKey === 'delivery_date' ? 'text-primary' : ''"
+                @click="toggleSort('delivery_date')"
+              >
+                Entrega
+                <component :is="sortIcon('delivery_date')" class="h-3.5 w-3.5 shrink-0" />
+              </button>
+            </TableHead>
+            <TableHead class="font-semibold text-foreground text-right">
+              <button
+                class="flex items-center gap-1.5 hover:text-primary transition-colors ml-auto"
                 :class="sortKey === 'price' ? 'text-primary' : ''"
                 @click="toggleSort('price')"
               >
@@ -411,7 +450,7 @@ function exportToExcel() {
           <!-- Skeleton -->
           <template v-if="loadingAll">
             <TableRow v-for="i in 8" :key="i">
-              <TableCell v-for="j in 7" :key="j">
+              <TableCell v-for="j in 10" :key="j">
                 <Skeleton class="h-4 w-full" />
               </TableCell>
             </TableRow>
@@ -419,7 +458,7 @@ function exportToExcel() {
 
           <!-- Sin resultados -->
           <TableRow v-else-if="paginatedUnits.length === 0">
-            <TableCell colspan="7" class="text-center text-muted-foreground py-12">
+            <TableCell colspan="10" class="text-center text-muted-foreground py-12">
               No hay departamentos que coincidan con los filtros
             </TableCell>
           </TableRow>
@@ -437,6 +476,15 @@ function exportToExcel() {
             <TableCell>{{ unit.typology?.name ?? '—' }}</TableCell>
             <TableCell class="text-right">
               {{ unit.typology?.surface_m2 ? formatSurface(unit.typology.surface_m2) : '—' }}
+            </TableCell>
+            <TableCell class="text-right">
+              {{ unit.tower.min_pie_percentage ? `${unit.tower.min_pie_percentage}%` : '—' }}
+            </TableCell>
+            <TableCell class="text-right">
+              {{ unit.tower.max_financing_years ? `${unit.tower.max_financing_years} años` : '—' }}
+            </TableCell>
+            <TableCell class="text-center">
+              {{ unit.tower.delivery_date ?? 'Inmediata' }}
             </TableCell>
             <TableCell class="text-right font-medium">
               {{ formatPrice(unit.list_price, unit.tower.project.currency.symbol, unit.tower.project.currency.decimal_places) }}
