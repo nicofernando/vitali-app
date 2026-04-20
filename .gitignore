@@ -16,6 +16,14 @@ dist-ssr/
 # Supabase
 .supabase/
 supabase/.temp/
+supabase/.branches/
+
+# MCP config local (contiene access tokens)
+.mcp.json
+
+# Env downloads
+env.download
+apps/**/env.download
 
 # Editor
 .vscode/*

@@ -82,6 +82,36 @@ describe('useSimulatorStore', () => {
     expect(store.selectedUnitId).toBe('u1')
   })
 
+  it('calculate es no-op si loading ya es true', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.functions.invoke).mockResolvedValue({ data: {}, error: null } as any)
+
+    const store = useSimulatorStore()
+    store.loading = true
+    await store.calculate({ unit_id: 'u1', pie_percentage: 20, term_years: 20, credit_type: 'french' })
+
+    expect(supabase.functions.invoke).not.toHaveBeenCalled()
+  })
+
+  it('calculate es no-op si creditType está vacío', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    const store = useSimulatorStore()
+    store.creditType = '' as any
+    await store.calculate({ unit_id: 'u1', pie_percentage: 20, term_years: 20, credit_type: 'french' })
+    expect(supabase.functions.invoke).not.toHaveBeenCalled()
+  })
+
+  it('calculate deja loading en false tras un error de la Edge Function', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.functions.invoke).mockResolvedValue({ data: null, error: { message: 'Server error' } } as any)
+
+    const store = useSimulatorStore()
+    await store.calculate({ unit_id: 'u1', pie_percentage: 20, term_years: 20, credit_type: 'french' })
+
+    expect(store.loading).toBe(false)
+    expect(store.error).toBe('Server error')
+  })
+
   it('reset limpia toda la selección, parámetros y resultado', () => {
     const store = useSimulatorStore()
     store.selectedProjectId = 'p1'

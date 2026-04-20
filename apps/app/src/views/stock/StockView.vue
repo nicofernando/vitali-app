@@ -24,7 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useUnitsStore } from '@/stores/units'
 
 const unitsStore = useUnitsStore()
-const { allUnits, loadingAll, error } = storeToRefs(unitsStore)
+const { allUnits, allUnitsDirty, loadingAll, error } = storeToRefs(unitsStore)
 
 // Centinela para "sin filtro" — string vacío no funciona bien en reka-ui Select
 const ALL = '__all__'
@@ -44,7 +44,10 @@ const sortDir = ref<'asc' | 'desc'>('asc')
 // Paginación
 const currentPage = ref(1)
 
-onMounted(() => unitsStore.fetchAll())
+onMounted(() => {
+  if (allUnitsDirty.value || allUnits.value.length === 0)
+    unitsStore.fetchAll()
+})
 
 // Reset de página al cambiar filtros u orden
 watch([filterProjectId, filterTypologyId, filterFloor, filterSearch, sortKey, sortDir], () => {
@@ -80,7 +83,7 @@ const filteredUnits = computed(() =>
       return false
     if (filterTypologyId.value && u.typology_id !== filterTypologyId.value)
       return false
-    if (filterFloor.value !== '' && filterFloor.value !== null && filterFloor.value !== undefined) {
+    if (filterFloor.value !== '') {
       const f = Number(filterFloor.value)
       if (!Number.isNaN(f) && u.floor !== f)
         return false
@@ -115,6 +118,8 @@ const sortedUnits = computed(() => {
     if (av === null && bv === null) return 0
     if (av === null) return 1
     if (bv === null) return -1
+    if (sortKey.value === 'unit_number')
+      return (av as string).localeCompare(bv as string, undefined, { numeric: true }) * (sortDir.value === 'asc' ? 1 : -1)
     if (av < bv) return sortDir.value === 'asc' ? -1 : 1
     if (av > bv) return sortDir.value === 'asc' ? 1 : -1
     return 0
@@ -230,7 +235,7 @@ function formatSurface(value: number | string) {
 
       <div class="space-y-1.5 min-w-[160px]">
         <Label class="text-xs text-muted-foreground">N° Depto</Label>
-        <Input v-model="filterSearch" placeholder="Buscar..." class="h-9" />
+        <Input v-model="filterSearch" placeholder="Ej: 101" class="h-9" />
       </div>
 
       <Button

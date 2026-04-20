@@ -11,7 +11,7 @@ export const useSimulatorStore = defineStore('simulator', () => {
   const selectedUnitId = ref<string>('')
   const piePercentage = ref<number>(20)
   const termYears = ref<number>(20)
-  const creditType = ref<'french' | 'smart' | 'both'>('both')
+  const creditType = ref<'french' | 'smart' | 'both' | ''>('both')
   const smartCuotasPercentage = ref<number>(30)
 
   // Calculation state
@@ -21,6 +21,8 @@ export const useSimulatorStore = defineStore('simulator', () => {
 
   async function calculate(request: CalculateQuoteRequest) {
     if (loading.value)
+      return
+    if (creditType.value === '')
       return
     loading.value = true
     error.value = null

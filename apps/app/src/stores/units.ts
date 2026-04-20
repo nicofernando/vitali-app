@@ -10,12 +10,14 @@ const SELECT_ALL_FIELDS = 'id, tower_id, typology_id, unit_number, floor, list_p
 export const useUnitsStore = defineStore('units', () => {
   const units = ref<Unit[]>([])
   const allUnits = ref<UnitWithContext[]>([])
+  const allUnitsDirty = ref(false)
   const currentTowerId = ref<string | null>(null)
   const loading = ref(false)
   const loadingAll = ref(false)
   const error = ref<string | null>(null)
 
   async function fetchAll() {
+    allUnitsDirty.value = false
     loadingAll.value = true
     error.value = null
     try {
@@ -77,8 +79,8 @@ export const useUnitsStore = defineStore('units', () => {
       if (err)
         throw err
       units.value.unshift(data as unknown as Unit)
-      if (allUnits.value.length > 0)
-        allUnits.value = []
+      // Mark allUnits stale so StockView re-fetches on next mount
+      allUnitsDirty.value = true
       return data as unknown as Unit
     }
     catch (err) {
@@ -105,8 +107,8 @@ export const useUnitsStore = defineStore('units', () => {
       const idx = units.value.findIndex(u => u.id === id)
       if (idx !== -1)
         units.value[idx] = data as unknown as Unit
-      if (allUnits.value.length > 0)
-        allUnits.value = []
+      // Mark allUnits stale so StockView re-fetches on next mount
+      allUnitsDirty.value = true
       return data as unknown as Unit
     }
     catch (err) {
@@ -130,6 +132,7 @@ export const useUnitsStore = defineStore('units', () => {
         throw err
       units.value = units.value.filter(u => u.id !== id)
       allUnits.value = allUnits.value.filter(u => u.id !== id)
+      allUnitsDirty.value = true
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al eliminar departamento')
@@ -140,5 +143,5 @@ export const useUnitsStore = defineStore('units', () => {
     }
   }
 
-  return { units, allUnits, currentTowerId, loading, loadingAll, error, fetchAll, fetchByTower, clearUnits, create, update, remove }
+  return { units, allUnits, allUnitsDirty, currentTowerId, loading, loadingAll, error, fetchAll, fetchByTower, clearUnits, create, update, remove }
 })

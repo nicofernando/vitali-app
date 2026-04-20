@@ -65,13 +65,12 @@ const balloonError = computed(() => {
 
 const canCalculate = computed(() =>
   selectedUnitId.value
+  && creditType.value !== ''
   && !pieError.value
   && !termError.value
   && !balloonError.value
   && termYears.value > 0,
 )
-
-onUnmounted(() => simulatorStore.reset())
 
 onMounted(async () => {
   await projectsStore.fetchAll()
@@ -96,7 +95,8 @@ function onProjectChange(value: unknown) {
       creditType.value = 'french'
     else if (project.smart_credit_enabled)
       creditType.value = 'smart'
-    // Si ningún crédito está habilitado, no cambiar creditType
+    else
+      creditType.value = ''
   }
   if (selectedProjectId.value)
     towersStore.fetchByProject(selectedProjectId.value)
@@ -123,6 +123,7 @@ function onUnitChange(value: unknown) {
 }
 
 function onCreditTypeChange(value: unknown) {
+  if (!value) return
   creditType.value = value as 'french' | 'smart' | 'both'
   simulatorStore.clearResult()
   if (value === 'french')
@@ -135,6 +136,8 @@ function handleReset() {
   simulatorStore.reset()
 }
 
+onUnmounted(handleReset)
+
 async function handleCalculate() {
   if (!canCalculate.value)
     return
@@ -143,7 +146,7 @@ async function handleCalculate() {
     unit_id: selectedUnitId.value,
     pie_percentage: piePercentage.value,
     term_years: termYears.value,
-    credit_type: creditType.value,
+    credit_type: creditType.value as 'french' | 'smart' | 'both',
     smart_cuotas_percentage: showSmartParams.value ? smartCuotasPercentage.value : undefined,
   })
 }
@@ -322,7 +325,11 @@ function formatCurrency(amount: number, symbol = '$') {
 
           <div class="space-y-2">
             <Label>Tipo de crédito</Label>
-            <Select :model-value="creditType" @update:model-value="onCreditTypeChange">
+            <Select
+              :model-value="creditType"
+              :disabled="!selectedProject?.french_credit_enabled && !selectedProject?.smart_credit_enabled"
+              @update:model-value="onCreditTypeChange"
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -341,6 +348,12 @@ function formatCurrency(amount: number, symbol = '$') {
                 </SelectItem>
               </SelectContent>
             </Select>
+            <p
+              v-if="selectedProject && !selectedProject.french_credit_enabled && !selectedProject.smart_credit_enabled"
+              class="text-xs text-destructive"
+            >
+              Este proyecto no tiene créditos habilitados
+            </p>
           </div>
         </div>
 
