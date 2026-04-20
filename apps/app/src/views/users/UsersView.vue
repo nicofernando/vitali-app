@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/table'
 import { supabase } from '@/lib/supabase'
 import { useUsersStore } from '@/stores/users'
+import CreateUserForm from '@/components/users/CreateUserForm.vue'
 
 const usersStore = useUsersStore()
 const { users, loading, error } = storeToRefs(usersStore)
@@ -83,29 +84,16 @@ onMounted(async () => {
 })
 
 // ── Formulario crear usuario ──────────────────────────────────
-const createSchema = toTypedSchema(z.object({
-  email: z.string().email('Email inválido'),
-  full_name: z.string().optional(),
-  phone: z.string().optional(),
-}))
-
-const { handleSubmit: handleCreateSubmit, resetForm: resetCreateForm } = useForm({
-  validationSchema: createSchema,
-})
+const createFormRef = ref<InstanceType<typeof CreateUserForm> | null>(null)
 
 function openCreate() {
-  resetCreateForm()
   showCreateSheet.value = true
 }
 
-const onCreateSubmit = handleCreateSubmit(async (values) => {
+async function handleCreateSubmit(values: { email: string, full_name: string | null, phone: string | null }) {
   creating.value = true
   try {
-    await usersStore.createUser({
-      email: values.email,
-      full_name: values.full_name ?? null,
-      phone: values.phone ?? null,
-    })
+    await usersStore.createUser(values)
     toast.success(`Invitación enviada a ${values.email}`)
     showCreateSheet.value = false
   }
@@ -115,7 +103,7 @@ const onCreateSubmit = handleCreateSubmit(async (values) => {
   finally {
     creating.value = false
   }
-})
+}
 
 // ── Formulario editar perfil ──────────────────────────────────
 const editSchema = toTypedSchema(z.object({
@@ -360,46 +348,12 @@ function getInitials(user: UserWithRoles): string {
           </SheetDescription>
         </SheetHeader>
 
-        <form class="space-y-4 mt-6" @submit="onCreateSubmit">
-          <FormField v-slot="{ componentField }" name="email">
-            <FormItem>
-              <FormLabel>Email *</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="usuario@vitalisuites.com" v-bind="componentField" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          </FormField>
-
-          <FormField v-slot="{ componentField }" name="full_name">
-            <FormItem>
-              <FormLabel>Nombre completo</FormLabel>
-              <FormControl>
-                <Input placeholder="Ej: María González" v-bind="componentField" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          </FormField>
-
-          <FormField v-slot="{ componentField }" name="phone">
-            <FormItem>
-              <FormLabel>Teléfono</FormLabel>
-              <FormControl>
-                <Input placeholder="+56 9 1234 5678" v-bind="componentField" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          </FormField>
-
-          <div class="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" @click="showCreateSheet = false">
-              Cancelar
-            </Button>
-            <Button type="submit" :disabled="creating">
-              {{ creating ? 'Enviando...' : 'Enviar invitación' }}
-            </Button>
-          </div>
-        </form>
+        <CreateUserForm
+          ref="createFormRef"
+          :loading="creating"
+          @submit="handleCreateSubmit"
+          @cancel="showCreateSheet = false"
+        />
       </SheetContent>
     </Sheet>
 
