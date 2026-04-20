@@ -72,6 +72,9 @@ export interface UnitWithContext extends Unit {
   tower: {
     id: string
     name: string
+    min_pie_percentage: number | null
+    max_financing_years: number | null
+    delivery_date: string | null
     project: Pick<Project, 'id' | 'name'> & {
       currency: Pick<Currency, 'id' | 'code' | 'symbol' | 'decimal_places'>
     }
