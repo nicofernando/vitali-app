@@ -11,7 +11,7 @@ vi.mock('@/lib/supabase', () => ({
 }))
 
 const role = { id: 'r1', name: 'Admin', description: null, created_at: '' }
-const baseUser = { id: 'u1', email: 'a@test.com', full_name: 'Ana', phone: null, roles: [] }
+const baseUser = { id: 'u1', email: 'a@test.com', full_name: 'Ana', phone: null, is_active: true, roles: [] }
 
 describe('useUsersStore', () => {
   beforeEach(() => {
@@ -96,12 +96,11 @@ describe('useUsersStore', () => {
   })
 
   // ── updateProfile ────────────────────────────────────────────
-  it('updateProfile: actualiza el ítem en memoria', async () => {
+  it('updateProfile: actualiza el ítem en memoria (upsert)', async () => {
     const { supabase } = await import('@/lib/supabase')
+    // updateProfile usa upsert para manejar usuarios sin fila en user_profiles
     vi.mocked(supabase.from).mockReturnValue({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      }),
+      upsert: vi.fn().mockResolvedValue({ error: null }),
     } as any)
 
     const store = useUsersStore()
@@ -116,9 +115,7 @@ describe('useUsersStore', () => {
   it('updateProfile: si falla, relanza el error y el usuario queda sin cambios', async () => {
     const { supabase } = await import('@/lib/supabase')
     vi.mocked(supabase.from).mockReturnValue({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: { message: 'RLS violation' } }),
-      }),
+      upsert: vi.fn().mockResolvedValue({ error: { message: 'RLS violation' } }),
     } as any)
 
     const store = useUsersStore()
