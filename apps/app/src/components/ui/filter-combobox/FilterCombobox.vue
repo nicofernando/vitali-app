@@ -28,10 +28,7 @@ const selectedOption = computed(() =>
   props.options.find(o => o.id === props.modelValue) ?? null,
 )
 
-// Cuando el panel está cerrado muestra el nombre seleccionado; abierto, el texto buscado
-const inputDisplay = computed(() =>
-  open.value ? search.value : (selectedOption.value?.name ?? ''),
-)
+
 
 const filteredOptions = computed(() => {
   if (!search.value.trim())
