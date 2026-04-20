@@ -28,7 +28,6 @@ import { useUnitsStore } from '@/stores/units'
 const unitsStore = useUnitsStore()
 const { allUnits, allUnitsDirty, loadingAll, error } = storeToRefs(unitsStore)
 
-const PAGE_SIZE = 25
 
 // Filtros
 const filterProjectId = ref<string>('')
