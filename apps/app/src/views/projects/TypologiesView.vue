@@ -204,7 +204,7 @@ const onSubmit = handleSubmit(async (values) => {
                 <Input
                   type="number"
                   min="1"
-                  step="0.5"
+                  step="0.01"
                   placeholder="Ej: 65"
                   v-bind="componentField"
                   :value="componentField.modelValue"
