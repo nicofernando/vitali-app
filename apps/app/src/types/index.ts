@@ -105,6 +105,7 @@ export interface UserWithRoles {
   email: string
   full_name: string | null
   phone: string | null
+  is_active: boolean
   roles: Role[]
 }
 

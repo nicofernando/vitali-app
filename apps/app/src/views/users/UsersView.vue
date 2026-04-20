@@ -48,16 +48,24 @@ import { supabase } from '@/lib/supabase'
 import { useUsersStore } from '@/stores/users'
 import CreateUserForm from '@/components/users/CreateUserForm.vue'
 
+const PAGE_SIZE = 25
+
 const usersStore = useUsersStore()
 const { users, loading, error } = storeToRefs(usersStore)
 
 interface PendingRemoveRole { userId: string, roleId: string, roleName: string }
 const pendingRemoveRole = ref<PendingRemoveRole | null>(null)
 const pendingDeleteUser = ref<UserWithRoles | null>(null)
+const pendingToggleUser = ref<UserWithRoles | null>(null)
+const toggling = ref(false)
 const deleting = ref(false)
 
 const roles = ref<Role[]>([])
 const search = ref('')
+const filterStatus = ref<'active' | 'disabled' | 'all'>('active')
+const sortKey = ref<'name' | 'email' | null>(null)
+const sortDir = ref<'asc' | 'desc'>('asc')
+const currentPage = ref(1)
 const showCreateSheet = ref(false)
 const editingUserId = ref<string | null>(null)
 const selectedRole = ref<Record<string, string>>({})
@@ -70,14 +78,52 @@ const editingUser = computed<UserWithRoles | null>(
 )
 
 const filteredUsers = computed(() => {
+  let list = users.value
+
+  // Filtro por estado
+  if (filterStatus.value === 'active')
+    list = list.filter(u => u.is_active)
+  else if (filterStatus.value === 'disabled')
+    list = list.filter(u => !u.is_active)
+
+  // Búsqueda
   const q = search.value.toLowerCase().trim()
-  if (!q)
-    return users.value
-  return users.value.filter(u =>
-    u.email.toLowerCase().includes(q)
-    || (u.full_name?.toLowerCase().includes(q) ?? false),
-  )
+  if (q)
+    list = list.filter(u => u.email.toLowerCase().includes(q) || (u.full_name?.toLowerCase().includes(q) ?? false))
+
+  // Ordenamiento
+  if (sortKey.value) {
+    const key = sortKey.value
+    list = [...list].sort((a, b) => {
+      const av = key === 'name' ? (a.full_name ?? a.email) : a.email
+      const bv = key === 'name' ? (b.full_name ?? b.email) : b.email
+      const cmp = av.localeCompare(bv, 'es')
+      return sortDir.value === 'asc' ? cmp : -cmp
+    })
+  }
+
+  return list
 })
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredUsers.value.length / PAGE_SIZE)))
+
+const paginatedUsers = computed(() => {
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return filteredUsers.value.slice(start, start + PAGE_SIZE)
+})
+
+// Reset de página al cambiar filtros
+function resetPage() { currentPage.value = 1 }
+
+function toggleSort(key: typeof sortKey.value) {
+  if (sortKey.value === key)
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  else {
+    sortKey.value = key
+    sortDir.value = 'asc'
+  }
+  resetPage()
+}
 
 onMounted(async () => {
   await usersStore.fetchAll()
@@ -143,6 +189,49 @@ const onEditSubmit = handleEditSubmit(async (values) => {
   }
 })
 
+// ── Deshabilitar / Habilitar ──────────────────────────────────
+async function confirmToggleUser() {
+  const user = pendingToggleUser.value
+  pendingToggleUser.value = null
+  if (!user)
+    return
+  toggling.value = true
+  try {
+    await usersStore.toggleUser(user.id, !user.is_active)
+    toast.success(user.is_active ? `"${user.email}" deshabilitado` : `"${user.email}" habilitado`)
+  }
+  catch {
+    toast.error('No se pudo cambiar el estado del usuario')
+  }
+  finally {
+    toggling.value = false
+  }
+}
+
+// ── Eliminar usuario (solo si ya está deshabilitado) ──────────
+async function confirmDeleteUser() {
+  const user = pendingDeleteUser.value
+  pendingDeleteUser.value = null
+  if (!user)
+    return
+  deleting.value = true
+  try {
+    await usersStore.deleteUser(user.id)
+    toast.success(`Usuario "${user.email}" eliminado`)
+    if (editingUserId.value === user.id)
+      editingUserId.value = null
+  }
+  catch (err: any) {
+    const msg = err?.message?.includes('violates foreign key')
+      ? 'No se puede eliminar — el usuario tiene registros asociados'
+      : 'No se pudo eliminar el usuario'
+    toast.error(msg)
+  }
+  finally {
+    deleting.value = false
+  }
+}
+
 // ── Gestión de roles ──────────────────────────────────────────
 function availableRoles(userId: string): Role[] {
   const user = users.value.find(u => u.id === userId)
@@ -196,27 +285,6 @@ async function confirmRemoveRole() {
   }
 }
 
-// ── Eliminar usuario ──────────────────────────────────────────
-async function confirmDeleteUser() {
-  const user = pendingDeleteUser.value
-  pendingDeleteUser.value = null
-  if (!user)
-    return
-  deleting.value = true
-  try {
-    await usersStore.deleteUser(user.id)
-    toast.success(`Usuario "${user.email}" eliminado`)
-    if (editingUserId.value === user.id)
-      editingUserId.value = null
-  }
-  catch {
-    toast.error('No se pudo eliminar el usuario')
-  }
-  finally {
-    deleting.value = false
-  }
-}
-
 // ── Helpers ───────────────────────────────────────────────────
 function getInitials(user: UserWithRoles): string {
   if (user.full_name) {
@@ -252,12 +320,40 @@ function getInitials(user: UserWithRoles): string {
       {{ error }}
     </p>
 
-    <!-- Búsqueda -->
-    <Input
-      v-model="search"
-      placeholder="Buscar por nombre o email..."
-      class="max-w-sm"
-    />
+    <!-- Filtros y búsqueda -->
+    <div class="flex flex-wrap gap-3 items-center">
+      <!-- Tabs de estado -->
+      <div class="flex rounded-md border overflow-hidden text-sm">
+        <button
+          class="px-3 py-1.5 transition-colors"
+          :class="filterStatus === 'active' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
+          @click="filterStatus = 'active'; resetPage()"
+        >
+          Activos
+        </button>
+        <button
+          class="px-3 py-1.5 border-l transition-colors"
+          :class="filterStatus === 'disabled' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
+          @click="filterStatus = 'disabled'; resetPage()"
+        >
+          Deshabilitados
+        </button>
+        <button
+          class="px-3 py-1.5 border-l transition-colors"
+          :class="filterStatus === 'all' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
+          @click="filterStatus = 'all'; resetPage()"
+        >
+          Todos
+        </button>
+      </div>
+
+      <Input
+        v-model="search"
+        placeholder="Buscar por nombre o email..."
+        class="max-w-xs h-9"
+        @input="resetPage()"
+      />
+    </div>
 
     <!-- Tabla -->
     <div class="rounded-lg border bg-card overflow-x-auto">
@@ -265,9 +361,28 @@ function getInitials(user: UserWithRoles): string {
         <TableHeader>
           <TableRow>
             <TableHead class="w-10" />
-            <TableHead>Nombre</TableHead>
-            <TableHead>Email</TableHead>
+            <TableHead>
+              <button
+                class="flex items-center gap-1 hover:text-primary transition-colors"
+                :class="sortKey === 'name' ? 'text-primary' : ''"
+                @click="toggleSort('name')"
+              >
+                Nombre
+                <span class="text-xs">{{ sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+              </button>
+            </TableHead>
+            <TableHead>
+              <button
+                class="flex items-center gap-1 hover:text-primary transition-colors"
+                :class="sortKey === 'email' ? 'text-primary' : ''"
+                @click="toggleSort('email')"
+              >
+                Email
+                <span class="text-xs">{{ sortKey === 'email' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+              </button>
+            </TableHead>
             <TableHead>Roles</TableHead>
+            <TableHead>Estado</TableHead>
             <TableHead class="text-right">
               Acciones
             </TableHead>
@@ -281,15 +396,16 @@ function getInitials(user: UserWithRoles): string {
               <TableCell><Skeleton class="h-4 w-32" /></TableCell>
               <TableCell><Skeleton class="h-4 w-44" /></TableCell>
               <TableCell><Skeleton class="h-5 w-24" /></TableCell>
+              <TableCell><Skeleton class="h-5 w-16" /></TableCell>
               <TableCell />
             </TableRow>
           </template>
 
-          <!-- Sin resultados de búsqueda -->
-          <template v-else-if="filteredUsers.length === 0">
+          <!-- Sin resultados -->
+          <template v-else-if="paginatedUsers.length === 0">
             <TableRow>
-              <TableCell colspan="5" class="text-center text-muted-foreground py-10">
-                {{ search ? 'Sin resultados para esa búsqueda.' : 'No hay usuarios registrados.' }}
+              <TableCell colspan="6" class="text-center text-muted-foreground py-10">
+                {{ search ? 'Sin resultados para esa búsqueda.' : filterStatus === 'disabled' ? 'No hay usuarios deshabilitados.' : 'No hay usuarios registrados.' }}
               </TableCell>
             </TableRow>
           </template>
@@ -297,9 +413,10 @@ function getInitials(user: UserWithRoles): string {
           <!-- Filas -->
           <template v-else>
             <TableRow
-              v-for="user in filteredUsers"
+              v-for="user in paginatedUsers"
               :key="user.id"
               class="cursor-default"
+              :class="!user.is_active ? 'opacity-60' : ''"
             >
               <!-- Avatar -->
               <TableCell>
@@ -333,14 +450,17 @@ function getInitials(user: UserWithRoles): string {
                   >
                     {{ role.name }}
                   </Badge>
-                  <Badge
-                    v-if="user.roles.length > 2"
-                    variant="outline"
-                    class="text-xs"
-                  >
+                  <Badge v-if="user.roles.length > 2" variant="outline" class="text-xs">
                     +{{ user.roles.length - 2 }}
                   </Badge>
                 </div>
+              </TableCell>
+
+              <!-- Estado -->
+              <TableCell>
+                <Badge :variant="user.is_active ? 'default' : 'outline'" class="text-xs">
+                  {{ user.is_active ? 'Activo' : 'Deshabilitado' }}
+                </Badge>
               </TableCell>
 
               <!-- Acciones -->
@@ -349,7 +469,20 @@ function getInitials(user: UserWithRoles): string {
                   <Button size="sm" variant="outline" @click="openEdit(user)">
                     Editar
                   </Button>
-                  <Button size="sm" variant="destructive" @click="pendingDeleteUser = user">
+                  <Button
+                    size="sm"
+                    :variant="user.is_active ? 'outline' : 'default'"
+                    @click="pendingToggleUser = user"
+                  >
+                    {{ user.is_active ? 'Deshabilitar' : 'Habilitar' }}
+                  </Button>
+                  <!-- Eliminar: solo visible si ya está deshabilitado -->
+                  <Button
+                    v-if="!user.is_active"
+                    size="sm"
+                    variant="destructive"
+                    @click="pendingDeleteUser = user"
+                  >
                     Eliminar
                   </Button>
                 </div>
@@ -360,10 +493,21 @@ function getInitials(user: UserWithRoles): string {
       </Table>
     </div>
 
-    <!-- Contador -->
-    <p v-if="!loading && users.length > 0" class="text-xs text-muted-foreground">
-      Mostrando {{ filteredUsers.length }} de {{ users.length }} usuario{{ users.length !== 1 ? 's' : '' }}
-    </p>
+    <!-- Footer: contador + paginación -->
+    <div v-if="!loading" class="flex items-center justify-between">
+      <p class="text-xs text-muted-foreground">
+        {{ filteredUsers.length }} usuario{{ filteredUsers.length !== 1 ? 's' : '' }}
+      </p>
+      <div v-if="totalPages > 1" class="flex items-center gap-2">
+        <Button variant="outline" size="sm" :disabled="currentPage === 1" @click="currentPage--">
+          ‹
+        </Button>
+        <span class="text-sm tabular-nums">{{ currentPage }} / {{ totalPages }}</span>
+        <Button variant="outline" size="sm" :disabled="currentPage === totalPages" @click="currentPage++">
+          ›
+        </Button>
+      </div>
+    </div>
 
     <!-- Sheet: nuevo usuario -->
     <Sheet v-model:open="showCreateSheet">
@@ -374,7 +518,6 @@ function getInitials(user: UserWithRoles): string {
             Se enviará un email de invitación. El usuario elige su contraseña al aceptar.
           </SheetDescription>
         </SheetHeader>
-
         <CreateUserForm
           :loading="creating"
           @submit="handleCreateSubmit"
@@ -383,7 +526,58 @@ function getInitials(user: UserWithRoles): string {
       </SheetContent>
     </Sheet>
 
-    <!-- Confirmación eliminar rol -->
+    <!-- Confirmación deshabilitar / habilitar -->
+    <AlertDialog :open="!!pendingToggleUser" @update:open="(v) => { if (!v) pendingToggleUser = null }">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {{ pendingToggleUser?.is_active ? '¿Deshabilitar usuario?' : '¿Habilitar usuario?' }}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            <template v-if="pendingToggleUser?.is_active">
+              "{{ pendingToggleUser?.email }}" no podrá iniciar sesión hasta que sea habilitado nuevamente.
+            </template>
+            <template v-else>
+              "{{ pendingToggleUser?.email }}" podrá volver a iniciar sesión.
+            </template>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="pendingToggleUser = null">
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction :disabled="toggling" @click="confirmToggleUser">
+            {{ pendingToggleUser?.is_active ? 'Deshabilitar' : 'Habilitar' }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Confirmación eliminar (solo usuarios deshabilitados) -->
+    <AlertDialog :open="!!pendingDeleteUser" @update:open="(v) => { if (!v) pendingDeleteUser = null }">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Eliminar usuario permanentemente?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Se eliminará "{{ pendingDeleteUser?.email }}" y todos sus datos de perfil y roles. Esta acción no se puede deshacer. Si el usuario tiene registros asociados (cotizaciones, etc.) la eliminación será bloqueada.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="pendingDeleteUser = null">
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction
+            class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            :disabled="deleting"
+            @click="confirmDeleteUser"
+          >
+            Eliminar permanentemente
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Confirmación remover rol -->
     <AlertDialog :open="!!pendingRemoveRole" @update:open="(v) => { if (!v) pendingRemoveRole = null }">
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -406,30 +600,6 @@ function getInitials(user: UserWithRoles): string {
       </AlertDialogContent>
     </AlertDialog>
 
-    <!-- Confirmación eliminar usuario -->
-    <AlertDialog :open="!!pendingDeleteUser" @update:open="(v) => { if (!v) pendingDeleteUser = null }">
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Se eliminará permanentemente a "{{ pendingDeleteUser?.email }}". Esta acción no se puede deshacer.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel @click="pendingDeleteUser = null">
-            Cancelar
-          </AlertDialogCancel>
-          <AlertDialogAction
-            class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            :disabled="deleting"
-            @click="confirmDeleteUser"
-          >
-            Eliminar
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-
     <!-- Sheet: editar usuario -->
     <Sheet :open="!!editingUserId" @update:open="(v) => { if (!v) editingUserId = null }">
       <SheetContent class="overflow-y-auto">
@@ -438,7 +608,6 @@ function getInitials(user: UserWithRoles): string {
           <SheetDescription>{{ editingUser?.email }}</SheetDescription>
         </SheetHeader>
 
-        <!-- Datos del perfil -->
         <form v-if="editingUser" class="space-y-4 mt-6" @submit="onEditSubmit">
           <FormField v-slot="{ componentField }" name="full_name">
             <FormItem>
@@ -469,7 +638,6 @@ function getInitials(user: UserWithRoles): string {
 
         <Separator class="my-6" />
 
-        <!-- Roles -->
         <div v-if="editingUser" class="space-y-3">
           <p class="text-sm font-medium">
             Roles asignados

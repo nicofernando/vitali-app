@@ -39,6 +39,7 @@ export const useUsersStore = defineStore('users', () => {
           email: u.email as string,
           full_name: u.full_name as string | null,
           phone: u.phone as string | null,
+          is_active: u.is_active !== false,
           roles: rolesByUser.get(u.id) ?? [],
         }))
         .sort((a, b) => {
@@ -108,6 +109,17 @@ export const useUsersStore = defineStore('users', () => {
       user.roles = user.roles.filter(r => r.id !== roleId)
   }
 
+  async function toggleUser(userId: string, enable: boolean) {
+    const { error: fnError } = await supabase.functions.invoke('admin-toggle-user', {
+      body: { user_id: userId, enable },
+    })
+    if (fnError)
+      throw fnError
+    const user = users.value.find(u => u.id === userId)
+    if (user)
+      user.is_active = enable
+  }
+
   async function deleteUser(userId: string) {
     const { error: fnError } = await supabase.functions.invoke('admin-delete-user', {
       body: { user_id: userId },
@@ -117,5 +129,5 @@ export const useUsersStore = defineStore('users', () => {
     users.value = users.value.filter(u => u.id !== userId)
   }
 
-  return { users, loading, error, fetchAll, createUser, updateProfile, assignRole, removeRole, deleteUser }
+  return { users, loading, error, fetchAll, createUser, updateProfile, assignRole, removeRole, toggleUser, deleteUser }
 })
