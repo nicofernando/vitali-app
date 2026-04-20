@@ -176,10 +176,11 @@ function handleRemoveRole(userId: string, roleId: string, roleName: string) {
 }
 
 async function confirmRemoveRole() {
-  if (!pendingRemoveRole.value)
-    return
-  const { userId, roleId, roleName } = pendingRemoveRole.value
+  const pending = pendingRemoveRole.value
   pendingRemoveRole.value = null
+  if (!pending)
+    return
+  const { userId, roleId, roleName } = pending
   assigning.value[userId] = true
   try {
     await usersStore.removeRole(userId, roleId)

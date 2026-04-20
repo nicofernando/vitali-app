@@ -73,17 +73,16 @@ function deleteTypology(typology: Typology) {
 }
 
 async function confirmDeleteTypology() {
-  if (!pendingDeleteTypology.value)
+  const typology = pendingDeleteTypology.value
+  pendingDeleteTypology.value = null
+  if (!typology)
     return
   try {
-    await typologiesStore.remove(pendingDeleteTypology.value.id)
+    await typologiesStore.remove(typology.id)
     toast.success('Tipología eliminada')
   }
   catch {
     toast.error('Error al eliminar la tipología')
-  }
-  finally {
-    pendingDeleteTypology.value = null
   }
 }
 
