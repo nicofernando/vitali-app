@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted } from 'vue'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -59,7 +59,7 @@ const showSmartParams = computed(() => creditType.value === 'smart' || creditTyp
 const balloonError = computed(() => {
   if (!showSmartParams.value) return null
   const balloon = 100 - piePercentage.value - smartCuotasPercentage.value
-  if (balloon <= 0) return `La suma de PIE (${piePercentage.value}%) + cuotas (${smartCuotasPercentage.value}%) no puede superar 99%`
+  if (balloon < 1) return `La suma de PIE (${piePercentage.value}%) + cuotas (${smartCuotasPercentage.value}%) no puede superar 99%`
   return null
 })
 
@@ -80,23 +80,22 @@ onMounted(async () => {
     await unitsStore.fetchByTower(selectedTowerId.value)
 })
 
-watch(selectedProject, (project) => {
-  if (!project)
-    return
-  if (project.french_credit_enabled && project.smart_credit_enabled)
-    creditType.value = 'both'
-  else if (project.french_credit_enabled)
-    creditType.value = 'french'
-  else
-    creditType.value = 'smart'
-})
-
 function onProjectChange(value: unknown) {
   selectedProjectId.value = value as string
   selectedTowerId.value = ''
   selectedUnitId.value = ''
-  unitsStore.units = []
+  unitsStore.clearUnits()
   simulatorStore.clearResult()
+  const project = projects.value.find(p => p.id === selectedProjectId.value)
+  if (project) {
+    if (project.french_credit_enabled && project.smart_credit_enabled)
+      creditType.value = 'both'
+    else if (project.french_credit_enabled)
+      creditType.value = 'french'
+    else if (project.smart_credit_enabled)
+      creditType.value = 'smart'
+    // Si ningún crédito está habilitado, no cambiar creditType
+  }
   if (selectedProjectId.value)
     towersStore.fetchByProject(selectedProjectId.value)
 }
@@ -121,9 +120,16 @@ function onUnitChange(value: unknown) {
   simulatorStore.clearResult()
 }
 
+function onCreditTypeChange(value: unknown) {
+  creditType.value = value as 'french' | 'smart' | 'both'
+  simulatorStore.clearResult()
+  if (value === 'french')
+    smartCuotasPercentage.value = 30
+}
+
 function handleReset() {
-  towersStore.towers = []
-  unitsStore.units = []
+  towersStore.clearTowers()
+  unitsStore.clearUnits()
   simulatorStore.reset()
 }
 
@@ -314,7 +320,7 @@ function formatCurrency(amount: number, symbol = '$') {
 
           <div class="space-y-2">
             <Label>Tipo de crédito</Label>
-            <Select v-model="creditType">
+            <Select :model-value="creditType" @update:model-value="onCreditTypeChange">
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -354,8 +360,8 @@ function formatCurrency(amount: number, symbol = '$') {
                 {{ balloonError }}
               </p>
               <p v-else class="text-xs text-muted-foreground">
-                Balloon = {{ 100 - piePercentage - smartCuotasPercentage }}%
-                ({{ formatCurrency(selectedUnit.list_price * (100 - piePercentage - smartCuotasPercentage) / 100, selectedProject?.currency?.symbol) }})
+                Balloon = {{ Math.max(0, 100 - piePercentage - smartCuotasPercentage) }}%
+                ({{ formatCurrency(selectedUnit.list_price * Math.max(0, 100 - piePercentage - smartCuotasPercentage) / 100, selectedProject?.currency?.symbol) }})
               </p>
             </div>
           </div>
@@ -413,10 +419,10 @@ function formatCurrency(amount: number, symbol = '$') {
                 Cuota mensual
               </p>
               <p class="text-3xl font-bold font-heading text-primary">
-                {{ formatCurrency(result.french.monthly_payment, result.project.currency.symbol) }}
+                {{ formatCurrency(result.french.monthly_payment, result.project.currency?.symbol ?? '$') }}
               </p>
               <p class="text-xs text-muted-foreground mt-1">
-                {{ result.project.currency.code }}
+                {{ result.project.currency?.code ?? '' }}
               </p>
             </div>
             <Separator />
@@ -426,7 +432,7 @@ function formatCurrency(amount: number, symbol = '$') {
                   Plazo
                 </p>
                 <p class="font-medium">
-                  {{ termYears }} años ({{ result.french.term_months }} cuotas)
+                  {{ Math.round(result.french.term_months / 12) }} años ({{ result.french.term_months }} cuotas)
                 </p>
               </div>
               <div>
@@ -442,7 +448,7 @@ function formatCurrency(amount: number, symbol = '$') {
                   Total pagado
                 </p>
                 <p class="font-medium">
-                  {{ formatCurrency(result.french.total_paid, result.project.currency.symbol) }}
+                  {{ formatCurrency(result.french.total_paid, result.project.currency?.symbol ?? '$') }}
                 </p>
               </div>
               <div>
@@ -450,7 +456,7 @@ function formatCurrency(amount: number, symbol = '$') {
                   Intereses totales
                 </p>
                 <p class="font-medium">
-                  {{ formatCurrency(result.french.total_paid - result.financing_amount, result.project.currency.symbol) }}
+                  {{ formatCurrency(result.french.total_paid - result.french.financing_amount, result.project.currency?.symbol ?? '$') }}
                 </p>
               </div>
             </div>
@@ -470,7 +476,7 @@ function formatCurrency(amount: number, symbol = '$') {
                   Cuotas (meses 1–{{ result.smart.term_months - 1 }})
                 </p>
                 <p class="text-2xl font-bold font-heading text-primary">
-                  {{ formatCurrency(result.smart.cuotas_payment, result.project.currency.symbol) }}
+                  {{ formatCurrency(result.smart.cuotas_payment, result.project.currency?.symbol ?? '$') }}
                 </p>
               </div>
               <div>
@@ -478,7 +484,7 @@ function formatCurrency(amount: number, symbol = '$') {
                   Cuota final (mes {{ result.smart.term_months }})
                 </p>
                 <p class="text-2xl font-bold font-heading">
-                  {{ formatCurrency(result.smart.balloon_payment, result.project.currency.symbol) }}
+                  {{ formatCurrency(result.smart.balloon_payment, result.project.currency?.symbol ?? '$') }}
                 </p>
               </div>
             </div>
@@ -505,7 +511,7 @@ function formatCurrency(amount: number, symbol = '$') {
                   Total pagado
                 </p>
                 <p class="font-medium">
-                  {{ formatCurrency(result.smart.total_paid, result.project.currency.symbol) }}
+                  {{ formatCurrency(result.smart.total_paid, result.project.currency?.symbol ?? '$') }}
                 </p>
               </div>
               <div>
@@ -513,7 +519,7 @@ function formatCurrency(amount: number, symbol = '$') {
                   Plazo
                 </p>
                 <p class="font-medium">
-                  {{ termYears }} años
+                  {{ Math.round(result.smart.term_months / 12) }} años
                 </p>
               </div>
             </div>

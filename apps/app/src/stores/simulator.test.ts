@@ -1,12 +1,10 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { CalculateQuoteResponse } from '@/types'
 import { useSimulatorStore } from './simulator'
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    auth: {
-      getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'fake-token' } } }),
-    },
     functions: { invoke: vi.fn() },
   },
 }))
@@ -46,7 +44,6 @@ describe('useSimulatorStore', () => {
 
     expect(supabase.functions.invoke).toHaveBeenCalledWith('calculate-quote', {
       body: { unit_id: 'u1', pie_percentage: 20, term_years: 20, credit_type: 'french' },
-      headers: { Authorization: 'Bearer fake-token' },
     })
     expect(store.result).toEqual(fakeResult)
     expect(store.loading).toBe(false)
@@ -73,7 +70,7 @@ describe('useSimulatorStore', () => {
     store.selectedProjectId = 'p1'
     store.selectedTowerId = 't1'
     store.selectedUnitId = 'u1'
-    store.result = { unit: { id: 'u1' } } as unknown as typeof store.result
+    store.result = { unit: { id: 'u1' } } as CalculateQuoteResponse
     store.error = 'Error previo'
 
     store.clearResult()
@@ -94,7 +91,7 @@ describe('useSimulatorStore', () => {
     store.termYears = 15
     store.creditType = 'french'
     store.smartCuotasPercentage = 50
-    store.result = { unit: { id: 'u1' } } as unknown as typeof store.result
+    store.result = { unit: { id: 'u1' } } as CalculateQuoteResponse
     store.error = 'Error previo'
 
     store.reset()

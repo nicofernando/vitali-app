@@ -80,7 +80,7 @@ const filteredUnits = computed(() =>
       return false
     if (filterTypologyId.value && u.typology_id !== filterTypologyId.value)
       return false
-    if (filterFloor.value) {
+    if (filterFloor.value && filterFloor.value.trim() !== '') {
       const f = Number(filterFloor.value)
       if (!Number.isNaN(f) && u.floor !== f)
         return false
@@ -221,7 +221,7 @@ function formatPrice(amount: number, symbol = '$') {
 
       <div class="space-y-1.5 w-24">
         <Label class="text-xs text-muted-foreground">Piso</Label>
-        <Input v-model="filterFloor" type="number" placeholder="Todos" class="h-9" min="1" />
+        <Input v-model="filterFloor" type="number" placeholder="Todos" class="h-9" min="0" />
       </div>
 
       <div class="space-y-1.5 min-w-[160px]">
@@ -229,13 +229,15 @@ function formatPrice(amount: number, symbol = '$') {
         <Input v-model="filterSearch" placeholder="Buscar..." class="h-9" />
       </div>
 
-      <button
+      <Button
         v-if="hasActiveFilters"
-        class="h-9 px-2 text-sm text-muted-foreground hover:text-foreground transition-colors self-end"
+        variant="ghost"
+        size="sm"
+        class="self-end"
         @click="clearFilters"
       >
         Limpiar
-      </button>
+      </Button>
     </div>
 
     <!-- Error -->
@@ -363,7 +365,7 @@ function formatPrice(amount: number, symbol = '$') {
     <!-- Paginación -->
     <div v-if="!loadingAll" class="flex items-center justify-between">
       <p class="text-sm text-muted-foreground">
-        {{ pageRangeLabel }} departamentos
+        {{ pageRangeLabel }}
       </p>
       <div v-if="totalPages > 1" class="flex items-center gap-1">
         <Button

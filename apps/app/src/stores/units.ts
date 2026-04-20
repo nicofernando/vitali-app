@@ -60,6 +60,11 @@ export const useUnitsStore = defineStore('units', () => {
     }
   }
 
+  function clearUnits() {
+    units.value = []
+    currentTowerId.value = null
+  }
+
   async function create(payload: UnitInsert) {
     loading.value = true
     error.value = null
@@ -72,6 +77,8 @@ export const useUnitsStore = defineStore('units', () => {
       if (err)
         throw err
       units.value.unshift(data as unknown as Unit)
+      if (allUnits.value.length > 0)
+        allUnits.value = []
       return data as unknown as Unit
     }
     catch (err) {
@@ -98,6 +105,8 @@ export const useUnitsStore = defineStore('units', () => {
       const idx = units.value.findIndex(u => u.id === id)
       if (idx !== -1)
         units.value[idx] = data as unknown as Unit
+      if (allUnits.value.length > 0)
+        allUnits.value = []
       return data as unknown as Unit
     }
     catch (err) {
@@ -120,6 +129,7 @@ export const useUnitsStore = defineStore('units', () => {
       if (err)
         throw err
       units.value = units.value.filter(u => u.id !== id)
+      allUnits.value = allUnits.value.filter(u => u.id !== id)
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al eliminar departamento')
@@ -130,5 +140,5 @@ export const useUnitsStore = defineStore('units', () => {
     }
   }
 
-  return { units, allUnits, currentTowerId, loading, loadingAll, error, fetchAll, fetchByTower, create, update, remove }
+  return { units, allUnits, currentTowerId, loading, loadingAll, error, fetchAll, fetchByTower, clearUnits, create, update, remove }
 })

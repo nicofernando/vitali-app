@@ -12,6 +12,11 @@ export const useTowersStore = defineStore('towers', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
+  function clearTowers() {
+    towers.value = []
+    currentProjectId.value = null
+  }
+
   async function fetchByProject(projectId: string) {
     loading.value = true
     error.value = null
@@ -105,5 +110,5 @@ export const useTowersStore = defineStore('towers', () => {
     }
   }
 
-  return { towers, currentProjectId, loading, error, fetchByProject, create, update, remove }
+  return { towers, currentProjectId, loading, error, clearTowers, fetchByProject, create, update, remove }
 })

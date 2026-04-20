@@ -49,7 +49,7 @@ const navItems: NavItem[] = [
   { name: 'Proyectos', to: '/projects', icon: Building2, permission: 'projects.read' },
   { name: 'Tipologías', to: '/typologies', icon: Layers, permission: 'typologies.read' },
   { name: 'Cotizador', to: '/simulator', icon: Calculator, permission: 'simulator.use' },
-  { name: 'Stock', to: '/stock', icon: LayoutList, permission: 'projects.read' },
+  { name: 'Stock', to: '/stock', icon: LayoutList, permission: 'units.read' },
   { name: 'Cotizaciones', to: '/quotes', icon: FileText, permission: 'quotes.read', comingSoon: true },
   { name: 'Clientes', to: '/clients', icon: Contact, permission: 'clients.read', comingSoon: true },
   { name: 'Monedas', to: '/currencies', icon: Coins, permission: 'settings.read' },
@@ -64,7 +64,7 @@ const visibleItems = computed(() =>
 )
 
 function isActive(to: string) {
-  return to === '/' ? route.path === '/' : route.path.startsWith(to)
+  return to === '/' ? route.path === '/' : route.path === to || route.path.startsWith(to + '/')
 }
 
 function handleNavClick() {

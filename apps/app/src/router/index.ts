@@ -51,7 +51,7 @@ const router = createRouter({
           path: 'stock',
           name: 'stock',
           component: () => import('@/views/stock/StockView.vue'),
-          meta: { permission: 'projects.read' },
+          meta: { permission: 'units.read' },
         },
         {
           path: 'currencies',

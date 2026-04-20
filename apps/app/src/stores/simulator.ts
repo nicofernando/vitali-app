@@ -20,16 +20,14 @@ export const useSimulatorStore = defineStore('simulator', () => {
   const error = ref<string | null>(null)
 
   async function calculate(request: CalculateQuoteRequest) {
+    if (loading.value)
+      return
     loading.value = true
     error.value = null
     result.value = null
     try {
-      const { data: { session } } = await supabase.auth.getSession()
       const { data, error: fnError } = await supabase.functions.invoke('calculate-quote', {
         body: request,
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
       })
       if (fnError)
         throw fnError
