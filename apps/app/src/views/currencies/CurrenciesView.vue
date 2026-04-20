@@ -95,17 +95,16 @@ const onSubmit = handleSubmit(async (values) => {
 })
 
 async function confirmDelete() {
-  if (!pendingDelete.value)
+  const pending = pendingDelete.value
+  pendingDelete.value = null
+  if (!pending)
     return
   try {
-    await currenciesStore.remove(pendingDelete.value.id)
+    await currenciesStore.remove(pending.id)
     toast.success('Moneda eliminada')
   }
   catch {
     toast.error('No se puede eliminar — puede estar en uso por algún proyecto')
-  }
-  finally {
-    pendingDelete.value = null
   }
 }
 </script>

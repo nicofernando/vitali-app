@@ -139,16 +139,15 @@ function deleteUnit(unit: Unit) {
 }
 
 async function handleConfirmDelete() {
-  if (!pendingDelete.value)
+  const pending = pendingDelete.value
+  pendingDelete.value = null
+  if (!pending)
     return
   try {
-    await pendingDelete.value.onConfirm()
+    await pending.onConfirm()
   }
   catch (err) {
     toast.error(err instanceof Error ? err.message : 'Error al eliminar')
-  }
-  finally {
-    pendingDelete.value = null
   }
 }
 </script>
