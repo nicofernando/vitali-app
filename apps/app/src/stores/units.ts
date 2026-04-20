@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
 
 const SELECT_FIELDS = 'id, tower_id, typology_id, unit_number, floor, list_price, created_at, typology:typologies(id, name, surface_m2)'
-const SELECT_ALL_FIELDS = 'id, tower_id, typology_id, unit_number, floor, list_price, created_at, typology:typologies(id, name, surface_m2), tower:towers(id, name, project:projects(id, name, currency:currencies(id, code, symbol)))'
+const SELECT_ALL_FIELDS = 'id, tower_id, typology_id, unit_number, floor, list_price, created_at, typology:typologies(id, name, surface_m2), tower:towers(id, name, project:projects(id, name, currency:currencies(id, code, symbol, decimal_places)))'
 
 export const useUnitsStore = defineStore('units', () => {
   const units = ref<Unit[]>([])

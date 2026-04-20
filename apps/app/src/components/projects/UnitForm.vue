@@ -53,7 +53,7 @@ const schema = toTypedSchema(z.object({
   unit_number: z.string().min(1, 'El número es requerido'),
   floor: z.number().int().nullable().optional(),
   typology_id: z.string().uuid('Seleccioná una tipología'),
-  list_price: z.number().positive('El precio debe ser mayor a 0'),
+  list_price: z.coerce.number().positive('El precio debe ser mayor a 0'),
 }))
 
 const { handleSubmit, resetForm } = useForm({ validationSchema: schema })
@@ -153,7 +153,7 @@ const onSubmit = handleSubmit(async (values) => {
               </FormControl>
               <SelectContent>
                 <SelectItem v-for="t in typologies" :key="t.id" :value="t.id">
-                  {{ t.name }} — {{ t.surface_m2 }} m²
+                  {{ t.name }} — {{ Number(t.surface_m2).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} m²
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -171,8 +171,6 @@ const onSubmit = handleSubmit(async (values) => {
                 :step="priceStep"
                 :placeholder="(props.decimalPlaces ?? 2) === 0 ? 'Ej: 5000000' : 'Ej: 2455.50'"
                 v-bind="componentField"
-                :value="componentField.modelValue"
-                @input="componentField['onUpdate:modelValue']?.(parseFloat(($event.target as HTMLInputElement).value))"
               />
             </FormControl>
             <FormMessage />

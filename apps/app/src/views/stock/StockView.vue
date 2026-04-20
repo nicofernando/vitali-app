@@ -167,8 +167,12 @@ function clearFilters() {
   filterSearch.value = ''
 }
 
-function formatPrice(amount: number, symbol = '$') {
-  return `${symbol} ${amount.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+function formatPrice(amount: number, symbol = '$', decimalPlaces = 0) {
+  return `${symbol} ${amount.toLocaleString('es-CL', { minimumFractionDigits: decimalPlaces, maximumFractionDigits: decimalPlaces })}`
+}
+
+function formatSurface(value: number | string) {
+  return `${Number(value).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`
 }
 </script>
 
@@ -351,10 +355,10 @@ function formatPrice(amount: number, symbol = '$') {
             <TableCell>{{ unit.unit_number }}</TableCell>
             <TableCell>{{ unit.typology?.name ?? '—' }}</TableCell>
             <TableCell class="text-right">
-              {{ unit.typology?.surface_m2 ? `${unit.typology.surface_m2} m²` : '—' }}
+              {{ unit.typology?.surface_m2 ? formatSurface(unit.typology.surface_m2) : '—' }}
             </TableCell>
             <TableCell class="text-right font-medium">
-              {{ formatPrice(unit.list_price, unit.tower.project.currency.symbol) }}
+              {{ formatPrice(unit.list_price, unit.tower.project.currency.symbol, unit.tower.project.currency.decimal_places) }}
               <span class="text-xs text-muted-foreground ml-1">{{ unit.tower.project.currency.code }}</span>
             </TableCell>
           </TableRow>

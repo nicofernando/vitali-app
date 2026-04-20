@@ -157,7 +157,7 @@ const onSubmit = handleSubmit(async (values) => {
               <TableCell class="font-medium">
                 {{ typology.name }}
               </TableCell>
-              <TableCell>{{ typology.surface_m2 }}</TableCell>
+              <TableCell>{{ Number(typology.surface_m2).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</TableCell>
               <TableCell>{{ typology.description ?? '—' }}</TableCell>
               <TableCell class="text-right">
                 <div class="flex justify-end gap-2">

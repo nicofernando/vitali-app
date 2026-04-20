@@ -73,7 +73,7 @@ export interface UnitWithContext extends Unit {
     id: string
     name: string
     project: Pick<Project, 'id' | 'name'> & {
-      currency: Pick<Currency, 'id' | 'code' | 'symbol'>
+      currency: Pick<Currency, 'id' | 'code' | 'symbol' | 'decimal_places'>
     }
   }
 }
