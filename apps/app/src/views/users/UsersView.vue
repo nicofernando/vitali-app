@@ -84,8 +84,6 @@ onMounted(async () => {
 })
 
 // ── Formulario crear usuario ──────────────────────────────────
-const createFormRef = ref<InstanceType<typeof CreateUserForm> | null>(null)
-
 function openCreate() {
   showCreateSheet.value = true
 }
@@ -349,7 +347,6 @@ function getInitials(user: UserWithRoles): string {
         </SheetHeader>
 
         <CreateUserForm
-          ref="createFormRef"
           :loading="creating"
           @submit="handleCreateSubmit"
           @cancel="showCreateSheet = false"
