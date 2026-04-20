@@ -80,7 +80,7 @@ const filteredUnits = computed(() =>
       return false
     if (filterTypologyId.value && u.typology_id !== filterTypologyId.value)
       return false
-    if (filterFloor.value && filterFloor.value.trim() !== '') {
+    if (filterFloor.value !== '' && filterFloor.value !== null && filterFloor.value !== undefined) {
       const f = Number(filterFloor.value)
       if (!Number.isNaN(f) && u.floor !== f)
         return false
