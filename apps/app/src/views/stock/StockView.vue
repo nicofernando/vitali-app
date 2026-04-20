@@ -67,7 +67,9 @@ const projectOptions = computed(() => {
     if (!seen.has(u.tower.project.id))
       seen.set(u.tower.project.id, u.tower.project.name)
   }
-  return [...seen.entries()].map(([id, name]) => ({ id, name }))
+  return [...seen.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
 })
 
 // Opciones de torre: solo las que pertenecen al proyecto filtrado (o todas si no hay filtro)
@@ -79,7 +81,9 @@ const towerOptions = computed(() => {
     if (!seen.has(u.tower.id))
       seen.set(u.tower.id, u.tower.name)
   }
-  return [...seen.entries()].map(([id, name]) => ({ id, name }))
+  return [...seen.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
 })
 
 const typologyOptions = computed(() => {
@@ -88,7 +92,9 @@ const typologyOptions = computed(() => {
     if (u.typology && !seen.has(u.typology.id))
       seen.set(u.typology.id, u.typology.name)
   }
-  return [...seen.entries()].map(([id, name]) => ({ id, name }))
+  return [...seen.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
 })
 
 const hasActiveFilters = computed(() =>

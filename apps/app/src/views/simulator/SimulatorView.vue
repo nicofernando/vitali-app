@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import FilterCombobox from '@/components/ui/filter-combobox/FilterCombobox.vue'
 import {
   Select,
   SelectContent,
@@ -43,6 +44,25 @@ const {
 const { projects, loading: loadingProjects } = storeToRefs(projectsStore)
 const { towers, loading: loadingTowers } = storeToRefs(towersStore)
 const { units, loading: loadingUnits } = storeToRefs(unitsStore)
+
+// Opciones para comboboxes, con orden numérico para que "Torre 10" venga después de "Torre 2"
+const projectOptions = computed(() =>
+  [...projects.value]
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+    .map(p => ({ id: p.id, name: p.name })),
+)
+
+const towerOptions = computed(() =>
+  [...towers.value]
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+    .map(t => ({ id: t.id, name: t.name })),
+)
+
+const unitOptions = computed(() =>
+  [...units.value]
+    .sort((a, b) => a.unit_number.localeCompare(b.unit_number, undefined, { numeric: true }))
+    .map(u => ({ id: u.id, name: `Dpto ${u.unit_number}${u.floor ? ` — Piso ${u.floor}` : ''}` })),
+)
 
 const selectedProject = computed(() => projects.value.find(p => p.id === selectedProjectId.value) ?? null)
 const selectedTower = computed(() => towers.value.find(t => t.id === selectedTowerId.value) ?? null)
@@ -81,8 +101,8 @@ onMounted(async () => {
     await unitsStore.fetchByTower(selectedTowerId.value)
 })
 
-function onProjectChange(value: unknown) {
-  selectedProjectId.value = value as string
+function onProjectChange(value: string) {
+  selectedProjectId.value = value
   selectedTowerId.value = ''
   selectedUnitId.value = ''
   unitsStore.clearUnits()
@@ -102,8 +122,8 @@ function onProjectChange(value: unknown) {
     towersStore.fetchByProject(selectedProjectId.value)
 }
 
-function onTowerChange(value: unknown) {
-  selectedTowerId.value = value as string
+function onTowerChange(value: string) {
+  selectedTowerId.value = value
   selectedUnitId.value = ''
   simulatorStore.clearResult()
 
@@ -117,8 +137,8 @@ function onTowerChange(value: unknown) {
   }
 }
 
-function onUnitChange(value: unknown) {
-  selectedUnitId.value = value as string
+function onUnitChange(value: string) {
+  selectedUnitId.value = value
   simulatorStore.clearResult()
 }
 
@@ -179,54 +199,40 @@ function formatCurrency(amount: number, symbol = '$') {
           <!-- Proyecto -->
           <div class="space-y-2">
             <Label>Proyecto</Label>
-            <Select :model-value="selectedProjectId" :disabled="loadingProjects" @update:model-value="onProjectChange">
-              <SelectTrigger>
-                <SelectValue :placeholder="loadingProjects ? 'Cargando...' : 'Seleccioná el proyecto'" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="p in projects" :key="p.id" :value="p.id">
-                  {{ p.name }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <FilterCombobox
+              :model-value="selectedProjectId"
+              :options="projectOptions"
+              :disabled="loadingProjects"
+              :placeholder="loadingProjects ? 'Cargando...' : 'Seleccioná el proyecto'"
+              all-label="Sin selección..."
+              @update:model-value="onProjectChange"
+            />
           </div>
 
           <!-- Torre -->
           <div class="space-y-2">
             <Label>Torre</Label>
-            <Select
+            <FilterCombobox
               :model-value="selectedTowerId"
+              :options="towerOptions"
               :disabled="!selectedProjectId || loadingTowers"
+              :placeholder="!selectedProjectId ? 'Primero seleccioná proyecto' : loadingTowers ? 'Cargando...' : 'Seleccioná la torre'"
+              all-label="Ninguna..."
               @update:model-value="onTowerChange"
-            >
-              <SelectTrigger>
-                <SelectValue :placeholder="!selectedProjectId ? 'Primero seleccioná proyecto' : loadingTowers ? 'Cargando...' : 'Seleccioná la torre'" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="t in towers" :key="t.id" :value="t.id">
-                  {{ t.name }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            />
           </div>
 
           <!-- Departamento -->
           <div class="space-y-2">
             <Label>Departamento</Label>
-            <Select
+            <FilterCombobox
               :model-value="selectedUnitId"
+              :options="unitOptions"
               :disabled="!selectedTowerId || loadingUnits"
+              :placeholder="!selectedTowerId ? 'Primero seleccioná torre' : loadingUnits ? 'Cargando...' : 'Seleccioná el depto'"
+              all-label="Ninguno..."
               @update:model-value="onUnitChange"
-            >
-              <SelectTrigger>
-                <SelectValue :placeholder="!selectedTowerId ? 'Primero seleccioná torre' : loadingUnits ? 'Cargando...' : 'Seleccioná el depto'" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="u in units" :key="u.id" :value="u.id">
-                  Dpto {{ u.unit_number }}{{ u.floor ? ` — Piso ${u.floor}` : '' }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            />
           </div>
         </div>
 
