@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -70,6 +70,8 @@ const canCalculate = computed(() =>
   && !balloonError.value
   && termYears.value > 0,
 )
+
+onUnmounted(() => simulatorStore.reset())
 
 onMounted(async () => {
   await projectsStore.fetchAll()
