@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -36,14 +43,15 @@ const sortDir = ref<'asc' | 'desc'>('asc')
 
 // Paginación
 const currentPage = ref(1)
+const limit = ref(25)
 
 onMounted(() => {
   if (allUnitsDirty.value || allUnits.value.length === 0)
     unitsStore.fetchAll()
 })
 
-// Reset de página al cambiar filtros u orden
-watch([filterProjectId, filterTowerId, filterTypologyId, filterFloor, filterSearch, sortKey, sortDir], () => {
+// Reset de página al cambiar filtros, orden o límite
+watch([filterProjectId, filterTowerId, filterTypologyId, filterFloor, filterSearch, sortKey, sortDir, limit], () => {
   currentPage.value = 1
 })
 
@@ -153,18 +161,18 @@ const sortedUnits = computed(() => {
   })
 })
 
-const totalPages = computed(() => Math.max(1, Math.ceil(sortedUnits.value.length / PAGE_SIZE)))
+const totalPages = computed(() => Math.max(1, Math.ceil(sortedUnits.value.length / limit.value)))
 
 const paginatedUnits = computed(() => {
-  const start = (currentPage.value - 1) * PAGE_SIZE
-  return sortedUnits.value.slice(start, start + PAGE_SIZE)
+  const start = (currentPage.value - 1) * limit.value
+  return sortedUnits.value.slice(start, start + limit.value)
 })
 
 const pageRangeLabel = computed(() => {
   const total = sortedUnits.value.length
   if (total === 0) return '0 departamentos'
-  const start = (currentPage.value - 1) * PAGE_SIZE + 1
-  const end = Math.min(currentPage.value * PAGE_SIZE, total)
+  const start = (currentPage.value - 1) * limit.value + 1
+  const end = Math.min(currentPage.value * limit.value, total)
   return `${start}–${end} de ${total}`
 })
 
@@ -394,10 +402,27 @@ function formatSurface(value: number | string) {
     </div>
 
     <!-- Paginación -->
-    <div v-if="!loadingAll" class="flex items-center justify-between">
-      <p class="text-sm text-muted-foreground">
-        {{ pageRangeLabel }}
-      </p>
+    <div v-if="!loadingAll" class="flex items-center justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-4">
+        <p class="text-sm text-muted-foreground">
+          {{ pageRangeLabel }}
+        </p>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-muted-foreground">Filas por página:</span>
+          <Select :model-value="String(limit)" @update:model-value="v => limit = Number(v)">
+            <SelectTrigger class="h-8 w-[70px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+              <SelectItem value="500">500</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      
       <div v-if="totalPages > 1" class="flex items-center gap-1">
         <Button
           variant="outline"
