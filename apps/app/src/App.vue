@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
@@ -11,4 +12,5 @@ onMounted(async () => {
 
 <template>
   <RouterView />
+  <Toaster />
 </template>

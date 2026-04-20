@@ -1,7 +1,10 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
 import type { Session, User } from '@supabase/supabase-js'
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { usePermissionsStore } from '@/stores/permissions'
+
+let _subscription: { unsubscribe: () => void } | null = null
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -16,10 +19,13 @@ export const useAuthStore = defineStore('auth', () => {
     session.value = data.session
     user.value = data.session?.user ?? null
 
-    supabase.auth.onAuthStateChange((_event, newSession) => {
-      session.value = newSession
-      user.value = newSession?.user ?? null
-    })
+    if (!_subscription) {
+      const { data: listenerData } = supabase.auth.onAuthStateChange((_event, newSession) => {
+        session.value = newSession
+        user.value = newSession?.user ?? null
+      })
+      _subscription = listenerData.subscription
+    }
   }
 
   async function login(email: string, password: string) {
@@ -30,7 +36,8 @@ export const useAuthStore = defineStore('auth', () => {
         email,
         password,
       })
-      if (authError) throw authError
+      if (authError)
+        throw authError
       session.value = data.session
       user.value = data.user
     }
@@ -44,6 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
+    usePermissionsStore().reset()
     await supabase.auth.signOut()
     session.value = null
     user.value = null

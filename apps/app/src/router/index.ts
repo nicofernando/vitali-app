@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionsStore } from '@/stores/permissions'
-import { supabase } from '@/lib/supabase'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -28,6 +28,42 @@ const router = createRouter({
           path: '',
           name: 'dashboard',
           component: () => import('@/views/DashboardView.vue'),
+        },
+        {
+          path: 'projects',
+          name: 'projects',
+          component: () => import('@/views/projects/ProjectsView.vue'),
+          meta: { permission: 'projects.read' },
+        },
+        {
+          path: 'typologies',
+          name: 'typologies',
+          component: () => import('@/views/projects/TypologiesView.vue'),
+          meta: { permission: 'typologies.read' },
+        },
+        {
+          path: 'simulator',
+          name: 'simulator',
+          component: () => import('@/views/simulator/SimulatorView.vue'),
+          meta: { permission: 'simulator.use' },
+        },
+        {
+          path: 'stock',
+          name: 'stock',
+          component: () => import('@/views/stock/StockView.vue'),
+          meta: { permission: 'units.read' },
+        },
+        {
+          path: 'currencies',
+          name: 'currencies',
+          component: () => import('@/views/currencies/CurrenciesView.vue'),
+          meta: { permission: 'settings.read' },
+        },
+        {
+          path: 'users',
+          name: 'users',
+          component: () => import('@/views/users/UsersView.vue'),
+          meta: { permission: 'users.read' },
         },
       ],
     },
@@ -60,7 +96,13 @@ router.beforeEach(async (to) => {
   if (to.meta.permission && authStore.user) {
     const permStore = usePermissionsStore()
     if (!permStore.loaded) {
-      await permStore.load(authStore.user.id)
+      try {
+        await permStore.load(authStore.user.id)
+      }
+      catch {
+        // If load fails, deny access rather than crashing navigation
+        return { name: 'dashboard' }
+      }
     }
     if (!permStore.can(to.meta.permission)) {
       return { name: 'dashboard' }
