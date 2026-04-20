@@ -384,13 +384,6 @@ function formatCurrency(amount: number, symbol = '$') {
       </CardContent>
     </Card>
 
-    <!-- Nueva simulación -->
-    <div v-if="result" class="flex justify-end">
-      <Button variant="outline" @click="handleReset">
-        Nueva simulación
-      </Button>
-    </div>
-
     <!-- Skeleton mientras calcula -->
     <template v-if="calculating">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -526,6 +519,13 @@ function formatCurrency(amount: number, symbol = '$') {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      <!-- Nueva cotización — al final del flujo -->
+      <div class="flex justify-end pt-2">
+        <Button variant="outline" @click="handleReset">
+          Nueva cotización
+        </Button>
       </div>
     </template>
   </div>
