@@ -133,8 +133,16 @@ const filteredUnits = computed(() =>
 )
 
 const sortedUnits = computed(() => {
-  if (!sortKey.value)
-    return filteredUnits.value
+  if (!sortKey.value) {
+    // Por defecto: orden natural anidado (Proyecto > Torre > Depto)
+    return [...filteredUnits.value].sort((a, b) => {
+      const p = a.tower.project.name.localeCompare(b.tower.project.name, undefined, { numeric: true })
+      if (p !== 0) return p
+      const t = a.tower.name.localeCompare(b.tower.name, undefined, { numeric: true })
+      if (t !== 0) return t
+      return a.unit_number.localeCompare(b.unit_number, undefined, { numeric: true })
+    })
+  }
 
   return [...filteredUnits.value].sort((a, b) => {
     let av: string | number | null = null
