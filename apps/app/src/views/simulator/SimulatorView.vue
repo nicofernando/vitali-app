@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -31,17 +31,18 @@ const towersStore = useTowersStore()
 const unitsStore = useUnitsStore()
 
 const { result, loading: calculating, error: calcError } = storeToRefs(simulatorStore)
+const {
+  selectedProjectId,
+  selectedTowerId,
+  selectedUnitId,
+  piePercentage,
+  termYears,
+  creditType,
+  smartCuotasPercentage,
+} = storeToRefs(simulatorStore)
 const { projects, loading: loadingProjects } = storeToRefs(projectsStore)
 const { towers, loading: loadingTowers } = storeToRefs(towersStore)
 const { units, loading: loadingUnits } = storeToRefs(unitsStore)
-
-const selectedProjectId = ref<string>('')
-const selectedTowerId = ref<string>('')
-const selectedUnitId = ref<string>('')
-const piePercentage = ref<number>(20)
-const termYears = ref<number>(20)
-const creditType = ref<'french' | 'smart' | 'both'>('both')
-const smartCuotasPercentage = ref<number>(30)
 
 const selectedProject = computed(() => projects.value.find(p => p.id === selectedProjectId.value) ?? null)
 const selectedTower = computed(() => towers.value.find(t => t.id === selectedTowerId.value) ?? null)
@@ -49,7 +50,9 @@ const selectedUnit = computed(() => units.value.find(u => u.id === selectedUnitI
 
 const minPie = computed(() => selectedTower.value?.min_pie_percentage ?? 0)
 const maxTerm = computed(() => selectedTower.value?.max_financing_years ?? 30)
+
 const pieError = computed(() => piePercentage.value < minPie.value ? `El PIE mínimo es ${minPie.value}%` : null)
+const termError = computed(() => selectedTower.value && termYears.value > maxTerm.value ? `El plazo máximo es ${maxTerm.value} años` : null)
 
 const showSmartParams = computed(() => creditType.value === 'smart' || creditType.value === 'both')
 
@@ -63,11 +66,19 @@ const balloonError = computed(() => {
 const canCalculate = computed(() =>
   selectedUnitId.value
   && !pieError.value
+  && !termError.value
   && !balloonError.value
   && termYears.value > 0,
 )
 
-onMounted(() => projectsStore.fetchAll())
+onMounted(async () => {
+  await projectsStore.fetchAll()
+  // Re-hydrate cascades si hay selección guardada en el store
+  if (selectedProjectId.value)
+    await towersStore.fetchByProject(selectedProjectId.value)
+  if (selectedTowerId.value)
+    await unitsStore.fetchByTower(selectedTowerId.value)
+})
 
 watch(selectedProject, (project) => {
   if (!project)
@@ -81,25 +92,23 @@ watch(selectedProject, (project) => {
 })
 
 function onProjectChange(value: unknown) {
-  const projectId = value as string
-  selectedProjectId.value = projectId
+  selectedProjectId.value = value as string
   selectedTowerId.value = ''
   selectedUnitId.value = ''
   unitsStore.units = []
-  simulatorStore.reset()
-  if (projectId)
-    towersStore.fetchByProject(projectId)
+  simulatorStore.clearResult()
+  if (selectedProjectId.value)
+    towersStore.fetchByProject(selectedProjectId.value)
 }
 
 function onTowerChange(value: unknown) {
-  const towerId = value as string
-  selectedTowerId.value = towerId
+  selectedTowerId.value = value as string
   selectedUnitId.value = ''
-  simulatorStore.reset()
+  simulatorStore.clearResult()
 
-  if (towerId) {
-    unitsStore.fetchByTower(towerId)
-    const tower = towers.value.find(t => t.id === towerId)
+  if (selectedTowerId.value) {
+    unitsStore.fetchByTower(selectedTowerId.value)
+    const tower = towers.value.find(t => t.id === selectedTowerId.value)
     if (tower) {
       piePercentage.value = tower.min_pie_percentage
       termYears.value = tower.max_financing_years
@@ -109,13 +118,10 @@ function onTowerChange(value: unknown) {
 
 function onUnitChange(value: unknown) {
   selectedUnitId.value = value as string
-  simulatorStore.reset()
+  simulatorStore.clearResult()
 }
 
 function handleReset() {
-  selectedProjectId.value = ''
-  selectedTowerId.value = ''
-  selectedUnitId.value = ''
   towersStore.towers = []
   unitsStore.units = []
   simulatorStore.reset()
@@ -299,7 +305,11 @@ function formatCurrency(amount: number, symbol = '$') {
               type="number"
               min="1"
               :max="maxTerm"
+              :class="termError ? 'border-destructive' : ''"
             />
+            <p v-if="termError" class="text-xs text-destructive">
+              {{ termError }}
+            </p>
           </div>
 
           <div class="space-y-2">

@@ -48,6 +48,12 @@ const router = createRouter({
           meta: { permission: 'simulator.use' },
         },
         {
+          path: 'stock',
+          name: 'stock',
+          component: () => import('@/views/stock/StockView.vue'),
+          meta: { permission: 'projects.read' },
+        },
+        {
           path: 'currencies',
           name: 'currencies',
           component: () => import('@/views/currencies/CurrenciesView.vue'),

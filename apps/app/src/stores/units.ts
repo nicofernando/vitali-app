@@ -1,16 +1,40 @@
-import type { Unit, UnitInsert, UnitUpdate } from '@/types'
+import type { Unit, UnitInsert, UnitUpdate, UnitWithContext } from '@/types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
 
 const SELECT_FIELDS = 'id, tower_id, typology_id, unit_number, floor, list_price, created_at, typology:typologies(id, name, surface_m2)'
+const SELECT_ALL_FIELDS = 'id, tower_id, typology_id, unit_number, floor, list_price, created_at, typology:typologies(id, name, surface_m2), tower:towers(id, name, project:projects(id, name, currency:currencies(id, code, symbol)))'
 
 export const useUnitsStore = defineStore('units', () => {
   const units = ref<Unit[]>([])
+  const allUnits = ref<UnitWithContext[]>([])
   const currentTowerId = ref<string | null>(null)
   const loading = ref(false)
+  const loadingAll = ref(false)
   const error = ref<string | null>(null)
+
+  async function fetchAll() {
+    loadingAll.value = true
+    error.value = null
+    try {
+      const { data, error: err } = await supabase
+        .from('units')
+        .select(SELECT_ALL_FIELDS)
+        .order('floor', { ascending: true })
+        .order('unit_number', { ascending: true })
+      if (err)
+        throw err
+      allUnits.value = (data as unknown as UnitWithContext[]) ?? []
+    }
+    catch (err) {
+      error.value = extractErrorMessage(err, 'Error al cargar el stock')
+    }
+    finally {
+      loadingAll.value = false
+    }
+  }
 
   async function fetchByTower(towerId: string) {
     loading.value = true
@@ -106,5 +130,5 @@ export const useUnitsStore = defineStore('units', () => {
     }
   }
 
-  return { units, currentTowerId, loading, error, fetchByTower, create, update, remove }
+  return { units, allUnits, currentTowerId, loading, loadingAll, error, fetchAll, fetchByTower, create, update, remove }
 })

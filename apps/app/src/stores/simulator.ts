@@ -1,13 +1,20 @@
-import type { CalculateQuoteRequest, CalculateQuoteResponse, Project, Tower, Unit } from '@/types'
+import type { CalculateQuoteRequest, CalculateQuoteResponse } from '@/types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
 
 export const useSimulatorStore = defineStore('simulator', () => {
-  const selectedProject = ref<Project | null>(null)
-  const selectedTower = ref<Tower | null>(null)
-  const selectedUnit = ref<Unit | null>(null)
+  // Form state — persists across navigation
+  const selectedProjectId = ref<string>('')
+  const selectedTowerId = ref<string>('')
+  const selectedUnitId = ref<string>('')
+  const piePercentage = ref<number>(20)
+  const termYears = ref<number>(20)
+  const creditType = ref<'french' | 'smart' | 'both'>('both')
+  const smartCuotasPercentage = ref<number>(30)
+
+  // Calculation state
   const result = ref<CalculateQuoteResponse | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -36,22 +43,38 @@ export const useSimulatorStore = defineStore('simulator', () => {
     }
   }
 
+  /** Limpia solo el resultado (al cambiar selección en cascada) */
+  function clearResult() {
+    result.value = null
+    error.value = null
+  }
+
+  /** Reseteo completo — nueva simulación */
   function reset() {
-    selectedProject.value = null
-    selectedTower.value = null
-    selectedUnit.value = null
+    selectedProjectId.value = ''
+    selectedTowerId.value = ''
+    selectedUnitId.value = ''
+    piePercentage.value = 20
+    termYears.value = 20
+    creditType.value = 'both'
+    smartCuotasPercentage.value = 30
     result.value = null
     error.value = null
   }
 
   return {
-    selectedProject,
-    selectedTower,
-    selectedUnit,
+    selectedProjectId,
+    selectedTowerId,
+    selectedUnitId,
+    piePercentage,
+    termYears,
+    creditType,
+    smartCuotasPercentage,
     result,
     loading,
     error,
     calculate,
+    clearResult,
     reset,
   }
 })

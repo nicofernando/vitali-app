@@ -68,6 +68,16 @@ export interface Unit {
 export type UnitInsert = Omit<Unit, 'id' | 'created_at' | 'typology'>
 export type UnitUpdate = Partial<UnitInsert>
 
+export interface UnitWithContext extends Unit {
+  tower: {
+    id: string
+    name: string
+    project: Pick<Project, 'id' | 'name'> & {
+      currency: Pick<Currency, 'id' | 'code' | 'symbol'>
+    }
+  }
+}
+
 export interface Role {
   id: string
   name: string

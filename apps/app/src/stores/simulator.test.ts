@@ -17,13 +17,18 @@ describe('useSimulatorStore', () => {
     vi.clearAllMocks()
   })
 
-  it('inicia sin selección y sin resultado', () => {
+  it('inicia sin selección, con defaults de formulario y sin resultado', () => {
     const store = useSimulatorStore()
-    expect(store.selectedProject).toBeNull()
-    expect(store.selectedTower).toBeNull()
-    expect(store.selectedUnit).toBeNull()
+    expect(store.selectedProjectId).toBe('')
+    expect(store.selectedTowerId).toBe('')
+    expect(store.selectedUnitId).toBe('')
+    expect(store.piePercentage).toBe(20)
+    expect(store.termYears).toBe(20)
+    expect(store.creditType).toBe('both')
+    expect(store.smartCuotasPercentage).toBe(30)
     expect(store.result).toBeNull()
     expect(store.loading).toBe(false)
+    expect(store.error).toBeNull()
   })
 
   it('calculate llama a la Edge Function con los parámetros correctos', async () => {
@@ -63,17 +68,45 @@ describe('useSimulatorStore', () => {
     expect(store.error).toBe('PIE mínimo es 20%')
   })
 
-  it('reset limpia toda la selección y el resultado', () => {
+  it('clearResult limpia solo el resultado sin tocar la selección', () => {
     const store = useSimulatorStore()
+    store.selectedProjectId = 'p1'
+    store.selectedTowerId = 't1'
+    store.selectedUnitId = 'u1'
+    store.result = { unit: { id: 'u1' } } as unknown as typeof store.result
+    store.error = 'Error previo'
+
+    store.clearResult()
+
+    expect(store.result).toBeNull()
+    expect(store.error).toBeNull()
+    expect(store.selectedProjectId).toBe('p1')
+    expect(store.selectedTowerId).toBe('t1')
+    expect(store.selectedUnitId).toBe('u1')
+  })
+
+  it('reset limpia toda la selección, parámetros y resultado', () => {
+    const store = useSimulatorStore()
+    store.selectedProjectId = 'p1'
+    store.selectedTowerId = 't1'
+    store.selectedUnitId = 'u1'
+    store.piePercentage = 35
+    store.termYears = 15
+    store.creditType = 'french'
+    store.smartCuotasPercentage = 50
     store.result = { unit: { id: 'u1' } } as unknown as typeof store.result
     store.error = 'Error previo'
 
     store.reset()
 
+    expect(store.selectedProjectId).toBe('')
+    expect(store.selectedTowerId).toBe('')
+    expect(store.selectedUnitId).toBe('')
+    expect(store.piePercentage).toBe(20)
+    expect(store.termYears).toBe(20)
+    expect(store.creditType).toBe('both')
+    expect(store.smartCuotasPercentage).toBe(30)
     expect(store.result).toBeNull()
     expect(store.error).toBeNull()
-    expect(store.selectedProject).toBeNull()
-    expect(store.selectedTower).toBeNull()
-    expect(store.selectedUnit).toBeNull()
   })
 })
