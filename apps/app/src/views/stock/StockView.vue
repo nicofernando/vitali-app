@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown } from 'lucide-vue-next'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown, Download } from 'lucide-vue-next'
+import * as XLSX from 'xlsx'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -207,17 +208,55 @@ function formatPrice(amount: number, symbol = '$', decimalPlaces = 0) {
 function formatSurface(value: number | string) {
   return `${Number(value).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`
 }
+
+function exportToExcel() {
+  const data = sortedUnits.value.map(unit => ({
+    'Proyecto': unit.tower.project.name,
+    'Torre': unit.tower.name,
+    'Piso': unit.floor ?? '',
+    'N° Depto': unit.unit_number,
+    'Tipología': unit.typology?.name ?? '',
+    'Superficie (m2)': unit.typology?.surface_m2 ? Number(unit.typology.surface_m2) : '',
+    'Precio de lista': unit.list_price,
+    'Moneda': unit.tower.project.currency.code,
+  }))
+
+  const worksheet = XLSX.utils.json_to_sheet(data)
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Stock')
+  
+  // Ajuste de ancho de columnas
+  worksheet['!cols'] = [
+    { wch: 25 }, // Proyecto
+    { wch: 15 }, // Torre
+    { wch: 8 },  // Piso
+    { wch: 12 }, // N° Depto
+    { wch: 20 }, // Tipología
+    { wch: 15 }, // Superficie
+    { wch: 20 }, // Precio
+    { wch: 10 }, // Moneda
+  ]
+
+  XLSX.writeFile(workbook, `Stock_VitaliHogar_${new Date().toISOString().split('T')[0]}.xlsx`)
+}
 </script>
 
 <template>
   <div class="p-4 md:p-6 space-y-5">
-    <div>
-      <h1 class="text-2xl font-heading font-bold text-foreground">
-        Stock
-      </h1>
-      <p class="text-sm text-muted-foreground mt-1">
-        Inventario completo de departamentos
-      </p>
+    <div class="flex items-start justify-between flex-wrap gap-4">
+      <div>
+        <h1 class="text-2xl font-heading font-bold text-foreground">
+          Stock
+        </h1>
+        <p class="text-sm text-muted-foreground mt-1">
+          Inventario completo de departamentos
+        </p>
+      </div>
+
+      <Button variant="outline" class="shrink-0" @click="exportToExcel">
+        <Download class="mr-2 h-4 w-4" />
+        Exportar a Excel
+      </Button>
     </div>
 
     <!-- Filtros -->
