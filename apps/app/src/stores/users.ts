@@ -108,5 +108,14 @@ export const useUsersStore = defineStore('users', () => {
       user.roles = user.roles.filter(r => r.id !== roleId)
   }
 
-  return { users, loading, error, fetchAll, createUser, updateProfile, assignRole, removeRole }
+  async function deleteUser(userId: string) {
+    const { error: fnError } = await supabase.functions.invoke('admin-delete-user', {
+      body: { user_id: userId },
+    })
+    if (fnError)
+      throw fnError
+    users.value = users.value.filter(u => u.id !== userId)
+  }
+
+  return { users, loading, error, fetchAll, createUser, updateProfile, assignRole, removeRole, deleteUser }
 })

@@ -53,6 +53,8 @@ const { users, loading, error } = storeToRefs(usersStore)
 
 interface PendingRemoveRole { userId: string, roleId: string, roleName: string }
 const pendingRemoveRole = ref<PendingRemoveRole | null>(null)
+const pendingDeleteUser = ref<UserWithRoles | null>(null)
+const deleting = ref(false)
 
 const roles = ref<Role[]>([])
 const search = ref('')
@@ -194,6 +196,27 @@ async function confirmRemoveRole() {
   }
 }
 
+// ── Eliminar usuario ──────────────────────────────────────────
+async function confirmDeleteUser() {
+  const user = pendingDeleteUser.value
+  pendingDeleteUser.value = null
+  if (!user)
+    return
+  deleting.value = true
+  try {
+    await usersStore.deleteUser(user.id)
+    toast.success(`Usuario "${user.email}" eliminado`)
+    if (editingUserId.value === user.id)
+      editingUserId.value = null
+  }
+  catch {
+    toast.error('No se pudo eliminar el usuario')
+  }
+  finally {
+    deleting.value = false
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────
 function getInitials(user: UserWithRoles): string {
   if (user.full_name) {
@@ -322,9 +345,14 @@ function getInitials(user: UserWithRoles): string {
 
               <!-- Acciones -->
               <TableCell class="text-right">
-                <Button size="sm" variant="outline" @click="openEdit(user)">
-                  Editar
-                </Button>
+                <div class="flex justify-end gap-2">
+                  <Button size="sm" variant="outline" @click="openEdit(user)">
+                    Editar
+                  </Button>
+                  <Button size="sm" variant="destructive" @click="pendingDeleteUser = user">
+                    Eliminar
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           </template>
@@ -373,6 +401,30 @@ function getInitials(user: UserWithRoles): string {
             @click="confirmRemoveRole"
           >
             Remover
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Confirmación eliminar usuario -->
+    <AlertDialog :open="!!pendingDeleteUser" @update:open="(v) => { if (!v) pendingDeleteUser = null }">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Se eliminará permanentemente a "{{ pendingDeleteUser?.email }}". Esta acción no se puede deshacer.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="pendingDeleteUser = null">
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction
+            class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            :disabled="deleting"
+            @click="confirmDeleteUser"
+          >
+            Eliminar
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

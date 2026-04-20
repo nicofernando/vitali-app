@@ -82,7 +82,7 @@ async function confirmDeleteTypology() {
     toast.success('Tipología eliminada')
   }
   catch {
-    toast.error('Error al eliminar la tipología')
+    toast.error('No se puede eliminar — la tipología está siendo usada por departamentos')
   }
 }
 
