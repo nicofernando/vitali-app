@@ -70,10 +70,12 @@ export const useUsersStore = defineStore('users', () => {
   }
 
   async function updateProfile(userId: string, data: { full_name?: string | null, phone?: string | null }) {
+    // Usamos upsert para que si el usuario no tiene fila en user_profiles
+    // (ej: usuarios creados antes del trigger on_auth_user_created) se cree
+    // automáticamente en lugar de fallar silenciosamente con 0 rows afectadas.
     const { error: dbError } = await supabase
       .from('user_profiles')
-      .update(data)
-      .eq('user_id', userId)
+      .upsert({ user_id: userId, ...data }, { onConflict: 'user_id' })
     if (dbError)
       throw dbError
     const user = users.value.find(u => u.id === userId)
