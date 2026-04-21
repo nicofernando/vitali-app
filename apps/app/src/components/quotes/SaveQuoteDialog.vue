@@ -117,7 +117,7 @@ async function handleSave() {
       monthly_payment: r.french?.monthly_payment ?? r.smart?.cuotas_payment ?? null,
       balloon_payment: r.smart?.balloon_payment ?? null,
       smart_cuotas_percentage: props.smartCuotasPercentage ?? null,
-      quote_data_snapshot: r as Record<string, unknown>,
+      quote_data_snapshot: r as unknown as Record<string, unknown>,
     })
 
     toast.success('Cotización guardada')
