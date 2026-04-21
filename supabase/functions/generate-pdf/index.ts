@@ -24,9 +24,10 @@ Deno.serve(async (req: Request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   const carboneApiKey = Deno.env.get('CARBONE_API_KEY')
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
     return new Response(JSON.stringify({ error: 'Supabase env vars not configured' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -55,7 +56,17 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    const { quote_id } = await req.json() as { quote_id: string }
+    let quote_id: string
+    try {
+      const body = await req.json() as { quote_id?: string }
+      quote_id = body.quote_id ?? ''
+    }
+    catch {
+      return new Response(JSON.stringify({ error: 'Body JSON inválido' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
     if (!quote_id) {
       return new Response(JSON.stringify({ error: 'quote_id es requerido' }), {
         status: 400,
@@ -109,14 +120,17 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Carbone error ${carboneRes.status}: ${errText}`)
     }
 
+    const contentType = carboneRes.headers.get('content-type') ?? ''
+    if (!contentType.includes('application/pdf')) {
+      const errText = await carboneRes.text()
+      throw new Error(`Carbone no devolvió un PDF (content-type: ${contentType}): ${errText.slice(0, 200)}`)
+    }
+
     const pdfBytes = await carboneRes.arrayBuffer()
 
     // 5. Subir PDF a Storage (bucket: quotes)
     const pdfPath = `${quote_id}.pdf`
-    const serviceSupabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
+    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey)
 
     const { error: uploadError } = await serviceSupabase.storage
       .from('quotes')

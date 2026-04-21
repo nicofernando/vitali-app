@@ -87,7 +87,7 @@ export function buildCarboneData(record: QuoteRecord): CarboneData {
     },
     proyecto: {
       nombre: project.name,
-      tasa_anual: (project.annual_interest_rate * 100).toFixed(2),
+      tasa_anual: ((project.annual_interest_rate ?? 0) * 100).toFixed(2),
       moneda: {
         codigo: project.currency.code,
         simbolo: project.currency.symbol,
@@ -129,12 +129,18 @@ export function buildCarboneData(record: QuoteRecord): CarboneData {
     const termMonths = record.term_years * 12
     const pctCuotas = record.smart_cuotas_percentage ?? 50
     const pctGlobo = 100 - pctCuotas
+    // Para tipo 'both', monthly_payment en BD contiene el valor del crédito francés.
+    // La cuota del crédito inteligente se recupera del snapshot completo.
+    const snapshot = record.quote_data_snapshot as { smart?: { cuotas_payment?: number } }
+    const smartCuota = record.credit_type === 'both'
+      ? (snapshot.smart?.cuotas_payment ?? record.balloon_payment ?? 0)
+      : (record.monthly_payment ?? 0)
     data.inteligente = {
-      cuota_mensual: record.monthly_payment ?? 0,
+      cuota_mensual: smartCuota,
       globo: record.balloon_payment ?? 0,
       pct_cuotas: pctCuotas,
       pct_globo: pctGlobo,
-      total_pagado: (record.monthly_payment ?? 0) * termMonths + (record.balloon_payment ?? 0),
+      total_pagado: smartCuota * termMonths + (record.balloon_payment ?? 0),
     }
   }
 

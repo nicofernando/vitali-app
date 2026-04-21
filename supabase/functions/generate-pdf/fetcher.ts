@@ -79,5 +79,10 @@ export async function fetchQuoteRecord(
     throw new Error(`Error fetching quote: ${error.message}`)
   }
 
-  return data as unknown as QuoteRecord
+  const record = data as unknown as QuoteRecord
+  if (!record.client || !record.unit || !record.unit.tower || !record.unit.tower.project) {
+    throw new Error('Quote incompleta: faltan datos de cliente, unidad o proyecto')
+  }
+
+  return record
 }

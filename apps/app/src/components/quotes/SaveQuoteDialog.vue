@@ -101,6 +101,10 @@ async function handleSave() {
   saving.value = true
   try {
     const r = props.result
+    if (!r.french && !r.smart)
+      throw new Error('Resultado de simulación inválido: no hay datos de crédito')
+    if (!r.unit.list_price)
+      throw new Error('Precio de lista inválido')
     const quoteId = await quotesStore.create({
       client_id: selectedClient.value.id,
       unit_id: r.unit.id,

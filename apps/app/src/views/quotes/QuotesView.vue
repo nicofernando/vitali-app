@@ -19,7 +19,7 @@ import { useQuotesStore } from '@/stores/quotes'
 const quotesStore = useQuotesStore()
 const { quotes, loading } = storeToRefs(quotesStore)
 
-const generatingPdf = ref<string | null>(null)
+const generatingPdf = ref<Set<string>>(new Set())
 
 onMounted(() => quotesStore.fetchAll())
 
@@ -58,9 +58,9 @@ function statusLabel(status: string) {
 }
 
 async function handleDownload(quote: QuoteSummary) {
-  if (generatingPdf.value)
+  if (generatingPdf.value.has(quote.id))
     return
-  generatingPdf.value = quote.id
+  generatingPdf.value = new Set([...generatingPdf.value, quote.id])
   try {
     const result = await quotesStore.generatePdf(quote.id)
     window.open(result.url, '_blank')
@@ -69,7 +69,9 @@ async function handleDownload(quote: QuoteSummary) {
     toast.error('Error al generar el PDF')
   }
   finally {
-    generatingPdf.value = null
+    const next = new Set(generatingPdf.value)
+    next.delete(quote.id)
+    generatingPdf.value = next
   }
 }
 </script>
@@ -143,10 +145,10 @@ async function handleDownload(quote: QuoteSummary) {
             <Button
               variant="outline"
               size="sm"
-              :disabled="generatingPdf === quote.id"
+              :disabled="generatingPdf.has(quote.id)"
               @click="handleDownload(quote)"
             >
-              {{ generatingPdf === quote.id ? 'Generando...' : quote.pdf_path ? 'Descargar PDF' : 'Generar PDF' }}
+              {{ generatingPdf.has(quote.id) ? 'Generando...' : quote.pdf_path ? 'Descargar PDF' : 'Generar PDF' }}
             </Button>
           </TableCell>
         </TableRow>
