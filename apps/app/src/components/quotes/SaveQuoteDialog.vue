@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
+import type { QuoteInsert } from '@/types'
 import { useClientsStore } from '@/stores/clients'
 import { useQuotesStore } from '@/stores/quotes'
 
@@ -105,7 +106,7 @@ async function handleSave() {
       throw new Error('Precio de lista inválido')
     if (typeof r.pie_amount !== 'number' || !Number.isFinite(r.pie_amount))
       throw new Error('Monto de PIE inválido')
-    const payload = {
+    const payload: QuoteInsert = {
       client_id: selectedClient.value.id,
       unit_id: r.unit.id,
       pie_percentage: (r.pie_amount / r.unit.list_price) * 100,
