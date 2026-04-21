@@ -120,15 +120,13 @@ async function handleSave() {
       smart_cuotas_percentage: props.smartCuotasPercentage ?? null,
       quote_data_snapshot: r as unknown as Record<string, unknown>,
     }
-    console.log('[SaveQuoteDialog] payload:', JSON.stringify(payload, null, 2))
     const quoteId = await quotesStore.create(payload)
 
     toast.success('Cotización guardada')
     emit('update:open', false)
     emit('saved', quoteId)
   }
-  catch (err) {
-    console.error('[SaveQuoteDialog] Error al guardar:', err)
+  catch {
     toast.error('Error al guardar la cotización')
   }
   finally {
