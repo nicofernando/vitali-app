@@ -108,9 +108,31 @@ Deno.serve(async (req: Request) => {
     // 3. Construir objeto de datos para Carbone
     const carboneData = buildCarboneData(record)
 
-    // 4. Llamar a Carbone cloud API — endpoint /render/template con ?download=true
-    //    para enviar template inline (base64) y recibir el PDF directo en la respuesta.
-    const carboneRes = await fetch('https://api.carbone.io/render/template?download=true', {
+    // 4a. Subir template a Carbone Cloud → obtener templateId
+    const uploadRes = await fetch('https://api.carbone.io/template', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'carbone-version': '4',
+        Authorization: `Bearer ${carboneApiKey}`,
+      },
+      body: JSON.stringify({ template: templateBase64 }),
+    })
+
+    if (!uploadRes.ok) {
+      const errText = await uploadRes.text()
+      throw new Error(`Carbone upload error ${uploadRes.status}: ${errText}`)
+    }
+
+    const uploadJson = await uploadRes.json() as { success: boolean; data?: { templateId?: string }; error?: string }
+    if (!uploadJson.success || !uploadJson.data?.templateId) {
+      throw new Error(`Carbone upload failed: ${uploadJson.error ?? 'no templateId returned'}`)
+    }
+
+    const templateId = uploadJson.data.templateId
+
+    // 4b. Generar PDF con POST /render/{templateId}?download=true
+    const renderRes = await fetch(`https://api.carbone.io/render/${templateId}?download=true`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -119,25 +141,23 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify({
         data: carboneData,
-        template: templateBase64,
         convertTo: 'pdf',
       }),
     })
 
-    if (!carboneRes.ok) {
-      const errText = await carboneRes.text()
-      throw new Error(`Carbone error ${carboneRes.status}: ${errText}`)
+    if (!renderRes.ok) {
+      const errText = await renderRes.text()
+      throw new Error(`Carbone render error ${renderRes.status}: ${errText}`)
     }
 
-    const contentType = carboneRes.headers.get('content-type') ?? ''
+    const contentType = renderRes.headers.get('content-type') ?? ''
     // Con ?download=true, Carbone devuelve el PDF directamente (application/pdf)
-    // Si no es PDF, Carbone devolvió un JSON de error
     if (!contentType.includes('application/pdf')) {
-      const errText = await carboneRes.text()
+      const errText = await renderRes.text()
       throw new Error(`Carbone no devolvió un PDF (content-type: ${contentType}): ${errText.slice(0, 200)}`)
     }
 
-    const pdfBytes = await carboneRes.arrayBuffer()
+    const pdfBytes = await renderRes.arrayBuffer()
 
     // 5. Subir PDF a Storage (bucket: quotes)
     const pdfPath = `${quote_id}.pdf`
