@@ -105,7 +105,7 @@ async function handleSave() {
       throw new Error('Precio de lista inválido')
     if (typeof r.pie_amount !== 'number' || !Number.isFinite(r.pie_amount))
       throw new Error('Monto de PIE inválido')
-    const quoteId = await quotesStore.create({
+    const payload = {
       client_id: selectedClient.value.id,
       unit_id: r.unit.id,
       pie_percentage: (r.pie_amount / r.unit.list_price) * 100,
@@ -118,7 +118,9 @@ async function handleSave() {
       balloon_payment: r.smart?.balloon_payment ?? null,
       smart_cuotas_percentage: props.smartCuotasPercentage ?? null,
       quote_data_snapshot: r as unknown as Record<string, unknown>,
-    })
+    }
+    console.log('[SaveQuoteDialog] payload:', JSON.stringify(payload, null, 2))
+    const quoteId = await quotesStore.create(payload)
 
     toast.success('Cotización guardada')
     emit('update:open', false)
