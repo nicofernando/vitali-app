@@ -91,8 +91,10 @@ Deno.serve(async (req: Request) => {
       })
     }
 
+    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey)
+
     // 2. Fetch template .docx desde Storage
-    const { data: templateBlob, error: storageError } = await supabase.storage
+    const { data: templateBlob, error: storageError } = await serviceSupabase.storage
       .from('templates')
       .download('cotizacion.docx')
 
@@ -106,8 +108,9 @@ Deno.serve(async (req: Request) => {
     // 3. Construir objeto de datos para Carbone
     const carboneData = buildCarboneData(record)
 
-    // 4. Llamar a Carbone cloud API
-    const carboneRes = await fetch('https://api.carbone.io/render', {
+    // 4. Llamar a Carbone cloud API — endpoint /render/template con ?download=true
+    //    para enviar template inline (base64) y recibir el PDF directo en la respuesta.
+    const carboneRes = await fetch('https://api.carbone.io/render/template?download=true', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -127,6 +130,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const contentType = carboneRes.headers.get('content-type') ?? ''
+    // Con ?download=true, Carbone devuelve el PDF directamente (application/pdf)
+    // Si no es PDF, Carbone devolvió un JSON de error
     if (!contentType.includes('application/pdf')) {
       const errText = await carboneRes.text()
       throw new Error(`Carbone no devolvió un PDF (content-type: ${contentType}): ${errText.slice(0, 200)}`)
@@ -136,7 +141,6 @@ Deno.serve(async (req: Request) => {
 
     // 5. Subir PDF a Storage (bucket: quotes)
     const pdfPath = `${quote_id}.pdf`
-    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey)
 
     const { error: uploadError } = await serviceSupabase.storage
       .from('quotes')
@@ -176,7 +180,9 @@ Deno.serve(async (req: Request) => {
   }
   catch (err) {
     const message = err instanceof Error ? err.message : 'Error desconocido'
-    return new Response(JSON.stringify({ error: message }), {
+    const stack = err instanceof Error ? err.stack : undefined
+    console.error(`[generate-pdf] 500 Error:`, err)
+    return new Response(JSON.stringify({ error: message, stack }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
