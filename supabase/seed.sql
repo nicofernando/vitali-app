@@ -24,8 +24,11 @@ insert into currencies (id, code, name, symbol, decimal_places) values
 -- TIPOLOGÍAS
 -- ============================================================
 insert into typologies (id, name, surface_m2, description) values
-  ('7e802d2a-a287-40ab-a799-aa4f69e1f441', 'armonia 30',  30.00, 'asdf'),
-  ('9b79b83d-8292-49bd-bdf4-d0232fb61b2a', 'Sinfonia 28', 28.00, 'Habitacion monoambiente pequeña');
+  ('7e802d2a-a287-40ab-a799-aa4f69e1f441', 'armonia 30',              30.00, 'asdf'),
+  ('9b79b83d-8292-49bd-bdf4-d0232fb61b2a', 'Sinfonia 28',             28.00, 'Habitacion monoambiente pequeña'),
+  ('38da6156-b423-4822-be92-532a071a6016', 'Chicureo - Suite Armonía', 36.72, null),
+  ('87399012-4d11-430e-94c3-b0edfbdc3c00', 'Chicureo - Suite Escencia 1', 28.80, null),
+  ('9eecc46f-ba57-4c6c-bd44-3aab3e49c8a1', 'Chicureo - Suite Escencia 2', 26.38, null);
 
 -- ============================================================
 -- PROYECTOS
