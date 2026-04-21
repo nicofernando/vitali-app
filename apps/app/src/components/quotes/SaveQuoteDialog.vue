@@ -31,7 +31,7 @@ const emit = defineEmits<{
 
 const clientsStore = useClientsStore()
 const quotesStore = useQuotesStore()
-const { clients } = storeToRefs(clientsStore)
+const { clients, loading: loadingClients } = storeToRefs(clientsStore)
 
 const step = ref<'search' | 'new-client'>('search')
 const searchQuery = ref('')
@@ -53,8 +53,7 @@ const searchResults = computed(() => {
 
 watch(() => props.open, (v) => {
   if (v) {
-    if (clients.value.length === 0)
-      clientsStore.fetchAll()
+    clientsStore.fetchAll()
   }
   else {
     reset()
@@ -155,25 +154,30 @@ async function handleSave() {
           />
 
           <!-- Resultados -->
-          <div v-if="searchResults.length > 0" class="border rounded-lg divide-y max-h-48 overflow-y-auto">
-            <button
-              v-for="client in searchResults"
-              :key="client.id"
-              class="w-full text-left px-4 py-3 text-sm hover:bg-muted transition-colors"
-              :class="selectedClient?.id === client.id ? 'bg-muted' : ''"
-              @click="selectClient(client)"
-            >
-              <p class="font-medium">
-                {{ client.full_name }}
-              </p>
-              <p class="text-muted-foreground text-xs">
-                {{ client.rut ?? 'Sin RUT' }} · {{ client.email ?? 'Sin email' }}
-              </p>
-            </button>
-          </div>
-          <p v-else-if="searchQuery.trim()" class="text-sm text-muted-foreground">
-            Sin resultados. ¿Querés crear un cliente nuevo?
+          <p v-if="loadingClients" class="text-sm text-muted-foreground">
+            Cargando clientes...
           </p>
+          <template v-else>
+            <div v-if="searchResults.length > 0" class="border rounded-lg divide-y max-h-48 overflow-y-auto">
+              <button
+                v-for="client in searchResults"
+                :key="client.id"
+                class="w-full text-left px-4 py-3 text-sm hover:bg-muted transition-colors"
+                :class="selectedClient?.id === client.id ? 'bg-muted' : ''"
+                @click="selectClient(client)"
+              >
+                <p class="font-medium">
+                  {{ client.full_name }}
+                </p>
+                <p class="text-muted-foreground text-xs">
+                  {{ client.rut ?? 'Sin RUT' }} · {{ client.email ?? 'Sin email' }}
+                </p>
+              </button>
+            </div>
+            <p v-else-if="searchQuery.trim()" class="text-sm text-muted-foreground">
+              Sin resultados. ¿Querés crear un cliente nuevo?
+            </p>
+          </template>
 
           <!-- Cliente seleccionado -->
           <div v-if="selectedClient" class="rounded-lg bg-muted p-3 text-sm">
