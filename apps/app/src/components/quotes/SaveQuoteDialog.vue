@@ -124,7 +124,8 @@ async function handleSave() {
     emit('update:open', false)
     emit('saved', quoteId)
   }
-  catch {
+  catch (err) {
+    console.error('[SaveQuoteDialog] Error al guardar:', err)
     toast.error('Error al guardar la cotización')
   }
   finally {
