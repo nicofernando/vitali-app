@@ -11,7 +11,6 @@ const fakeCurrencies = [
   { id: 'c2', code: 'USD', name: 'Dólar', symbol: 'US$', decimal_places: 2 },
 ]
 
-
 describe('useCurrenciesStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Menu } from 'lucide-vue-next'
-import { ref, onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionsStore } from '@/stores/permissions'
 import AppSidebar from './AppSidebar.vue'
