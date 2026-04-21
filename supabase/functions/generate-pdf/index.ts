@@ -1,20 +1,11 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildCarboneData } from './builder.ts'
 import { fetchQuoteRecord } from './fetcher.ts'
+import { encode as base64Encode } from 'https://deno.land/std@0.224.0/encoding/base64.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer)
-  let binary = ''
-  const chunkSize = 8192
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
-  }
-  return btoa(binary)
 }
 
 Deno.serve(async (req: Request) => {
@@ -81,6 +72,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // 1. Fetch quote con todos los joins
+    console.log(`[generate-pdf] Fetching quote ${quote_id}`)
     const record = await fetchQuoteRecord(supabase, quote_id)
 
     // Verificar ownership antes de proceder
@@ -94,6 +86,7 @@ Deno.serve(async (req: Request) => {
     const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // 2. Fetch template .docx desde Storage
+    console.log(`[generate-pdf] Downloading template from storage...`)
     const { data: templateBlob, error: storageError } = await serviceSupabase.storage
       .from('templates')
       .download('cotizacion.docx')
@@ -102,37 +95,57 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Error descargando template: ${storageError?.message ?? 'no encontrado'}`)
     }
 
-    const templateBytes = await templateBlob.arrayBuffer()
-    const templateBase64 = arrayBufferToBase64(templateBytes)
+    const templateBytes = new Uint8Array(await templateBlob.arrayBuffer())
+    console.log(`[generate-pdf] Template downloaded: ${templateBytes.byteLength} bytes`)
+
+    if (templateBytes.byteLength === 0) {
+      throw new Error('Template descargado está vacío (0 bytes)')
+    }
 
     // 3. Construir objeto de datos para Carbone
     const carboneData = buildCarboneData(record)
+    console.log(`[generate-pdf] Carbone data built, keys: ${Object.keys(carboneData).join(', ')}`)
 
-    // 4a. Subir template a Carbone Cloud → obtener templateId
+    // 4a. Subir template a Carbone Cloud via multipart/form-data
+    //     (JSON con base64 falla en v4 con "template field is empty" — usar FormData)
+    console.log(`[generate-pdf] Uploading template to Carbone...`)
+    const formData = new FormData()
+    formData.append('template', new Blob([templateBytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), 'cotizacion.docx')
+
     const uploadRes = await fetch('https://api.carbone.io/template', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'carbone-version': '4',
         Authorization: `Bearer ${carboneApiKey}`,
       },
-      body: JSON.stringify({ template: templateBase64 }),
+      body: formData,
     })
 
+    const uploadText = await uploadRes.text()
+    console.log(`[generate-pdf] Carbone upload response ${uploadRes.status}: ${uploadText.slice(0, 500)}`)
+
     if (!uploadRes.ok) {
-      const errText = await uploadRes.text()
-      throw new Error(`Carbone upload error ${uploadRes.status}: ${errText}`)
+      throw new Error(`Carbone upload error ${uploadRes.status}: ${uploadText}`)
     }
 
-    const uploadJson = await uploadRes.json() as { success: boolean; data?: { templateId?: string }; error?: string }
+    let uploadJson: { success: boolean; data?: { templateId?: string }; error?: string }
+    try {
+      uploadJson = JSON.parse(uploadText)
+    }
+    catch {
+      throw new Error(`Carbone upload returned invalid JSON: ${uploadText.slice(0, 300)}`)
+    }
+
     if (!uploadJson.success || !uploadJson.data?.templateId) {
       throw new Error(`Carbone upload failed: ${uploadJson.error ?? 'no templateId returned'}`)
     }
 
     const templateId = uploadJson.data.templateId
+    console.log(`[generate-pdf] Template uploaded, templateId: ${templateId}`)
 
-    // 4b. Generar PDF con POST /render/{templateId}?download=true
-    const renderRes = await fetch(`https://api.carbone.io/render/${templateId}?download=true`, {
+    // 4b. Generar PDF con POST /render/{templateId}
+    console.log(`[generate-pdf] Rendering PDF...`)
+    const renderRes = await fetch(`https://api.carbone.io/render/${templateId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -145,19 +158,43 @@ Deno.serve(async (req: Request) => {
       }),
     })
 
+    const renderContentType = renderRes.headers.get('content-type') ?? ''
+    console.log(`[generate-pdf] Render response ${renderRes.status}, content-type: ${renderContentType}`)
+
     if (!renderRes.ok) {
       const errText = await renderRes.text()
       throw new Error(`Carbone render error ${renderRes.status}: ${errText}`)
     }
 
-    const contentType = renderRes.headers.get('content-type') ?? ''
-    // Con ?download=true, Carbone devuelve el PDF directamente (application/pdf)
-    if (!contentType.includes('application/pdf')) {
-      const errText = await renderRes.text()
-      throw new Error(`Carbone no devolvió un PDF (content-type: ${contentType}): ${errText.slice(0, 200)}`)
+    // Render devuelve JSON con renderId (sin ?download=true)
+    const renderJson = await renderRes.json() as { success: boolean; data?: { renderId?: string }; error?: string }
+    if (!renderJson.success || !renderJson.data?.renderId) {
+      throw new Error(`Carbone render failed: ${renderJson.error ?? 'no renderId returned'}`)
     }
 
-    const pdfBytes = await renderRes.arrayBuffer()
+    const renderId = renderJson.data.renderId
+    console.log(`[generate-pdf] Render complete, renderId: ${renderId}`)
+
+    // 4c. Descargar PDF con GET /render/{renderId}
+    const downloadRes = await fetch(`https://api.carbone.io/render/${renderId}`, {
+      method: 'GET',
+    })
+
+    if (!downloadRes.ok) {
+      const errText = await downloadRes.text()
+      throw new Error(`Carbone download error ${downloadRes.status}: ${errText}`)
+    }
+
+    const dlContentType = downloadRes.headers.get('content-type') ?? ''
+    console.log(`[generate-pdf] Download response ${downloadRes.status}, content-type: ${dlContentType}`)
+
+    if (!dlContentType.includes('application/pdf') && !dlContentType.includes('application/octet-stream')) {
+      const errText = await downloadRes.text()
+      throw new Error(`Carbone no devolvió un PDF (content-type: ${dlContentType}): ${errText.slice(0, 200)}`)
+    }
+
+    const pdfBytes = await downloadRes.arrayBuffer()
+    console.log(`[generate-pdf] PDF downloaded: ${pdfBytes.byteLength} bytes`)
 
     // 5. Subir PDF a Storage (bucket: quotes)
     const pdfPath = `${quote_id}.pdf`
@@ -172,6 +209,7 @@ Deno.serve(async (req: Request) => {
     if (uploadError) {
       throw new Error(`Error subiendo PDF: ${uploadError.message}`)
     }
+    console.log(`[generate-pdf] PDF uploaded to storage: ${pdfPath}`)
 
     // 6. Actualizar pdf_path en quotes
     const { error: updateError } = await serviceSupabase
@@ -192,6 +230,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const expiresAt = new Date(Date.now() + 3600 * 1000).toISOString()
+    console.log(`[generate-pdf] Success! Signed URL created.`)
 
     return new Response(
       JSON.stringify({ url: signedData.signedUrl, pdf_path: pdfPath, expires_at: expiresAt }),
@@ -201,8 +240,8 @@ Deno.serve(async (req: Request) => {
   catch (err) {
     const message = err instanceof Error ? err.message : 'Error desconocido'
     const stack = err instanceof Error ? err.stack : undefined
-    console.error(`[generate-pdf] 500 Error:`, err)
-    return new Response(JSON.stringify({ error: message, stack }), {
+    console.error(`[generate-pdf] 500 Error:`, message, stack)
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
