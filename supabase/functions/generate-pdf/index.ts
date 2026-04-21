@@ -73,6 +73,12 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+    if (!/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(quote_id)) {
+      return new Response(JSON.stringify({ error: 'quote_id inválido' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     // 1. Fetch quote con todos los joins
     const record = await fetchQuoteRecord(supabase, quote_id)
@@ -148,6 +154,7 @@ Deno.serve(async (req: Request) => {
       .from('quotes')
       .update({ pdf_path: pdfPath })
       .eq('id', quote_id)
+      .eq('created_by', user.id)
     if (updateError)
       throw updateError
 

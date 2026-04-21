@@ -80,8 +80,17 @@ export async function fetchQuoteRecord(
   }
 
   const record = data as unknown as QuoteRecord
-  if (!record.client || !record.unit || !record.unit.tower || !record.unit.tower.project) {
-    throw new Error('Quote incompleta: faltan datos de cliente, unidad o proyecto')
+  if (
+    !record.client
+    || Array.isArray(record.client)
+    || !record.unit
+    || Array.isArray(record.unit)
+    || !record.unit.typology
+    || !record.unit.tower
+    || !record.unit.tower.project
+    || !record.unit.tower.project.currency
+  ) {
+    throw new Error('Quote incompleta: faltan datos de cliente, unidad, tipología, torre, proyecto o moneda')
   }
 
   return record

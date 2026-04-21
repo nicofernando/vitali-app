@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { QuoteSummary } from '@/types'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { onMounted, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,7 +19,7 @@ import { useQuotesStore } from '@/stores/quotes'
 const quotesStore = useQuotesStore()
 const { quotes, loading } = storeToRefs(quotesStore)
 
-const generatingPdf = ref<Set<string>>(new Set())
+const generatingPdf = shallowRef<Set<string>>(new Set())
 
 onMounted(() => quotesStore.fetchAll())
 

@@ -132,8 +132,10 @@ export function buildCarboneData(record: QuoteRecord): CarboneData {
     // Para tipo 'both', monthly_payment en BD contiene el valor del crédito francés.
     // La cuota del crédito inteligente se recupera del snapshot completo.
     const snapshot = record.quote_data_snapshot as { smart?: { cuotas_payment?: number } }
+    // Para tipo 'both', monthly_payment en BD contiene el valor del crédito francés,
+    // no el de las cuotas del inteligente. Se recupera del snapshot.
     const smartCuota = record.credit_type === 'both'
-      ? (snapshot.smart?.cuotas_payment ?? record.balloon_payment ?? 0)
+      ? (snapshot.smart?.cuotas_payment ?? 0)
       : (record.monthly_payment ?? 0)
     data.inteligente = {
       cuota_mensual: smartCuota,

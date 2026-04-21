@@ -105,6 +105,8 @@ async function handleSave() {
       throw new Error('Resultado de simulación inválido: no hay datos de crédito')
     if (!r.unit.list_price)
       throw new Error('Precio de lista inválido')
+    if (typeof r.pie_amount !== 'number' || !Number.isFinite(r.pie_amount))
+      throw new Error('Monto de PIE inválido')
     const quoteId = await quotesStore.create({
       client_id: selectedClient.value.id,
       unit_id: r.unit.id,
