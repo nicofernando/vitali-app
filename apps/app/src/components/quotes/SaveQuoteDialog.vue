@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CalculateQuoteResponse, Client } from '@/types'
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import ClientForm from '@/components/clients/ClientForm.vue'
 import { Button } from '@/components/ui/button'
@@ -75,7 +75,7 @@ function selectClient(client: Client) {
 
 function goToNewClient() {
   step.value = 'new-client'
-  setTimeout(() => newClientFormRef.value?.init(null), 50)
+  nextTick(() => newClientFormRef.value?.init(null))
 }
 
 async function handleCreateClient(values: Parameters<typeof clientsStore.create>[0]) {
@@ -108,12 +108,12 @@ async function handleSave() {
       pie_amount: r.pie_amount,
       financing_amount: r.financing_amount,
       credit_type: r.french && r.smart ? 'both' : r.french ? 'french' : 'smart',
-      term_years: r.french?.term_months ? r.french.term_months / 12 : (r.smart?.term_months ?? 240) / 12,
+      term_years: Math.round(r.french?.term_months ? r.french.term_months / 12 : (r.smart?.term_months ?? 240) / 12),
       monthly_rate: r.french?.monthly_rate ?? 0,
       monthly_payment: r.french?.monthly_payment ?? r.smart?.cuotas_payment ?? null,
       balloon_payment: r.smart?.balloon_payment ?? null,
       smart_cuotas_percentage: props.smartCuotasPercentage ?? null,
-      quote_data_snapshot: r as unknown as object,
+      quote_data_snapshot: r as Record<string, unknown>,
     })
 
     toast.success('Cotización guardada')

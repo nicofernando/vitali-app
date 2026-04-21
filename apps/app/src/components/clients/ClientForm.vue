@@ -47,7 +47,7 @@ function init(client?: Client | null) {
 defineExpose({ init })
 
 const onSubmit = handleSubmit((values) => {
-  emit('submit', values as any)
+  emit('submit', values)
 })
 </script>
 

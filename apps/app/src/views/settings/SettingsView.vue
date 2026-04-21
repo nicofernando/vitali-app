@@ -14,7 +14,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getBlocksForDocumentType } from '@/lib/document-variables'
 import { supabase } from '@/lib/supabase'
+import { usePermissions } from '@/composables/usePermissions'
 
+const { can } = usePermissions()
 const uploading = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
@@ -25,6 +27,11 @@ async function handleUpload(event: Event) {
   const file = input.files?.[0]
   if (!file)
     return
+
+  if (!can('settings.templates.write')) {
+    toast.error('No tenés permisos para actualizar el template')
+    return
+  }
 
   if (!file.name.endsWith('.docx')) {
     toast.error('El archivo debe ser un .docx')
@@ -93,7 +100,7 @@ async function handleUpload(event: Event) {
               >
               <Button
                 variant="outline"
-                :disabled="uploading"
+                :disabled="uploading || !can('settings.templates.write')"
                 @click="fileInputRef?.click()"
               >
                 {{ uploading ? 'Subiendo...' : 'Subir nuevo template (.docx)' }}

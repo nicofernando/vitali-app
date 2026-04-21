@@ -177,7 +177,7 @@ export interface QuoteInsert {
   monthly_payment?: number | null
   balloon_payment?: number | null
   smart_cuotas_percentage?: number | null
-  quote_data_snapshot: object
+  quote_data_snapshot: Record<string, unknown>
   status?: QuoteStatus
 }
 

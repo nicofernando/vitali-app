@@ -1,11 +1,11 @@
 import type { GeneratePdfResponse, QuoteInsert, QuoteSummary } from '@/types'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
 
 export const useQuotesStore = defineStore('quotes', () => {
-  const quotes = ref<QuoteSummary[]>([])
+  const quotes = shallowRef<QuoteSummary[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -43,10 +43,12 @@ export const useQuotesStore = defineStore('quotes', () => {
     })
     if (fnError)
       throw new Error(fnError.message)
+    if (!data || !data.url || !data.pdf_path)
+      throw new Error('Respuesta inválida de generate-pdf')
     const result = data as GeneratePdfResponse
     const idx = quotes.value.findIndex(q => q.id === quoteId)
     if (idx !== -1)
-      quotes.value[idx].pdf_path = result.pdf_path
+      quotes.value = quotes.value.map((q, i) => i === idx ? { ...q, pdf_path: result.pdf_path } : q)
     return result
   }
 

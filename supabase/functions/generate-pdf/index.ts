@@ -7,15 +7,42 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  const chunkSize = 8192
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
+  }
+  return btoa(binary)
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+  const carboneApiKey = Deno.env.get('CARBONE_API_KEY')
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return new Response(JSON.stringify({ error: 'Supabase env vars not configured' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+  if (!carboneApiKey) {
+    return new Response(JSON.stringify({ error: 'CARBONE_API_KEY not configured' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
   try {
     const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl,
+      supabaseAnonKey,
       { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } },
     )
 
@@ -39,6 +66,14 @@ Deno.serve(async (req: Request) => {
     // 1. Fetch quote con todos los joins
     const record = await fetchQuoteRecord(supabase, quote_id)
 
+    // Verificar ownership antes de proceder
+    if (record.created_by !== user.id) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // 2. Fetch template .docx desde Storage
     const { data: templateBlob, error: storageError } = await supabase.storage
       .from('templates')
@@ -49,15 +84,12 @@ Deno.serve(async (req: Request) => {
     }
 
     const templateBytes = await templateBlob.arrayBuffer()
-    const templateBase64 = btoa(
-      String.fromCharCode(...new Uint8Array(templateBytes)),
-    )
+    const templateBase64 = arrayBufferToBase64(templateBytes)
 
     // 3. Construir objeto de datos para Carbone
     const carboneData = buildCarboneData(record)
 
     // 4. Llamar a Carbone cloud API
-    const carboneApiKey = Deno.env.get('CARBONE_API_KEY') ?? ''
     const carboneRes = await fetch('https://api.carbone.io/render', {
       method: 'POST',
       headers: {
@@ -98,10 +130,12 @@ Deno.serve(async (req: Request) => {
     }
 
     // 6. Actualizar pdf_path en quotes
-    await serviceSupabase
+    const { error: updateError } = await serviceSupabase
       .from('quotes')
       .update({ pdf_path: pdfPath })
       .eq('id', quote_id)
+    if (updateError)
+      throw updateError
 
     // 7. Crear URL firmada (válida 1 hora)
     const { data: signedData, error: signError } = await serviceSupabase.storage

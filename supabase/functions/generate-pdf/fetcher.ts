@@ -2,6 +2,7 @@ import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 
 export interface QuoteRecord {
   id: string
+  created_by: string
   status: string
   credit_type: 'french' | 'smart' | 'both'
   pie_percentage: number
@@ -54,7 +55,7 @@ export async function fetchQuoteRecord(
   const { data, error } = await supabase
     .from('quotes')
     .select(`
-      id, status, credit_type,
+      id, created_by, status, credit_type,
       pie_percentage, pie_amount, financing_amount,
       term_years, monthly_rate, monthly_payment, balloon_payment,
       smart_cuotas_percentage, quote_data_snapshot, created_at,

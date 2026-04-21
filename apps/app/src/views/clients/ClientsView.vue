@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Client } from '@/types'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import ClientForm from '@/components/clients/ClientForm.vue'
 import {
@@ -49,13 +49,13 @@ onMounted(() => clientsStore.fetchAll())
 function openNew() {
   editingClient.value = null
   showForm.value = true
-  setTimeout(() => formRef.value?.init(null), 50)
+  nextTick(() => formRef.value?.init(null))
 }
 
 function openEdit(client: Client) {
   editingClient.value = client
   showForm.value = true
-  setTimeout(() => formRef.value?.init(client), 50)
+  nextTick(() => formRef.value?.init(client))
 }
 
 function closeForm() {

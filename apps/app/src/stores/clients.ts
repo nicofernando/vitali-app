@@ -1,11 +1,13 @@
 import type { Client, ClientInsert, ClientUpdate } from '@/types'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
 
+const CLIENT_COLUMNS = 'id, full_name, rut, email, phone, address, commune, created_at'
+
 export const useClientsStore = defineStore('clients', () => {
-  const clients = ref<Client[]>([])
+  const clients = shallowRef<Client[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -15,7 +17,7 @@ export const useClientsStore = defineStore('clients', () => {
     try {
       const { data, error: dbError } = await supabase
         .from('clients')
-        .select('*')
+        .select(CLIENT_COLUMNS)
         .order('full_name')
       if (dbError)
         throw dbError
@@ -40,7 +42,7 @@ export const useClientsStore = defineStore('clients', () => {
     const { data, error: dbError } = await supabase
       .from('clients')
       .insert(payload)
-      .select('*')
+      .select(CLIENT_COLUMNS)
       .single()
     if (dbError)
       throw dbError
@@ -53,7 +55,7 @@ export const useClientsStore = defineStore('clients', () => {
       .from('clients')
       .update(payload)
       .eq('id', id)
-      .select('*')
+      .select(CLIENT_COLUMNS)
       .single()
     if (dbError)
       throw dbError
