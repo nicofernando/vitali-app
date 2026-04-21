@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CalculateQuoteResponse, Client } from '@/types'
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { toast } from 'vue-sonner'
 import ClientForm from '@/components/clients/ClientForm.vue'
 import { Button } from '@/components/ui/button'
@@ -30,18 +31,32 @@ const emit = defineEmits<{
 
 const clientsStore = useClientsStore()
 const quotesStore = useQuotesStore()
+const { clients } = storeToRefs(clientsStore)
 
 const step = ref<'search' | 'new-client'>('search')
 const searchQuery = ref('')
-const searchResults = ref<Client[]>([])
-const searching = ref(false)
 const selectedClient = ref<Client | null>(null)
 const saving = ref(false)
 const newClientFormRef = ref<InstanceType<typeof ClientForm> | null>(null)
 const creatingClient = ref(false)
 
+const searchResults = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q)
+    return []
+  return clients.value.filter(c =>
+    c.full_name.toLowerCase().includes(q)
+    || (c.rut ?? '').toLowerCase().includes(q)
+    || (c.email ?? '').toLowerCase().includes(q),
+  ).slice(0, 10)
+})
+
 watch(() => props.open, (v) => {
-  if (!v) {
+  if (v) {
+    if (clients.value.length === 0)
+      clientsStore.fetchAll()
+  }
+  else {
     reset()
   }
 })
@@ -49,24 +64,8 @@ watch(() => props.open, (v) => {
 function reset() {
   step.value = 'search'
   searchQuery.value = ''
-  searchResults.value = []
   selectedClient.value = null
   saving.value = false
-}
-
-async function handleSearch() {
-  if (!searchQuery.value.trim())
-    return
-  searching.value = true
-  try {
-    searchResults.value = await clientsStore.search(searchQuery.value)
-  }
-  catch {
-    toast.error('Error al buscar clientes')
-  }
-  finally {
-    searching.value = false
-  }
 }
 
 function selectClient(client: Client) {
@@ -149,16 +148,11 @@ async function handleSave() {
       <template v-if="step === 'search'">
         <div class="space-y-4">
           <!-- Búsqueda -->
-          <div class="flex gap-2">
-            <Input
-              v-model="searchQuery"
-              placeholder="Buscar por nombre o RUT..."
-              @keyup.enter="handleSearch"
-            />
-            <Button variant="outline" :disabled="searching" @click="handleSearch">
-              {{ searching ? '...' : 'Buscar' }}
-            </Button>
-          </div>
+          <Input
+            v-model="searchQuery"
+            placeholder="Buscar por nombre, RUT o email..."
+            autofocus
+          />
 
           <!-- Resultados -->
           <div v-if="searchResults.length > 0" class="border rounded-lg divide-y max-h-48 overflow-y-auto">
@@ -177,7 +171,7 @@ async function handleSave() {
               </p>
             </button>
           </div>
-          <p v-else-if="searchQuery && !searching" class="text-sm text-muted-foreground">
+          <p v-else-if="searchQuery.trim()" class="text-sm text-muted-foreground">
             Sin resultados. ¿Querés crear un cliente nuevo?
           </p>
 
