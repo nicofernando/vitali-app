@@ -138,8 +138,14 @@ async function handleDownload(quote: QuoteSummary) {
     const result = await quotesStore.generatePdf(quote.id)
     window.open(result.url, '_blank')
   }
-  catch {
-    toast.error('Error al generar el PDF')
+  catch (err) {
+    if (err instanceof Error) {
+      console.error('[QuotesView] generatePdf error:', err.message, err.stack)
+      toast.error(`Error al generar el PDF: ${err.message}`)
+    } else {
+      console.error('[QuotesView] generatePdf error:', err)
+      toast.error('Error al generar el PDF')
+    }
   }
   finally {
     const next = new Set(generatingPdf.value)
