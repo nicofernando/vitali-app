@@ -1,0 +1,217 @@
+<script setup lang="ts">
+import type { CalculateQuoteResponse, Client } from '@/types'
+import { ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
+import ClientForm from '@/components/clients/ClientForm.vue'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
+import { useClientsStore } from '@/stores/clients'
+import { useQuotesStore } from '@/stores/quotes'
+
+const props = defineProps<{
+  open: boolean
+  result: CalculateQuoteResponse | null
+  smartCuotasPercentage?: number
+}>()
+
+const emit = defineEmits<{
+  'update:open': [value: boolean]
+  'saved': [quoteId: string]
+}>()
+
+const clientsStore = useClientsStore()
+const quotesStore = useQuotesStore()
+
+const step = ref<'search' | 'new-client'>('search')
+const searchQuery = ref('')
+const searchResults = ref<Client[]>([])
+const searching = ref(false)
+const selectedClient = ref<Client | null>(null)
+const saving = ref(false)
+const newClientFormRef = ref<InstanceType<typeof ClientForm> | null>(null)
+const creatingClient = ref(false)
+
+watch(() => props.open, (v) => {
+  if (!v) {
+    reset()
+  }
+})
+
+function reset() {
+  step.value = 'search'
+  searchQuery.value = ''
+  searchResults.value = []
+  selectedClient.value = null
+  saving.value = false
+}
+
+async function handleSearch() {
+  if (!searchQuery.value.trim())
+    return
+  searching.value = true
+  try {
+    searchResults.value = await clientsStore.search(searchQuery.value)
+  }
+  catch {
+    toast.error('Error al buscar clientes')
+  }
+  finally {
+    searching.value = false
+  }
+}
+
+function selectClient(client: Client) {
+  selectedClient.value = client
+}
+
+function goToNewClient() {
+  step.value = 'new-client'
+  setTimeout(() => newClientFormRef.value?.init(null), 50)
+}
+
+async function handleCreateClient(values: Parameters<typeof clientsStore.create>[0]) {
+  creatingClient.value = true
+  try {
+    const created = await clientsStore.create(values)
+    selectedClient.value = created
+    step.value = 'search'
+    toast.success('Cliente creado')
+  }
+  catch {
+    toast.error('Error al crear el cliente')
+  }
+  finally {
+    creatingClient.value = false
+  }
+}
+
+async function handleSave() {
+  if (!selectedClient.value || !props.result)
+    return
+
+  saving.value = true
+  try {
+    const r = props.result
+    const quoteId = await quotesStore.create({
+      client_id: selectedClient.value.id,
+      unit_id: r.unit.id,
+      pie_percentage: (r.pie_amount / r.unit.list_price) * 100,
+      pie_amount: r.pie_amount,
+      financing_amount: r.financing_amount,
+      credit_type: r.french && r.smart ? 'both' : r.french ? 'french' : 'smart',
+      term_years: r.french?.term_months ? r.french.term_months / 12 : (r.smart?.term_months ?? 240) / 12,
+      monthly_rate: r.french?.monthly_rate ?? 0,
+      monthly_payment: r.french?.monthly_payment ?? r.smart?.cuotas_payment ?? null,
+      balloon_payment: r.smart?.balloon_payment ?? null,
+      smart_cuotas_percentage: props.smartCuotasPercentage ?? null,
+      quote_data_snapshot: r as unknown as object,
+    })
+
+    toast.success('Cotización guardada')
+    emit('update:open', false)
+    emit('saved', quoteId)
+  }
+  catch {
+    toast.error('Error al guardar la cotización')
+  }
+  finally {
+    saving.value = false
+  }
+}
+</script>
+
+<template>
+  <Dialog :open="open" @update:open="emit('update:open', $event)">
+    <DialogContent class="sm:max-w-lg">
+      <DialogHeader>
+        <DialogTitle>Guardar cotización</DialogTitle>
+        <DialogDescription>
+          Asociá un cliente para guardar esta cotización
+        </DialogDescription>
+      </DialogHeader>
+
+      <!-- Step: buscar cliente -->
+      <template v-if="step === 'search'">
+        <div class="space-y-4">
+          <!-- Búsqueda -->
+          <div class="flex gap-2">
+            <Input
+              v-model="searchQuery"
+              placeholder="Buscar por nombre o RUT..."
+              @keyup.enter="handleSearch"
+            />
+            <Button variant="outline" :disabled="searching" @click="handleSearch">
+              {{ searching ? '...' : 'Buscar' }}
+            </Button>
+          </div>
+
+          <!-- Resultados -->
+          <div v-if="searchResults.length > 0" class="border rounded-lg divide-y max-h-48 overflow-y-auto">
+            <button
+              v-for="client in searchResults"
+              :key="client.id"
+              class="w-full text-left px-4 py-3 text-sm hover:bg-muted transition-colors"
+              :class="selectedClient?.id === client.id ? 'bg-muted' : ''"
+              @click="selectClient(client)"
+            >
+              <p class="font-medium">
+                {{ client.full_name }}
+              </p>
+              <p class="text-muted-foreground text-xs">
+                {{ client.rut ?? 'Sin RUT' }} · {{ client.email ?? 'Sin email' }}
+              </p>
+            </button>
+          </div>
+          <p v-else-if="searchQuery && !searching" class="text-sm text-muted-foreground">
+            Sin resultados. ¿Querés crear un cliente nuevo?
+          </p>
+
+          <!-- Cliente seleccionado -->
+          <div v-if="selectedClient" class="rounded-lg bg-muted p-3 text-sm">
+            <p class="font-medium">
+              Cliente seleccionado:
+            </p>
+            <p>{{ selectedClient.full_name }} · {{ selectedClient.rut ?? 'Sin RUT' }}</p>
+          </div>
+
+          <Separator />
+
+          <Button variant="outline" class="w-full" @click="goToNewClient">
+            + Crear cliente nuevo
+          </Button>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="emit('update:open', false)">
+            Cancelar
+          </Button>
+          <Button :disabled="!selectedClient || saving" @click="handleSave">
+            {{ saving ? 'Guardando...' : 'Guardar cotización' }}
+          </Button>
+        </DialogFooter>
+      </template>
+
+      <!-- Step: crear cliente -->
+      <template v-else>
+        <p class="text-sm text-muted-foreground mb-4">
+          Completá los datos para registrar el nuevo cliente.
+        </p>
+        <ClientForm
+          ref="newClientFormRef"
+          :submitting="creatingClient"
+          @submit="handleCreateClient"
+          @cancel="step = 'search'"
+        />
+      </template>
+    </DialogContent>
+  </Dialog>
+</template>

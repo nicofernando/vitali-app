@@ -14,8 +14,6 @@ import {
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { usePermissionsStore } from '@/stores/permissions'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +25,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { useAuthStore } from '@/stores/auth'
+import { usePermissionsStore } from '@/stores/permissions'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -50,11 +50,11 @@ const navItems: NavItem[] = [
   { name: 'Tipologías', to: '/typologies', icon: Layers, permission: 'typologies.read' },
   { name: 'Cotizador', to: '/simulator', icon: Calculator, permission: 'simulator.use' },
   { name: 'Stock', to: '/stock', icon: LayoutList, permission: 'units.read' },
-  { name: 'Cotizaciones', to: '/quotes', icon: FileText, permission: 'quotes.read', comingSoon: true },
-  { name: 'Clientes', to: '/clients', icon: Contact, permission: 'clients.read', comingSoon: true },
+  { name: 'Cotizaciones', to: '/quotes', icon: FileText, permission: 'quotes.read' },
+  { name: 'Clientes', to: '/clients', icon: Contact, permission: 'clients.read' },
   { name: 'Monedas', to: '/currencies', icon: Coins, permission: 'settings.read' },
   { name: 'Usuarios', to: '/users', icon: Users, permission: 'users.read' },
-  { name: 'Configuración', to: '/settings', icon: Settings, permission: 'settings.read', comingSoon: true },
+  { name: 'Configuración', to: '/settings', icon: Settings, permission: 'settings.read' },
 ]
 
 const visibleItems = computed(() =>

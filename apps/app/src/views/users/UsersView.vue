@@ -2,8 +2,8 @@
 import type { Role, UserWithRoles } from '@/types'
 import { toTypedSchema } from '@vee-validate/zod'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
 import { useForm } from 'vee-validate'
+import { computed, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { z } from 'zod'
 import {
@@ -20,6 +20,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
@@ -29,13 +36,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Table,
   TableBody,
