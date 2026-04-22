@@ -71,17 +71,12 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // 1. Fetch quote con todos los joins
+    // 1. Fetch quote con todos los joins.
+    // El cliente con auth respeta RLS: si el SELECT devuelve la fila, el usuario
+    // tiene permiso (owner+quotes.read o quotes.read_all). No hace falta re-validar
+    // ownership acá — sería redundante y rompería a admins con read_all.
     console.log(`[generate-pdf] Fetching quote ${quote_id}`)
     const record = await fetchQuoteRecord(supabase, quote_id)
-
-    // Verificar ownership antes de proceder
-    if (record.created_by !== user.id) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
 
     const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -211,12 +206,14 @@ Deno.serve(async (req: Request) => {
     }
     console.log(`[generate-pdf] PDF uploaded to storage: ${pdfPath}`)
 
-    // 6. Actualizar pdf_path en quotes
+    // 6. Actualizar pdf_path en quotes.
+    // El acceso ya se validó vía RLS en el SELECT inicial; acá solo persistimos
+    // el path. No filtramos por created_by porque admins generan PDFs de cotizaciones
+    // ajenas y el filtro dejaría el path sin actualizar (regenera cada vez).
     const { error: updateError } = await serviceSupabase
       .from('quotes')
       .update({ pdf_path: pdfPath })
       .eq('id', quote_id)
-      .eq('created_by', user.id)
     if (updateError)
       throw updateError
 
