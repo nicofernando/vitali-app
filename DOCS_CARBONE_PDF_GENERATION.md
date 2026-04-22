@@ -64,3 +64,14 @@ Esto ahorra cuota de uso en la API de Carbone, tiempo de carga para el usuario y
 
 ## Siguientes Pasos
 El flujo está al 100% operativo. El paso final para producción es sustituir la plantilla de prueba en el bucket `templates` por el documento **Word real** de la empresa, manteniendo las variables lógicas de Carbone.
+
+## 4. Deuda Técnica y Parches ("Hackys" a considerar)
+Durante la implementación y resolución de los errores críticos, se introdujeron un par de soluciones que funcionan perfectamente para la etapa actual, pero que representan **deuda técnica** y deberían ser optimizadas en el futuro para mejorar el rendimiento y escalabilidad:
+
+1. **Subida redundante de la plantilla a Carbone (Problema de Rendimiento):**
+   Actualmente, *cada vez* que un usuario hace clic en "Generar PDF", la Edge Function descarga la plantilla `.docx` desde Supabase y la vuelve a subir a la API de Carbone (`POST /template`). Esto agrega latencia (tiempo de espera) innecesaria en cada petición.
+   **Solución ideal:** Subir la plantilla a Carbone *una sola vez*, guardar el `templateId` resultante (ya sea en la base de datos o en una variable de entorno), y que la Edge Function simplemente invoque el endpoint `POST /render/{templateId}` enviando únicamente los datos en JSON.
+2. **Nombre de plantilla *Hardcodeado*:**
+   En el código de la función (`index.ts`), el nombre del archivo `cotizacion.docx` está escrito explícitamente (hardcodeado). Si el día de mañana la empresa requiere múltiples formatos de cotización (ej. según el tipo de cliente o proyecto), este valor deberá ser dinámico y parametrizado.
+3. **Bypass de RLS en el UPDATE de la base de datos:**
+   Para guardar la ruta del PDF (`pdf_path`), se usa el `SUPABASE_SERVICE_ROLE_KEY` haciendo un bypass de las reglas RLS. El código tiene un comentario indicando que esto se hizo como un "parche" para que los administradores puedan generar PDFs de cotizaciones que no crearon (y así el UPDATE no falle). Si bien es una práctica común en Edge Functions, saltarse el RLS implica que cualquier "Trigger" de base de datos que dependa de saber quién hizo la acción (`auth.uid()`) no registrará al usuario real para esa actualización específica.
