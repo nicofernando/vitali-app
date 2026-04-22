@@ -1,4 +1,5 @@
 import type { GeneratePdfResponse, QuoteInsert, QuoteSummary } from '@/types'
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 import { supabase } from '@/lib/supabase'
@@ -41,8 +42,26 @@ export const useQuotesStore = defineStore('quotes', () => {
     const { data, error: fnError } = await supabase.functions.invoke('generate-pdf', {
       body: { quote_id: quoteId },
     })
-    if (fnError)
+    if (fnError) {
+      if (fnError instanceof FunctionsHttpError) {
+        let serverMsg = fnError.message
+        try {
+          const body = await fnError.context.json()
+          if (body?.error)
+            serverMsg = body.error
+        }
+        catch {
+          try {
+            const text = await fnError.context.text()
+            if (text)
+              serverMsg = text
+          }
+          catch {}
+        }
+        throw new Error(`generate-pdf: ${serverMsg}`)
+      }
       throw new Error(fnError.message)
+    }
     if (!data || !data.url || !data.pdf_path)
       throw new Error('Respuesta inválida de generate-pdf')
     const result = data as GeneratePdfResponse
