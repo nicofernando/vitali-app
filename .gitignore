@@ -54,3 +54,6 @@ pnpm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Archivos de prueba generados
+scripts/*.docx
