@@ -44,21 +44,22 @@ export const useQuotesStore = defineStore('quotes', () => {
     })
     if (fnError) {
       if (fnError instanceof FunctionsHttpError) {
+        const status = fnError.context.status
         let serverMsg = fnError.message
         try {
-          const body = await fnError.context.json()
-          if (body?.error)
-            serverMsg = body.error
-        }
-        catch {
-          try {
-            const text = await fnError.context.text()
-            if (text)
+          const text = await fnError.context.text()
+          if (text) {
+            try {
+              const body = JSON.parse(text)
+              serverMsg = body.error ?? body.message ?? body.msg ?? text
+            }
+            catch {
               serverMsg = text
+            }
           }
-          catch {}
         }
-        throw new Error(`generate-pdf: ${serverMsg}`)
+        catch {}
+        throw new Error(`generate-pdf [${status}]: ${serverMsg}`)
       }
       throw new Error(fnError.message)
     }
