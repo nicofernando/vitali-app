@@ -26,9 +26,37 @@ export async function handler(req: Request): Promise<Response> {
       })
     }
 
-    const { user_id } = await req.json()
+    const { data: canDelete, error: permError } = await authClient.rpc('has_permission', {
+      p_module: 'users',
+      p_action: 'delete',
+    })
+    if (permError || !canDelete) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    let user_id: string
+    try {
+      const body = await req.json()
+      user_id = body.user_id
+    }
+    catch {
+      return new Response(JSON.stringify({ error: 'Body JSON inválido' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
     if (!user_id) {
       return new Response(JSON.stringify({ error: 'user_id es requerido' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (!/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(user_id)) {
+      return new Response(JSON.stringify({ error: 'user_id inválido' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })

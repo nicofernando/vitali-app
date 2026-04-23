@@ -155,7 +155,7 @@ CREATE OR REPLACE FUNCTION get_quotes_with_details() ...
 6.  lib/document-variables.ts → DATA_BLOCKS, DOCUMENT_TYPE_BLOCKS
 7.  stores/clients.test.ts → RED → clients.ts → GREEN
 8.  stores/quotes.test.ts → RED → quotes.ts → GREEN
-9.  functions/generate-pdf/builder.test.ts → RED → builder.ts → GREEN
+9.  functions/generate-pdf/builder.vitest.ts → RED → builder.ts → GREEN
 10. functions/generate-pdf/fetcher.ts + index.ts
 11. Deploy Edge Function generate-pdf en dev (MCP)
 12. components/clients/ClientForm.vue
@@ -184,7 +184,7 @@ CREATE OR REPLACE FUNCTION get_quotes_with_details() ...
 | `supabase/functions/generate-pdf/index.ts` | Handler Edge Function |
 | `supabase/functions/generate-pdf/fetcher.ts` | Fetch datos DB |
 | `supabase/functions/generate-pdf/builder.ts` | Objeto data para Carbone |
-| `supabase/functions/generate-pdf/builder.test.ts` | Tests Deno del builder |
+| `supabase/functions/generate-pdf/builder.vitest.ts` | Tests Deno del builder |
 
 ## Archivos a modificar
 

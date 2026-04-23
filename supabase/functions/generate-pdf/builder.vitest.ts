@@ -120,10 +120,12 @@ describe('buildCarboneData', () => {
       monthly_payment: 800000,
       balloon_payment: 48000000,
       smart_cuotas_percentage: 50,
+      quote_data_snapshot: { smart: { cuotas_payment: 350000 } },
     }
     const data = buildCarboneData(bothRecord)
     expect(data.frances).toBeDefined()
     expect(data.inteligente).toBeDefined()
+    expect(data.inteligente!.cuota_mensual).toBe(350000)
   })
 
   it('fecha de entrega nula se formatea como cadena vacía', () => {

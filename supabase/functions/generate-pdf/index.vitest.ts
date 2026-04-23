@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // vi.hoisted runs at the same time as vi.mock (both are hoisted before imports),
 // so mockCreateClient is available inside the factory.
@@ -154,6 +154,10 @@ describe('generate-pdf handler', () => {
     setupEnv()
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   // ── CORS ──────────────────────────────────────────────────────────────────
 
   it('OPTIONS devuelve 200 ok (CORS preflight)', async () => {
@@ -238,7 +242,6 @@ describe('generate-pdf handler', () => {
       .mockReturnValueOnce(makeAuthClient({ id: 'u1' }) as any)
       .mockReturnValueOnce(makeServiceClient({ templateError: { message: 'Not found' } }) as any)
     vi.mocked(fetchQuoteRecord).mockResolvedValue(fakeRecord as any)
-    vi.mocked(buildCarboneData).mockReturnValue({} as any)
 
     const res = await handler(makeRequest({ quote_id: VALID_UUID }))
     expect(res.status).toBe(500)
@@ -292,6 +295,32 @@ describe('generate-pdf handler', () => {
     expect(res.status).toBe(500)
     const body = await res.json()
     expect(body.error).toContain('Carbone render failed')
+  })
+
+  it('devuelve 500 cuando falla el upload del PDF a Storage', async () => {
+    mockCreateClient
+      .mockReturnValueOnce(makeAuthClient({ id: 'u1' }) as any)
+      .mockReturnValueOnce(makeServiceClient({ uploadStorageError: { message: 'bucket full' } }) as any)
+    vi.mocked(fetchQuoteRecord).mockResolvedValue(fakeRecord as any)
+    vi.mocked(buildCarboneData).mockReturnValue({} as any)
+    mockCarboneSuccess()
+
+    const res = await handler(makeRequest({ quote_id: VALID_UUID }))
+    expect(res.status).toBe(500)
+    expect((await res.json()).error).toContain('Error subiendo PDF')
+  })
+
+  it('devuelve 500 cuando falla la creación de URL firmada', async () => {
+    mockCreateClient
+      .mockReturnValueOnce(makeAuthClient({ id: 'u1' }) as any)
+      .mockReturnValueOnce(makeServiceClient({ signError: { message: 'sign failed' } }) as any)
+    vi.mocked(fetchQuoteRecord).mockResolvedValue(fakeRecord as any)
+    vi.mocked(buildCarboneData).mockReturnValue({} as any)
+    mockCarboneSuccess()
+
+    const res = await handler(makeRequest({ quote_id: VALID_UUID }))
+    expect(res.status).toBe(500)
+    expect((await res.json()).error).toContain('URL firmada')
   })
 
   // ── Happy path ────────────────────────────────────────────────────────────

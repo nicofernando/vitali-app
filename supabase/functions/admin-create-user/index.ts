@@ -32,11 +32,39 @@ export async function handler(req: Request): Promise<Response> {
       })
     }
 
-    const body: CreateUserRequest = await req.json()
-    const { email, full_name, phone } = body
+    const { data: canCreate, error: permError } = await authClient.rpc('has_permission', {
+      p_module: 'users',
+      p_action: 'create',
+    })
+    if (permError || !canCreate) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    let body: CreateUserRequest
+    try {
+      body = await req.json()
+    }
+    catch {
+      return new Response(JSON.stringify({ error: 'Body JSON inválido' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const email = (body.email ?? '').trim()
+    const { full_name, phone } = body
 
     if (!email) {
       return new Response(JSON.stringify({ error: 'El email es requerido' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (!/^[^\s@]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/i.test(email)) {
+      return new Response(JSON.stringify({ error: 'Email inválido' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -59,10 +87,11 @@ export async function handler(req: Request): Promise<Response> {
 
     // Si viene phone, actualizar el perfil que creó el trigger
     if (phone && inviteData.user?.id) {
-      await adminClient
+      const { error: phoneError } = await adminClient
         .from('user_profiles')
         .update({ phone })
         .eq('user_id', inviteData.user.id)
+      if (phoneError) throw phoneError
     }
 
     return new Response(

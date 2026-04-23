@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockCreateClient } = vi.hoisted(() => ({ mockCreateClient: vi.fn() }))
 vi.mock('jsr:@supabase/supabase-js@2', () => ({ createClient: mockCreateClient }))
@@ -10,8 +10,11 @@ function setupEnv() {
     ({ SUPABASE_URL: 'https://test.supabase.co', SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'svc' }[key])
 }
 
-function makeAuthClient(user: object | null, err: object | null = null) {
-  return { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: err }) } }
+function makeAuthClient(user: object | null, err: object | null = null, hasPerm = true) {
+  return {
+    auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: err }) },
+    rpc: vi.fn().mockResolvedValue({ data: hasPerm, error: null }),
+  }
 }
 
 function makeAdminClient(inviteResult: object) {
@@ -35,6 +38,10 @@ describe('admin-create-user handler', () => {
     setupEnv()
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('OPTIONS devuelve 200 ok (CORS preflight)', async () => {
     const res = await handler(new Request('https://fn.supabase.co/admin-create-user', { method: 'OPTIONS' }))
     expect(res.status).toBe(200)
@@ -50,7 +57,6 @@ describe('admin-create-user handler', () => {
   it('devuelve 400 cuando falta email', async () => {
     mockCreateClient
       .mockReturnValueOnce(makeAuthClient({ id: 'admin-1' }) as any)
-      .mockReturnValueOnce(makeAdminClient({ data: { user: { id: 'new-1' } }, error: null }) as any)
     const res = await handler(makeRequest({}))
     expect(res.status).toBe(400)
     expect((await res.json()).error).toContain('email')
@@ -85,5 +91,33 @@ describe('admin-create-user handler', () => {
     const res = await handler(makeRequest({ email: 'existe@vitali.com' }))
     expect(res.status).toBe(500)
     expect((await res.json()).error).toContain('Email ya existe')
+  })
+
+  it('devuelve 403 cuando el usuario no tiene permiso', async () => {
+    mockCreateClient
+      .mockReturnValueOnce(makeAuthClient({ id: 'admin-1' }, null, false) as any)
+    const res = await handler(makeRequest({ email: 'test@example.com' }))
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.error).toBe('Forbidden')
+  })
+
+  it('devuelve 400 cuando el body no es JSON válido', async () => {
+    mockCreateClient.mockReturnValue(makeAuthClient({ id: 'admin-1' }) as any)
+    const req = new Request('https://fn.supabase.co/admin-create-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid' },
+      body: 'not-json',
+    })
+    const res = await handler(req)
+    expect(res.status).toBe(400)
+  })
+
+  it('devuelve 400 cuando el email es inválido', async () => {
+    mockCreateClient
+      .mockReturnValueOnce(makeAuthClient({ id: 'admin-1' }) as any)
+    const res = await handler(makeRequest({ email: 'not-an-email' }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toContain('Email inválido')
   })
 })

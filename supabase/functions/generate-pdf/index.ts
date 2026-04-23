@@ -174,6 +174,10 @@ export async function handler(req: Request): Promise<Response> {
     // 4c. Descargar PDF con GET /render/{renderId}
     const downloadRes = await fetch(`https://api.carbone.io/render/${renderId}`, {
       method: 'GET',
+      headers: {
+        'carbone-version': '4',
+        Authorization: `Bearer ${carboneApiKey}`,
+      },
     })
 
     if (!downloadRes.ok) {
@@ -191,6 +195,10 @@ export async function handler(req: Request): Promise<Response> {
 
     const pdfBytes = await downloadRes.arrayBuffer()
     console.log(`[generate-pdf] PDF downloaded: ${pdfBytes.byteLength} bytes`)
+
+    if (pdfBytes.byteLength === 0) {
+      throw new Error('Carbone devolvió un PDF vacío (0 bytes)')
+    }
 
     // 5. Subir PDF a Storage (bucket: quotes)
     const pdfPath = `${quote_id}.pdf`

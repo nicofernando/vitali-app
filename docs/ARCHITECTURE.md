@@ -88,8 +88,8 @@ permissions (id, module, action, description)
 role_permissions (role_id, permission_id)
 
 -- Usuarios (extiende auth.users de Supabase)
-user_profiles (id, user_id, full_name, email, smtp_host, smtp_port,
-               smtp_user, created_at)
+user_profiles (id, user_id, full_name, email, phone, is_active,
+               smtp_host, smtp_port, smtp_user, created_at)
 -- smtp_password → en Supabase Vault, referenciado por user_id
 
 -- Roles de usuarios

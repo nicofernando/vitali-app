@@ -1,4 +1,5 @@
 {
   "deno.enablePaths": ["supabase/functions"],
-  "deno.unstable": false
+  "deno.unstable": false,
+  "deno.config": "supabase/functions/deno.json"
 }

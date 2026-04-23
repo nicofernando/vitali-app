@@ -91,8 +91,6 @@
 ---
 
 ## Estado Actual
-- Sprint 0 en progreso
-- MCP Supabase configurado (dev + prod)
-- Skills instaladas
-- Documentación base creada
-- Pendiente: inicializar monorepo (pnpm workspaces + Vue app)
+- Sprint 1 completo ✅
+- Sprint 2 completo ✅ — en QA (staging.vitalisuites.com)
+- Sprint 3 planificado (Email)
