@@ -64,7 +64,7 @@ const visibleItems = computed(() =>
 )
 
 function isActive(to: string) {
-  return to === '/' ? route.path === '/' : route.path === to || route.path.startsWith(to + '/')
+  return to === '/' ? route.path === '/' : route.path === to || route.path.startsWith(`${to}/`)
 }
 
 function handleNavClick() {

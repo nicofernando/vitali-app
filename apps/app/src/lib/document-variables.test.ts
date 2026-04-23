@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DATA_BLOCKS, DOCUMENT_TYPE_BLOCKS, getBlocksForDocumentType } from './document-variables'
 
-describe('DATA_BLOCKS', () => {
+describe('dATA_BLOCKS', () => {
   it('contiene los 7 bloques esperados', () => {
     const ids = DATA_BLOCKS.map(b => b.id)
     expect(ids).toContain('cliente')
@@ -32,7 +32,7 @@ describe('DATA_BLOCKS', () => {
   })
 })
 
-describe('DOCUMENT_TYPE_BLOCKS', () => {
+describe('dOCUMENT_TYPE_BLOCKS', () => {
   it('define el tipo cotizacion con los 7 bloques', () => {
     expect(DOCUMENT_TYPE_BLOCKS.cotizacion).toHaveLength(7)
     expect(DOCUMENT_TYPE_BLOCKS.cotizacion).toContain('cliente')

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { CalculateQuoteResponse, Client } from '@/types'
-import type { QuoteInsert } from '@/types'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
+import type { CalculateQuoteResponse, Client, QuoteInsert } from '@/types'
 import { ChevronDown, X } from 'lucide-vue-next'
+import { storeToRefs } from 'pinia'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import ClientForm from '@/components/clients/ClientForm.vue'
 import { Button } from '@/components/ui/button'

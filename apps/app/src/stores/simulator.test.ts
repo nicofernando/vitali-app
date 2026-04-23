@@ -1,6 +1,6 @@
+import type { CalculateQuoteResponse } from '@/types'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { CalculateQuoteResponse } from '@/types'
 import { useSimulatorStore } from './simulator'
 
 vi.mock('@/lib/supabase', () => ({
