@@ -28,6 +28,7 @@ apps/**/env.download
 # Editor
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea/
 *.suo
 *.ntvs*
@@ -57,3 +58,6 @@ pnpm-debug.log*
 
 # Archivos de prueba generados
 scripts/*.docx
+
+# Archivos de datos locales
+*.xlsx
