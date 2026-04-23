@@ -16,6 +16,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // Map Deno JSR imports to the installed npm package (absolute path so vitest
+      // can resolve it regardless of where the test file lives in the monorepo).
+      'jsr:@supabase/supabase-js@2': fileURLToPath(new URL('./node_modules/@supabase/supabase-js', import.meta.url)),
     },
   },
 })

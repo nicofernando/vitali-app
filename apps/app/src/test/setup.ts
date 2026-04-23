@@ -7,3 +7,10 @@ vi.stubGlobal('import.meta', {
     BASE_URL: '/',
   },
 })
+
+// Stub Deno globals so Edge Function index.ts files can be imported in vitest (jsdom).
+// Deno.serve becomes a no-op; Deno.env.get is configured per test via (Deno as any).env.get.
+vi.stubGlobal('Deno', {
+  serve: vi.fn(),
+  env: { get: vi.fn() },
+})

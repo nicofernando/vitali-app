@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-Deno.serve(async (req: Request) => {
+export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -70,4 +70,6 @@ Deno.serve(async (req: Request) => {
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   }
-})
+}
+
+Deno.serve(handler)

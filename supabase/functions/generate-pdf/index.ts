@@ -1,14 +1,15 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildCarboneData } from './builder.ts'
 import { fetchQuoteRecord } from './fetcher.ts'
-import { encode as base64Encode } from 'https://deno.land/std@0.224.0/encoding/base64.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-Deno.serve(async (req: Request) => {
+const TEMPLATE_NAME = 'cotizacion.docx'
+
+export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -84,7 +85,7 @@ Deno.serve(async (req: Request) => {
     console.log(`[generate-pdf] Downloading template from storage...`)
     const { data: templateBlob, error: storageError } = await serviceSupabase.storage
       .from('templates')
-      .download('cotizacion.docx')
+      .download(TEMPLATE_NAME)
 
     if (storageError || !templateBlob) {
       throw new Error(`Error descargando template: ${storageError?.message ?? 'no encontrado'}`)
@@ -105,7 +106,7 @@ Deno.serve(async (req: Request) => {
     //     (JSON con base64 falla en v4 con "template field is empty" — usar FormData)
     console.log(`[generate-pdf] Uploading template to Carbone...`)
     const formData = new FormData()
-    formData.append('template', new Blob([templateBytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), 'cotizacion.docx')
+    formData.append('template', new Blob([templateBytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), TEMPLATE_NAME)
 
     const uploadRes = await fetch('https://api.carbone.io/template', {
       method: 'POST',
@@ -243,4 +244,6 @@ Deno.serve(async (req: Request) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
-})
+}
+
+Deno.serve(handler)
