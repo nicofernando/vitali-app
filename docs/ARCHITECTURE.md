@@ -32,10 +32,10 @@
 **Por qué**: El cliente ya tiene el hosting. Para una SPA compilada (solo archivos estáticos), un hosting compartido con SFTP es perfectamente válido. No hay credenciales sensibles en el bundle compilado.
 **Consecuencia**: GitHub Actions automatiza el build y el upload SFTP. Credenciales en GitHub Secrets. El Supabase anon key queda en el bundle (es por diseño — RLS protege los datos).
 
-### ADR-007: PDF generado server-side
-**Decisión**: Las cotizaciones y documentos PDF se generan en Edge Functions de Supabase usando una plantilla HTML + Chrome headless o servicio externo (PDFShift/DocRaptor).
-**Por qué**: Output profesional e idéntico al diseño. La plantilla es HTML/CSS puro, editable sin tocar código. Escalable para contratos y otros documentos futuros. Alternativas como jsPDF + html2canvas producen output de mala calidad.
-**Consecuencia**: Costo marginal por generación de PDF cuando se use servicio externo. En el free tier de Supabase las Edge Functions tienen límite de invocaciones.
+### ADR-007: PDF generado server-side con Carbone.io + templates .docx
+**Decisión**: Las cotizaciones y documentos PDF se generan en Edge Functions de Supabase usando Carbone.io con plantillas `.docx` de Word.
+**Por qué**: Output profesional controlado por el cliente sin tocar código. El template es un `.docx` editable en Word con variables `{d.campo}`. Alternativas descartadas: jsPDF + html2canvas (mala calidad), Chrome headless/PDFShift (overhead de infra). Carbone cloud free tier es suficiente para el volumen actual (100 renders/mes); cuando escale → Carbone OSS self-hosted en Docker con la misma API.
+**Consecuencia**: Flujo en 3 pasos via API REST (upload template → render con datos → download PDF). Templates viven en Supabase Storage bucket `templates`. `verify_jwt = false` en `config.toml` es obligatorio — la validación del token se hace internamente en la Edge Function via `auth.getUser()`. Ver `DOCS_CARBONE_PDF_GENERATION.md` para el flujo completo y deuda técnica.
 
 ### ADR-008: Credenciales SMTP en Supabase Vault
 **Decisión**: Las passwords SMTP de cada vendedor se almacenan cifradas en Supabase Vault.

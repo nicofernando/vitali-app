@@ -67,18 +67,23 @@ quotesStore.create(payload)     → guarda en DB (quotes table)
         ↓
 quotesStore.generatePdf(id)     → llama Edge Function generate-pdf
         ↓
-Edge Function:
-  1. Fetch quote + joins desde DB
-  2. Fetch template .docx desde Storage (bucket: templates)
+Edge Function (Carbone v4 — flujo en 3 pasos):
+  1. Fetch quote + joins desde DB (auth client — respeta RLS)
+  2. Fetch template .docx desde Storage (service client — bypassa RLS)
   3. buildCarboneData() → objeto de variables para Carbone
-  4. POST api.carbone.io/render con { data, template: base64, convertTo: 'pdf' }
-  5. Upload PDF a Storage (bucket: quotes/{quote_id}.pdf)
-  6. UPDATE quotes SET pdf_path = path
-  7. createSignedUrl (válida 1h)
-  8. Retorna { url, pdf_path, expires_at }
+  4. POST api.carbone.io/template (FormData) → templateId
+  5. POST api.carbone.io/render/{templateId} (JSON data) → renderId
+  6. GET  api.carbone.io/render/{renderId} → PDF binario
+  7. Upload PDF a Storage (bucket: quotes/{quote_id}.pdf)
+  8. UPDATE quotes SET pdf_path = path
+  9. createSignedUrl (válida 1h)
+  10. Retorna { url, pdf_path, expires_at }
         ↓
 Frontend abre URL en nueva pestaña → PDF descargado
 ```
+
+> **Importante**: Carbone v4 rechaza templates en base64 dentro de JSON ("template field is empty").
+> El formato correcto es `FormData` con el archivo adjunto como `Blob`. Ver `DOCS_CARBONE_PDF_GENERATION.md`.
 
 ### Almacenamiento
 
