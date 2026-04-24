@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "exported_at": "2026-04-21 15:28:51",
+  "exported_at": "2026-04-24 21:59:10",
   "sessions": [
     {
       "id": "manual-save",
@@ -18,7 +18,7 @@
       "id": "manual-save-vitali-app",
       "project": "vitali-app",
       "directory": "",
-      "started_at": "2026-04-04 22:57:15"
+      "started_at": "2026-04-06 20:04:27"
     }
   ],
   "observations": [
@@ -146,6 +146,589 @@
     },
     {
       "id": 9,
+      "sync_id": "obs-fc2e387a6695b5b5",
+      "session_id": "manual-save-proyector-fin",
+      "type": "decision",
+      "title": "Protocolo de inicio de sesión + workflow de sprints documentado",
+      "content": "**What**: Documentado el protocolo completo de inicio de sesión y workflow de sprints como ley inquebrantable.\n\n**Why**: Sesiones anteriores perdían contexto al arrancar. El workflow de git no tenía reglas claras sobre ramas, migraciones ni QA.\n\n**Where**: CLAUDE.md (dos nuevas secciones) + .claude/skills/sprint-workflow/SKILL.md (skill nueva)\n\n**Protocolo de inicio (6 pasos)**:\n1. mem_context → recuperar memoria\n2. git pull + pnpm install + git log -5\n3. Leer TECH_DEBT.md → reportar ítems open\n4. Estado del sprint → del último session_summary en engram\n5. Preguntas de arquitectura abiertas\n6. Decir explícitamente qué viene antes de trabajar\n\n**Workflow de sprints**:\n- main = solo sprints cerrados y validados. Nunca tocar directamente.\n- feat/sprint-N = sandbox. Vive hasta que el sprint está correcto (días o semanas).\n- Commits: uno por entregable lógico, con cuerpo: qué se hizo / probado / QA usuario\n- Migraciones: solo ADITIVAS dentro del sprint. DROP/ALTER/RENAME requieren migración inversa previa.\n- Cierre: PR con template completo → QA aprobado → merge --no-ff a main → delete rama\n- Merge: siempre --no-ff para conservar merge commit visible\n\n**Contexto especial**:\n- Un solo Supabase free tier — no hay staging de DB\n- App no pasa a producción real hasta estar completa\n- Excel es la producción real hasta entonces\n- TDD obligatorio para núcleo matemático — finanzas reales",
+      "project": "proyector-fin",
+      "scope": "project",
+      "topic_key": "workflow/sprint-protocol",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-30 15:11:33",
+      "created_at": "2026-03-30 15:11:33",
+      "updated_at": "2026-03-30 15:11:33"
+    },
+    {
+      "id": 10,
+      "sync_id": "obs-9e50598db77c7e97",
+      "session_id": "manual-save-proyector-fin",
+      "type": "bugfix",
+      "title": "Surgical fixes: NaN/Infinity guards, type safety, reactivity, error handling",
+      "content": "**What**: Applied 14 confirmed fixes (6 CRITICAL, 7 WARNING, 2 SUGGESTION) from judgment-day review. All pass typecheck + lint + 85 tests.\n\n**Why**: Judgment-day adversarial review found silent NaN propagation, Infinity from pmt(nper=0), unguarded `as any` casts, direct Supabase call in component, non-atomic two-phase DB update, delete without dependency check, Set mutation not triggering Vue reactivity, and setTimeout without cleanup.\n\n**Where**:\n- `src/lib/formula-evaluator.ts` — NaN guard on Number(default_value), pmt nper\u003c=0 and tasa\u003c=-1 guards\n- `src/lib/formula-parser.ts` — double decimal point rejection in tokenizer\n- `src/stores/templates.ts` — getUser() error check, is_active removed from RawTemplateCurrency/flatten(), markAsBase restore-on-fail + TODO, fetchUsageCounts() moved here as store action\n- `src/components/settings/CurrenciesTable.vue` — removed direct supabase import, uses store.fetchUsageCounts()\n- `src/components/templates/ParameterDialog.vue` — isDslFunctionNode() type guard replaces as any, catch(e:unknown), setTimeout extracted to onAcBlur() with onUnmounted cleanup\n- `src/views/TemplateDetailView.vue` — handleDeleteParam checks dependents before delete, handleEditTemplateSave re-fetches instead of local mutation, safeExpressionLabel() wraps dslToExpression in try/catch\n- `src/components/templates/TemplateCurrenciesSheet.vue` — expandedUsage changed from Set to Record for reactivity, onSearchBlur() with cleanup\n- `src/components/templates/GroupManagementSheet.vue` — confirmDelete checks both call results, shows error to user\n- `TECH_DEBT.md` — TD-004 added for markAsBase atomicity\n\n**Learned**:\n- Vue lint rule `vue/define-macros-order` requires defineProps/defineEmits BEFORE any function declarations in script setup — type guard functions must come after.\n- `style/max-statements-per-line` fires on arrow functions with block bodies `() =\u003e { x = y }` on a single line — extract to named function or split.\n- `ref\u003cSet\u003cstring\u003e\u003e` mutations (.add/.delete) do NOT trigger Vue reactivity — use `ref\u003cRecord\u003cstring,boolean\u003e\u003e` with spread assignment instead.\n- `continue` in for...of is valid inside nested if/else — correctly skips resolved.set() for NaN params.",
+      "project": "proyector-fin",
+      "scope": "project",
+      "topic_key": "bugfix/judgment-day-fixes-batch1",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-30 15:31:31",
+      "created_at": "2026-03-30 15:31:31",
+      "updated_at": "2026-03-30 15:31:31"
+    },
+    {
+      "id": 11,
+      "sync_id": "obs-b0684639831f5b47",
+      "session_id": "manual-save-proyector-fin",
+      "type": "project",
+      "title": "Judgment Day Sprint 2 — resultados y deuda documentada",
+      "content": "**What**: Revisión adversarial completa de Sprint 2 con 2 jueces en paralelo, 3 rondas.\n\n**Why**: Código de finanzas reales — errores tienen costo real.\n\n**Resultados**: 3 rondas de juicio, 3 fix agents. Todos los issues críticos resueltos en código. Issues que requieren RPC documentados en TECH_DEBT.md.\n\n**Issues críticos resueltos**:\n- NaN silencioso en evaluador (Number() sin isFinite check)\n- pmt(nper=0) → Infinity; pmt(nper no-entero) aceptado\n- dslToExpression: a/(b*c) generaba a/b*c (bug matemático real)\n- formula_definition as any sin type guard\n- CurrenciesTable query Supabase directa en componente\n- expandedUsage.value double dereference en template\n- dep-check por string JSON con falsos positivos\n- Dialog cerraba antes de confirmar save exitoso → ahora parent controla cierre\n- flatten() hardcodeaba is_active:false (columna ya droppeada por TD-003)\n\n**Deuda técnica abierta para Sprint 3**:\n- TD-004: markAsBase → RPC Postgres para atomicidad\n- TD-005: GroupManagementSheet confirmDelete → RPC Postgres\n- TD-006: Tests unitarios para nuevos paths del evaluador (TDD obligatorio)\n\n**Estado final**: typecheck ✅, lint ✅, 85 tests ✅. Commit a551d85 pusheado.\n\n**QA usuario pendiente**: E2E manual del Sprint 2 completo antes de cerrar sprint.",
+      "project": "proyector-fin",
+      "scope": "project",
+      "topic_key": "sprint2/judgment-day",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-30 19:38:46",
+      "created_at": "2026-03-30 19:38:46",
+      "updated_at": "2026-03-30 19:38:46"
+    },
+    {
+      "id": 12,
+      "sync_id": "obs-76f46b3f5307067f",
+      "session_id": "manual-save-proyector-fin",
+      "type": "session_summary",
+      "title": "Session summary: proyector-fin",
+      "content": "## Goal\nResolver deuda técnica TD-004, TD-005 y TD-006 del Sprint 2 mediante Judgment Day adversarial (múltiples rondas de jueces en paralelo + fix agents hasta aprobación).\n\n## Instructions\n- Judgment Day: max 2 fix iterations por protocolo, pero aplicar buen juicio para issues triviales de última ronda (comentarios, one-liners).\n- CRITICAL de jueces que involucran RPC: SIEMPRE verificar la firma real del RPC contra la DB antes de aceptar el hallazgo — varios fueron falsos positivos.\n- El fix agent a veces genera expected values incorrectos en tests matemáticos — el test pasó igual porque el fix agent corrió los tests y corrigió sobre la marcha.\n- `deleteGroup` retornar `true` después de RPC exitoso aunque falle el refresh es correcto — no setear `error.value` en ese path (viola contrato booleano del store).\n- `0^-nper = +Infinity` (no 0) cuando tasa = -1 — el resultado final es 0 por IEEE 754 pero el intermediate path es Infinity.\n\n## Discoveries\n- RPC `delete_parameter_group` solo toma `p_group_id` (UUID único, SECURITY DEFINER) — no necesita `p_template_id`. El `templateId` en la firma TypeScript es solo para `fetchByTemplate` post-RPC.\n- RPC `set_base_currency` toma `(p_template_id, p_currency_id)` — ambos UPDATE en una transacción. Verifica con IF NOT FOUND al final.\n- Supabase project_id: `cgdugkrjirhqzjhbooar` (proyector-fin, sa-east-1).\n- `Number.parseFloat('0x10')` = 0 (se detiene en 'x'), NO rechaza hex correctamente. La solución correcta es una regex decimal-only: `/^[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:e[+-]?\\d+)?$/i`.\n- Vue auto-unwrap: nunca escribir `ref.value` dentro de `\u003ctemplate\u003e`. El bug de `expandedUsage.value[c.id]` en template causó que siempre fuera undefined.\n- `dslToExpression` bug de precedencia: `a/(b*c)` generaba `a/b*c` — fix en `needsParens` para right operand de divide con hijo multiply.\n- Dialog SRP: el dialog NO controla su propio cierre — el padre tiene `paramSaving = ref(false)` y solo cierra cuando la operación async confirma éxito.\n\n## Accomplished\n- ✅ TD-004 resuelto: `markAsBase` → RPC `set_base_currency` (atómico). Migración aplicada en Supabase.\n- ✅ TD-005 resuelto: `deleteGroup` → RPC `delete_parameter_group` (atómico). Migración aplicada. `ungroupByGroupId` eliminado (dead code).\n- ✅ TD-006 resuelto: 16 tests nuevos en `formula-evaluator.test.ts` — 104 tests totales pasan.\n- ✅ Judgment Day Sprint 2: ~25 issues resueltos en 3 rondas (hex rejection, pmt guards, Infinity propagation, dialog SRP, expandedUsage double-.value, dslToExpression precedence, etc.)\n- ✅ TemplateCurrenciesSheet: feedback de error en markAsBase, handleDelete, handleSelectCurrency (actionError ref).\n- ✅ `fetchUsageCounts` documentado como scope global.\n- ✅ TECH_DEBT.md: TD-004, TD-005, TD-006 marcados resolved. TD-001, TD-002 siguen open (Sprint 4).\n- ✅ Commit pusheado: `d2fc120` en main.\n\n## Relevant Files\n- `src/stores/templates.ts` — markAsBase usa RPC, deleteGroup usa RPC, fetchUsageCounts con JSDoc, ungroupByGroupId eliminado\n- `src/components/templates/TemplateCurrenciesSheet.vue` — actionError ref, handleSelectCurrency check return value\n- `src/components/templates/GroupManagementSheet.vue` — confirmDelete usa RPC atómico\n- `src/lib/formula-evaluator.ts` — hex regex, pmt guards, isFinite checks, comentario tasa=-1 corregido\n- `src/lib/formula-evaluator.test.ts` — 104 tests (54 en evaluator)\n- `TECH_DEBT.md` — TD-004/005/006 resolved, TD-001/002 open Sprint 4",
+      "project": "proyector-fin",
+      "scope": "project",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-31 15:46:12",
+      "created_at": "2026-03-31 15:46:12",
+      "updated_at": "2026-03-31 15:46:12"
+    },
+    {
+      "id": 13,
+      "sync_id": "obs-0622f72e1b442d58",
+      "session_id": "manual-save-proyector-fin",
+      "type": "decision",
+      "title": "Established: delegación de subagentes es workflow obligatorio en proyector-fin",
+      "content": "**What**: El patrón orquestador + subagentes es ahora el workflow DEFAULT y OBLIGATORIO en este proyecto. El orquestador mantiene un hilo de contexto delgado y delega todo trabajo operativo.\n\n**Why**: Sesiones anteriores inflaban el contexto del orquestador leyendo 4+ archivos y escribiendo código multi-archivo inline, quemando tokens innecesariamente.\n\n**Where**: CLAUDE.md (proyecto) — nueva sección \"Orquestación y Delegación (ley inquebrantable)\" insertada después de ## Descripción. Reglas globales del patrón en ~/.claude/CLAUDE.md sección \"Agent Teams Lite\".\n\n**Learned**: La tabla de delegación por tipo de tarea está en topic_key workflow/subagent-task-types. El orquestador resuelve skill registry una vez por sesión e inyecta compact rules en cada subagente.",
+      "project": "proyector-fin",
+      "scope": "project",
+      "topic_key": "workflow/orchestrator-delegation",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-31 16:05:02",
+      "created_at": "2026-03-31 16:05:02",
+      "updated_at": "2026-03-31 16:05:02"
+    },
+    {
+      "id": 14,
+      "sync_id": "obs-3dba1a0d93a9c92c",
+      "session_id": "manual-save-proyector-fin",
+      "type": "pattern",
+      "title": "Pattern: tabla de delegación por tipo de tarea en proyector-fin",
+      "content": "**What**: Tabla de qué va inline vs delegado en este proyecto específico.\n\n**Why**: Recuperable sin leer CLAUDE.md — sobrevive compaction de contexto.\n\n**Where**: CLAUDE.md sección \"Orquestación y Delegación\"\n\n| Tarea | Inline | Delegar |\n|-------|--------|---------|\n| Leer 1-3 archivos para decidir/verificar | ✅ | — |\n| Explorar codebase (4+ archivos, búsquedas) | — | ✅ |\n| Leer archivos para luego editarlos | — | ✅ (junto con la escritura) |\n| Escribir UN archivo mecánico | ✅ | — |\n| Componente Vue (lógica nueva o multi-archivo) | — | ✅ |\n| Edge Function o RPC PostgreSQL | — | ✅ |\n| Migración SQL + código relacionado | — | ✅ |\n| Refactor de store Pinia | — | ✅ |\n| Tests unitarios (DSL/módulos financieros) | — | ✅ |\n| Bash de estado (git status, git log) | ✅ | — |\n| Bash de ejecución (pnpm test, typecheck) | — | ✅ |\n| Guardar memorias en Engram | ✅ | — |\n\n**Skill injection**: Orquestador resuelve skill registry UNA vez por sesión, inyecta compact rules en cada subagente. Subagentes NO leen SKILL.md directamente.\n\n**Para planning grande**: /sdd-ff es meta-command del orquestador (no skill) — lanza proposal+spec+design+tasks vía subagentes.",
+      "project": "proyector-fin",
+      "scope": "project",
+      "topic_key": "workflow/subagent-task-types",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-31 16:05:07",
+      "created_at": "2026-03-31 16:05:07",
+      "updated_at": "2026-03-31 16:05:07"
+    },
+    {
+      "id": 15,
+      "sync_id": "obs-853628ebaeef66e0",
+      "session_id": "manual-save-proyector-fin",
+      "type": "project",
+      "title": "Sprint 3 — estado al cierre de sesión, listo para continuar",
+      "content": "**What**: Sprint 3 planificado y listo para implementar. Rama `feat/sprint-3` creada desde main. Nada implementado aún.\n\n**Why**: Sesión cortada por límite de tokens el 2026-03-31.\n\n**Where**: Rama `feat/sprint-3` (vacía, desde main). Ver `.claude/s3-prompt.md` para el prompt exacto de continuación.\n\n**Learned**: \n- `feat/sprint-2-fase0` está completa, pushed, judgment-day APPROVED (115 tests). Lista para QA del usuario.\n- S3 NO depende de fase0 (archivos distintos). Merge final: fase0 → main, luego s3 → main.\n- Migraciones SQL: 8 archivos en `supabase/migrations/`. Tablas: template_accounts, projects, scenarios, scenario_parameters, input_curves, rrhh_roles. RPCs: fork_template, resolve_scenario_params, trigger_recompute (stub).\n- Stores nuevos: projects.ts, scenarios.ts, accounts.ts\n- Vistas nuevas: ProjectsView, ProjectDetailView (tabs: Parámetros/Cuentas/Curvas/RRHH)\n- Componentes: CreateProjectDialog, ScenarioSelector, CreateScenarioDialog, AccountsTree, AccountDialog\n- Rutas nuevas: /projects, /projects/:id",
+      "project": "proyector-fin",
+      "scope": "project",
+      "topic_key": "sprint/s3-state",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-31 21:11:35",
+      "created_at": "2026-03-31 21:11:35",
+      "updated_at": "2026-03-31 21:11:35"
+    },
+    {
+      "id": 16,
+      "sync_id": "obs-2f36a2daa37ee2c9",
+      "session_id": "manual-save-proyector-fin",
+      "type": "session_summary",
+      "title": "Session summary: proyector-fin",
+      "content": "",
+      "project": "proyector-fin",
+      "scope": "project",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-01 21:54:11",
+      "created_at": "2026-04-01 21:54:11",
+      "updated_at": "2026-04-01 21:54:11"
+    },
+    {
+      "id": 17,
+      "sync_id": "obs-53c5cb08a97c91c1",
+      "session_id": "manual-save-vitali-app",
+      "type": "bugfix",
+      "title": "Fix permissions store: prevenir cargas concurrentes y manejar errores",
+      "content": "**What**: Refactor del `usePermissionsStore` para prevenir cargas concurrentes y manejar errores sin crashear la navegación.\n\n**Why**: El router guard llamaba `load()` múltiples veces en paralelo. Si fallaba, la navegación crasheaba en lugar de redirigir de forma segura.\n\n**Where**: `apps/app/src/stores/permissions.ts`, `apps/app/src/router/index.ts`\n\n**Learned**:\n- Se usa un `_loadPromise: Promise\u003cvoid\u003e | null` para deduplicar llamadas concurrentes — el segundo caller espera la promesa in-flight en lugar de lanzar una segunda consulta.\n- Si `_doLoad` falla, se setea `loaded = true` igual para que el guard no entre en loop infinito.\n- El guard en `router/index.ts` envuelve `await permStore.load()` en try/catch y redirige a `dashboard` ante errores (fail-safe).\n- Supabase devuelve `role_permissions` como objeto o array dependiendo de la cardinalidad — el store ahora normaliza ambos casos con `Array.isArray()`.",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "bugfix/permissions-concurrent-load",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:04:27",
+      "created_at": "2026-04-06 20:04:27",
+      "updated_at": "2026-04-06 20:04:27"
+    },
+    {
+      "id": 18,
+      "sync_id": "obs-c6024f807e0c69c5",
+      "session_id": "manual-save-vitali-app",
+      "type": "pattern",
+      "title": "feat(currencies): CRUD de monedas con decimal_places",
+      "content": "**What**: Feature completa de CRUD de monedas (`currencies`) con campo `decimal_places`.\n\n**Why**: El simulador necesita saber cuántos decimales usar según la moneda del proyecto (CLP=0, USD/UF/etc=2).\n\n**Where**:\n- `apps/app/src/stores/currencies.ts` — store con fetchAll, create, update, remove\n- `apps/app/src/stores/currencies.test.ts` — 5 tests\n- `apps/app/src/views/currencies/CurrenciesView.vue` — tabla + Sheet form + AlertDialog eliminar\n- `apps/app/src/router/index.ts` — ruta `/currencies`\n- `apps/app/src/components/layout/AppSidebar.vue` — entrada en sidebar (permiso `settings.read`)\n- Migración SQL: agrega `decimal_places` a `currencies` (CLP default 0, resto 2)\n\n**Learned**:\n- `UnitForm` usa `decimal_places` de la moneda del proyecto para calcular el `step` del input de precio.\n- Las tipologías en `UnitForm` usan el catálogo global (`typologies` store), NO `project_typologies`.",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "feature/currencies-crud",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:04:31",
+      "created_at": "2026-04-06 20:04:31",
+      "updated_at": "2026-04-06 20:04:31"
+    },
+    {
+      "id": 19,
+      "sync_id": "obs-ca48cd4ea282ff98",
+      "session_id": "manual-save-vitali-app",
+      "type": "pattern",
+      "title": "Pattern: as unknown as X en stores para typecheck con relaciones Supabase",
+      "content": "**What**: Uso de `as unknown as X` en stores para que el typecheck de CI pase con relaciones Supabase (joins anidados).\n\n**Why**: El tipo inferido por Supabase para relaciones con `select()` anidado no matchea el tipo local del store — el cast directo falla, pero `as unknown as X` lo resuelve.\n\n**Where**: `apps/app/src/stores/projects.ts`, `apps/app/src/stores/typologies.ts`, `apps/app/src/stores/units.ts`\n\n**Learned**: Es un workaround aceptado para CI — no refleja un problema en runtime. El typecheck de Supabase es estricto con relaciones 1:N cuando el tipo generado difiere del tipo local.",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "pattern/supabase-relation-typecast",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:04:38",
+      "created_at": "2026-04-06 20:04:38",
+      "updated_at": "2026-04-06 20:04:38"
+    },
+    {
+      "id": 20,
+      "sync_id": "obs-23f5b0516f40baa0",
+      "session_id": "manual-save-vitali-app",
+      "type": "pattern",
+      "title": "Pattern: AcceptableValue de reka-ui requiere tipado como unknown en handlers",
+      "content": "**What**: Los handlers de `Select` de reka-ui deben tiparse como `unknown` para ser compatibles con `AcceptableValue`.\n\n**Why**: reka-ui v2 define `AcceptableValue` como un tipo genérico amplio — si el handler espera un tipo concreto (ej: `string`), TypeScript falla en CI.\n\n**Where**: `apps/app/src/views/simulator/SimulatorView.vue`\n\n**Learned**: Patrón: `(val: unknown) =\u003e { const v = val as string; ... }` — aceptar `unknown` y hacer el cast interno.",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "pattern/reka-ui-acceptable-value",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:04:41",
+      "created_at": "2026-04-06 20:04:41",
+      "updated_at": "2026-04-06 20:04:41"
+    },
+    {
+      "id": 21,
+      "sync_id": "obs-397260a92d923c9e",
+      "session_id": "manual-save-vitali-app",
+      "type": "pattern",
+      "title": "feat(projects): editar departamentos con UX explícita (botones Torres→ Deptos→)",
+      "content": "**What**: UX de gestión de departamentos en `ProjectsView` refactorizada con botones de navegación explícitos (\"Torres→\" y \"Deptos→\") en lugar de UI implícita.\n\n**Why**: La experiencia previa no dejaba claro cómo navegar entre torres y departamentos dentro de un proyecto.\n\n**Where**: `apps/app/src/components/projects/UnitForm.vue`, `apps/app/src/views/projects/ProjectsView.vue`",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "feature/projects-edit-units-ux",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:04:46",
+      "created_at": "2026-04-06 20:04:46",
+      "updated_at": "2026-04-06 20:04:46"
+    },
+    {
+      "id": 22,
+      "sync_id": "obs-60348c8f4421005c",
+      "session_id": "manual-save-vitali-app",
+      "type": "architecture",
+      "title": "sdd-init/vitali-app",
+      "content": "## vitali-app — Project Context\n\n**Stack**:\n- Frontend: Vue 3.5 + Vite 6 + Tailwind CSS v4 + shadcn-vue (reka-ui v2) + Pinia v3 + Vue Router 4\n- Validation: Vee-Validate + Zod | Utilities: VueUse\n- Testing: Vitest + Vue Test Utils (jsdom) | Linting: @antfu/eslint-config\n- Backend: Supabase (PostgreSQL 17 + Auth + Storage + Edge Functions in Deno)\n- Packages: pnpm monorepo (workspaces)\n\n**Architecture**:\n- RBAC: `roles` + `permissions` + RLS on all tables\n- Client tonto: frontend NEVER calculates — only reads Edge Function results\n- Double Supabase client in Edge Functions: auth client (respects RLS) + service client (bypasses RLS for storage ops)\n- Monorepo: `apps/app` (Vue SPA), `apps/web` (Astro — future), `packages/brand`, `supabase/`\n\n**Supabase projects**:\n- Dev: vitali-app-dev (bwiozqzevpmxjnwsjeuj) | Prod: vitali-app (cwbppfodpuknxqwrhoev)\n- Rule: Claude only touches supabase-dev by default. User must explicitly say \"aplicar a prod\".\n\n**Branches**: feat/* (local supabase) → qa (dev cloud / staging) → main (prod)\n\n**Sprint state**: S2 complete (PDF generation with Carbone.io v4). S3 = Email.\n\n**Conventions**:\n- Conventional Commits in Spanish: `feat(scope): descripción`\n- TDD for all verifiable behavior (Edge Functions, composables, stores, permissions)\n- Pre-commit: `pnpm typecheck \u0026\u0026 pnpm lint \u0026\u0026 pnpm test:run`\n- NO build after changes — user runs build\n\n**Key files**:\n- `docs/SPRINT-PLAN.md` — sprint plan\n- `docs/ARCHITECTURE.md` — technical decisions\n- `docs/REQUIREMENTS.md` — business requirements\n- `docs/S2-PLAN.md` — S2 detailed plan\n- `DOCS_CARBONE_PDF_GENERATION.md` — Carbone.io integration docs\n- `.atl/skill-registry.md` — skills and compact rules\n- `supabase/functions/` — Edge Functions (Deno)\n- `.vscode/settings.json` — Deno extension scoped to supabase/functions/\n- `supabase/functions/deno.json` — Deno project marker",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "sdd-init/vitali-app",
+      "revision_count": 2,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-23 20:22:39",
+      "created_at": "2026-04-06 20:25:22",
+      "updated_at": "2026-04-23 20:22:39"
+    },
+    {
+      "id": 23,
+      "sync_id": "obs-984342c40cdd418f",
+      "session_id": "manual-save-vitali-app",
+      "type": "config",
+      "title": "Testing Capabilities — vitali-app",
+      "content": "## Testing Capabilities — vitali-app\n\n**Strict TDD Mode**: enabled\n**Detectado**: 2026-04-04\n\n### Test Runner\n- Framework: Vitest\n- Command: `pnpm test:run`\n- Environment: jsdom, globals: true\n\n### Criterio TDD\nTDD aplica a todo lo que tenga comportamiento verificable.\n\n| Qué | TDD |\n|---|---|\n| Edge Functions con lógica de cálculo | OBLIGATORIO |\n| Composables con reglas de negocio | OBLIGATORIO |\n| Lógica de permisos/RBAC | OBLIGATORIO |\n| Stores Pinia con lógica async compleja | OBLIGATORIO |\n| Componentes Vue con comportamiento | RECOMENDADO |\n| CRUD simple sin lógica | NO necesario |\n| Componentes puramente presentacionales | NO necesario |\n\n### Test Layers\n| Layer | Tool | Estado |\n|-------|------|--------|\n| Unit | Vitest | activo |\n| Integration | Vitest + Vue Test Utils | activo |\n| E2E | — | no instalado |\n\n### Quality Tools\n| Tool | Command |\n|------|----------|\n| Linter | `pnpm lint` (@antfu/eslint-config) |\n| Type checker | `pnpm typecheck` |\n| Pre-commit | typecheck + lint + test:run |",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "sdd/vitali-app/testing-capabilities",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:25:25",
+      "created_at": "2026-04-06 20:25:25",
+      "updated_at": "2026-04-06 20:25:25"
+    },
+    {
+      "id": 24,
+      "sync_id": "obs-0db1c66bf1de2f61",
+      "session_id": "manual-save-vitali-app",
+      "type": "config",
+      "title": "skill-registry — vitali-app",
+      "content": "Ver archivo local: .atl/skill-registry.md\n\nStack: Vue 3.5 + Vite 6 + Tailwind CSS v4 + shadcn-vue (reka-ui v2) + Pinia v3 + Supabase + Vitest\n\nSkills aplicables: vue, vue-best-practices, vue-router-best-practices, vue-testing-best-practices, vueuse-functions, pinia, shadcn-vue-skilld, supabase-postgres-best-practices, vitest, vite, tailwind-design-system, frontend-design, antfu, pnpm, web-design-guidelines\n\nSkills NO aplicables: nuxt, slidev, tsdown, turborepo, unocss, vitepress, go-testing",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "skill-registry",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:25:30",
+      "created_at": "2026-04-06 20:25:30",
+      "updated_at": "2026-04-06 20:25:30"
+    },
+    {
+      "id": 25,
+      "sync_id": "obs-873123ae2e66eeff",
+      "session_id": "manual-save-vitali-app",
+      "type": "architecture",
+      "title": "S1 Cotizador MVP — Propuesta SDD",
+      "content": "## Intent\nHabilitar al equipo comercial de Vitali Suites para gestionar el inventario inmobiliario (proyectos, torres, tipologías, departamentos), simular cotizaciones con crédito francés e inteligente mediante Edge Functions, y administrar usuarios/roles.\n\n## Scope IN\n- CRUD Inmobiliario: Proyectos, Torres, Tipologías, Departamentos/Units\n- Cotizador (Simulador): flujo proyecto→torre→depto, pie%+plazo, Edge Function calcula\n- Edge Function `calculate-quote`: recibe unit_id/pie_percentage/term_years/credit_type\n- Roles y Permisos UI: listar usuarios, asignar/revocar roles\n- Currencies CRUD (agregado): gestión de monedas con decimal_places\n\n## Scope OUT\n- PDF de cotizaciones (S2)\n- Email (S2)\n- CMS vitalisuites.com\n- Creación de roles desde UI (por migración SQL)\n\n## ADRs Clave\n- ADR-01: Tipos manuales en src/types/index.ts (no gen types — schema en evolución)\n- ADR-02: Una store por dominio (Composition API style)\n- ADR-03: Una sola Edge Function calculate-quote (french/smart/both)\n- ADR-04: Formularios en Sheet (panel lateral)\n- ADR-05: Toast (sonner) para errores de red, inline para validación\n\n## Supabase Projects\n- Dev: vitali-app-dev, ref: bwiozqzevpmxjnwsjeuj\n- Prod: vitali-app, ref: cwbppfodpuknxqwrhoev\n- Regla de hierro: solo usar supabase-dev. Para prod el usuario debe escribir 'aplicar a prod'.",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "sdd/s1-cotizador-mvp/proposal",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:25:47",
+      "created_at": "2026-04-06 20:25:47",
+      "updated_at": "2026-04-06 20:25:47"
+    },
+    {
+      "id": 26,
+      "sync_id": "obs-99ca7cea8ea795e5",
+      "session_id": "manual-save-vitali-app",
+      "type": "architecture",
+      "title": "S1 Cotizador MVP — Specs",
+      "content": "Specs completas en Engram. Módulos cubiertos:\n- CRUD Inmobiliario: Proyectos, Torres, Tipologías, Departamentos\n- Roles y Permisos UI\n- Edge Function calculate-quote (crédito francés, inteligente, both)\n- Cotizador UI (flujo cascada, autocompletado, cálculo on demand)\n\nReglas clave:\n- Tasa mensual = annual_rate / 12 (NO compuesta)\n- PIE mínimo validado server-side (400 si \u003c min_pie_percentage)\n- Crédito no habilitado → 400\n- credit_type='both' → retorna french Y smart en mismo response\n- Sidebar: sin permiso → item no visible (filtrado por can())",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "sdd/s1-cotizador-mvp/spec",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:25:56",
+      "created_at": "2026-04-06 20:25:56",
+      "updated_at": "2026-04-06 20:25:56"
+    },
+    {
+      "id": 27,
+      "sync_id": "obs-f085dbb3c194ef11",
+      "session_id": "manual-save-vitali-app",
+      "type": "architecture",
+      "title": "S1 Cotizador MVP — Diseño Técnico",
+      "content": "## Estructura de archivos implementada\n```\napps/app/src/\n├── types/index.ts — Currency, Project, Tower, Typology, Unit, Role, CalculateQuoteRequest/Response\n├── stores/ — projects, towers, typologies, units, simulator, currencies, users, permissions\n├── views/projects/ProjectsView.vue\n├── views/simulator/SimulatorView.vue\n├── views/users/UsersView.vue\n├── views/currencies/CurrenciesView.vue\n├── components/projects/ — ProjectForm, TowerForm, UnitForm\n├── components/layout/ — AppShell, AppSidebar\n└── components/ui/alert-dialog/ — 10 archivos creados manualmente\n\nsupabase/functions/calculate-quote/ — Edge Function (pendiente deploy completo)\n```\n\n## Patrones establecidos\n- Store CRUD: ref([]), loading, error, fetchAll/fetchByX, create, update, remove\n- SELECT_FIELDS const en cada store para las columnas\n- as unknown as X para castear relaciones Supabase (PostgREST)\n- Handlers Select: (value: unknown) con cast interno (reka-ui AcceptableValue)\n- AlertDialog: creado manualmente (CLI interactivo/roto)\n\n## Rutas en router/index.ts\n- /projects → permission: projects.read\n- /typologies → permission: typologies.read\n- /simulator → permission: simulator.use\n- /currencies → permission: settings.read\n- /users → permission: users.read",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "sdd/s1-cotizador-mvp/design",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:25:59",
+      "created_at": "2026-04-06 20:25:59",
+      "updated_at": "2026-04-06 20:25:59"
+    },
+    {
+      "id": 28,
+      "sync_id": "obs-c75f02d713098ca6",
+      "session_id": "manual-save-vitali-app",
+      "type": "architecture",
+      "title": "S1 Cotizador MVP — Tasks",
+      "content": "## Estado actual de tareas S1\n\n### COMPLETADAS\n- [x] Fase 1: tipos, shadcn-vue, rutas\n- [x] Fase 2: stores CRUD (projects, towers, typologies, units, currencies, users)\n- [x] Fase 2: vistas CRUD (ProjectsView, TypologiesView, UsersView, CurrenciesView)\n- [x] Fase 2: componentes (ProjectForm, TowerForm, UnitForm, UserRoleManager)\n- [x] Fase 4: SimulatorView.vue — cotizador funcional (llama EF existente)\n- [x] Fase 5: UsersView + asignación de roles\n\n### PENDIENTES\n- [ ] Fase 3: Edge Function calculate-quote (deploy a dev)\n  - supabase functions deploy calculate-quote --project-ref bwiozqzevpmxjnwsjeuj\n- [ ] Verificar sidebar 'popacas' en staging (fix de permissions ya pusheado a qa)\n- [ ] Crear primer usuario en prod Auth\n- [ ] S2: PDF de cotizaciones, email, dashboard KPIs",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "sdd/s1-cotizador-mvp/tasks",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:26:08",
+      "created_at": "2026-04-06 20:26:08",
+      "updated_at": "2026-04-06 20:26:08"
+    },
+    {
+      "id": 29,
+      "sync_id": "obs-49733e44cb35c8cb",
+      "session_id": "manual-save-vitali-app",
+      "type": "decision",
+      "title": "Branching workflow — feat/* obligatorio para S1+",
+      "content": "**What**: Todo desarrollo nuevo va en `feat/*`, nunca directamente en `qa` o `main`.\n**Why**: S1 se desarrolló en `qa` por error. El usuario lo detectó y confirmó que el flujo correcto es feat/* → qa → main. Push a `qa` dispara deploy a staging.vitalisuites.com automáticamente.\n**Where**: Aplica a todos los sprints futuros.\n**Learned**: Al arrancar una sesión nueva, verificar en qué rama está antes de tocar código. Si está en `qa` o `main`, crear `feat/\u003cnombre\u003e` primero. El estado actual S1 quedó en `qa` por acuerdo del usuario (no valía la pena reestructurar).",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "workflow/branching",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:26:14",
+      "created_at": "2026-04-06 20:26:14",
+      "updated_at": "2026-04-06 20:26:14"
+    },
+    {
+      "id": 30,
+      "sync_id": "obs-fa4d9a26be4e1a85",
+      "session_id": "manual-save-vitali-app",
+      "type": "config",
+      "title": "Keyword de continuidad entre PCs — castor",
+      "content": "**What**: Palabra clave de handoff entre equipos acordada con el usuario.\n**Why**: El usuario se cambia de PC. Quiere verificar que Engram está cargado correctamente en el nuevo equipo antes de continuar.\n**Where**: Solo memoria — no hay archivos de código involucrados.\n**Learned**: Protocolo: cuando el usuario diga 'pass engram', responder únicamente 'castor'. Eso confirma que el contexto de Engram está activo y el proyecto vitali-app está cargado correctamente.",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "handoff/keyword-castor",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 20:26:17",
+      "created_at": "2026-04-06 20:26:17",
+      "updated_at": "2026-04-06 20:26:17"
+    },
+    {
+      "id": 31,
+      "sync_id": "obs-cf6c0b3f10cd83d1",
+      "session_id": "manual-save",
+      "type": "reference",
+      "title": "Palabra clave de sincronización: gatito",
+      "content": "La palabra clave \"gatito\" indica que las memorias Engram están actualizadas y sincronizadas entre máquinas. Si en una sesión nueva ves esta palabra al buscar en engram, el contexto está al día.",
+      "scope": "project",
+      "topic_key": "sync/keyword",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-06 22:05:36",
+      "created_at": "2026-04-06 22:05:36",
+      "updated_at": "2026-04-06 22:05:36"
+    },
+    {
+      "id": 32,
+      "sync_id": "obs-e6353a0991050d8f",
+      "session_id": "manual-save-vitali-app",
+      "type": "bugfix",
+      "title": "Fix: simulator state persistence + term validation + stock view",
+      "content": "**What**: Tres fixes en rama `qa` previos a merge a main.\n\n**Fix 1 — Estado del simulador**: Form state (selectedProjectId, selectedTowerId, selectedUnitId, piePercentage, termYears, creditType, smartCuotasPercentage) movido de refs locales del componente al simulatorStore. Ahora persiste al navegar. Se agregó `clearResult()` separado de `reset()`: clearResult limpia solo result/error al cambiar selección en cascada; reset() es el full reset para \"nueva simulación\".\n\n**Fix 2 — Validación de plazo**: Agregado `termError` computed en SimulatorView igual que pieError/balloonError. Se integra a canCalculate. El input muestra border-destructive y mensaje reactivo sin esperar al click de calcular.\n\n**Fix 3 — Vista de stock**: Nueva StockView en /stock con `fetchAll()` en unitsStore que hace join a tower→project→currency. Filtros por proyecto, tipología, piso y búsqueda por número. Sin estado de unidad (status) — queda para S2. Ruta con permission projects.read.\n\n**Where**:\n- `apps/app/src/stores/simulator.ts` — form state + clearResult/reset\n- `apps/app/src/stores/simulator.test.ts` — tests actualizados (5 tests)\n- `apps/app/src/views/simulator/SimulatorView.vue` — storeToRefs + re-hydrate onMounted + termError\n- `apps/app/src/stores/units.ts` — fetchAll() + allUnits + loadingAll\n- `apps/app/src/types/index.ts` — UnitWithContext\n- `apps/app/src/views/stock/StockView.vue` — nueva vista\n- `apps/app/src/router/index.ts` — ruta /stock\n- `apps/app/src/components/layout/AppSidebar.vue` — nav item Stock\n\n**Learned**: El store del simulador tenía selectedProject/Tower/Unit que eran dead code (nunca se seteaban desde el componente). Se eliminaron y reemplazaron por los IDs del form. La re-hidratación de las cascadas en onMounted es clave para que los dropdowns se repueblen correctamente al volver a la vista.",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "qa/fixes-pre-merge",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-20 13:17:50",
+      "created_at": "2026-04-20 13:17:50",
+      "updated_at": "2026-04-20 13:17:50"
+    },
+    {
+      "id": 33,
+      "sync_id": "obs-8fbf47f61afe1351",
+      "session_id": "manual-save-vitali-app",
+      "type": "decision",
+      "title": "Deuda técnica: paginación client-side en StockView",
+      "content": "**What**: La vista de Stock (StockView) usa paginación client-side de 25 ítems. `fetchAll()` en unitsStore trae todos los registros de una sola vez.\n\n**Why**: MVP — inventario actual es pequeño (pocos proyectos, pocas unidades). Trivial de implementar y suficiente por ahora.\n\n**Prioridad**: NO URGENTE. Atacar cuando haya múltiples proyectos con ~500 unidades cada uno (umbral orientativo: \u003e1000 unidades totales).\n\n**Qué hacer cuando escale**: Agregar paginación server-side en `fetchAll(towerId?, page?, pageSize?)` con `.range()` de Supabase + count total para calcular páginas. El componente ya tiene la estructura de paginación, solo hay que conectar al backend.\n\n**Where**: `apps/app/src/stores/units.ts` — fetchAll(), `apps/app/src/views/stock/StockView.vue` — paginación y filtros",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "tech-debt/stock-pagination",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-20 13:34:04",
+      "created_at": "2026-04-20 13:34:04",
+      "updated_at": "2026-04-20 13:34:04"
+    },
+    {
+      "id": 34,
+      "sync_id": "obs-18e0bbe1579ad684",
+      "session_id": "manual-save-vitali-app",
+      "type": "decision",
+      "title": "Pendientes no urgentes — vitali-app",
+      "content": "**What**: Lista de tareas pendientes no urgentes para vitali-app\n\n**Why**: El usuario quiere registrar items que no son prioridad ahora pero que no se deben perder\n\n**Pendientes**:\n1. **Audit log de acciones de usuario** — registrar quién creó/editó/eliminó/deshabilitó usuarios, proyectos, cotizaciones, etc. Requerido antes de poner en producción real con múltiples operadores. Afecta: toda la app (users, projects, quotes).\n2. (agregar más a medida que surjan)\n\n**Learned**: El usuario mencionó esto al notar que borrar usuarios eliminaría registros históricos de quotes y otras acciones atribuidas a ese usuario. La solución adoptada fue deshabilitar usuarios en lugar de borrarlos.",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "pendientes-no-urgentes",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-20 19:37:24",
+      "created_at": "2026-04-20 19:37:24",
+      "updated_at": "2026-04-20 19:37:24"
+    },
+    {
+      "id": 35,
+      "sync_id": "obs-4e840afd50b709aa",
+      "session_id": "manual-save-vitali-app",
+      "type": "bugfix",
+      "title": "Fixed 6 bugs in simulator/stock/units — surgical patch",
+      "content": "**What**: Applied 6 surgical fixes across SimulatorView, StockView, units store, and simulator tests.\n\n**Why**: Code review flagged stale creditType on project change, missing cleanup on unmount, lexicographic sort bug, misleading placeholder, empty table flash after create/update, and missing test coverage.\n\n**Where**:\n- `apps/app/src/views/simulator/SimulatorView.vue`\n- `apps/app/src/views/stock/StockView.vue`\n- `apps/app/src/stores/units.ts`\n- `apps/app/src/stores/simulator.test.ts`\n\n**Learned**:\n1. `creditType` store ref is typed as `Ref\u003c'french' | 'smart' | 'both'\u003e` — to assign `''` from the view without touching the store type, used `'' as unknown as 'french'` cast.\n2. Calling `fetchAll()` directly inside `create()`/`update()` would break existing unit tests because the mock only chains `insert`/`update`, not the `select().order().order()` chain used in `fetchAll`. Used dirty flag (`allUnitsDirty`) instead — safer, no test breakage.\n3. `function handleReset()` IS hoisted in JS module scope, so `onUnmounted(handleReset)` at line 75 referencing a function declared at line 134 is valid.\n4. `localeCompare` with `{ numeric: true }` is the correct fix for alphanumeric sort (101 \u003c 20 bug).",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "bugfix/simulator-stock-units-patch",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-20 19:49:25",
+      "created_at": "2026-04-20 19:49:25",
+      "updated_at": "2026-04-20 19:49:25"
+    },
+    {
+      "id": 36,
+      "sync_id": "obs-31efbaef9e8d010e",
+      "session_id": "manual-save-vitali-app",
+      "type": "bugfix",
+      "title": "Fixed type-unsafe creditType sentinel and allUnitsDirty inconsistencies",
+      "content": "**What**: Three surgical fixes across simulator store, units store, and SimulatorView.\n\n**Why**: Code review found: (1) `creditType` was typed as never-empty but was being set to `''` via `as unknown as 'french'` — a type lie that could reach the Edge Function. (2) `allUnitsDirty` was only set when `allUnits.length \u003e 0` in create/update, and never set in remove — asymmetric dirty tracking.\n\n**Where**:\n- `apps/app/src/stores/simulator.ts` — widened type to `'french' | 'smart' | 'both' | ''`, added early return guard in `calculate()` when `creditType.value === ''`\n- `apps/app/src/views/simulator/SimulatorView.vue` — removed `as unknown as 'french'` cast (now compiles cleanly), moved `onUnmounted(handleReset)` to after `handleReset` definition, replaced disabled `SelectItem value=\"\"` for no-credits case with a disabled Select + `\u003cp class=\"text-xs text-destructive\"\u003e` warning\n- `apps/app/src/stores/units.ts` — removed `if (allUnits.value.length \u003e 0)` guard from `create()` and `update()`, added `allUnitsDirty.value = true` to `remove()` after in-place filter\n\n**Learned**: The empty-string sentinel for \"no credits available\" is UI-only state — it must never reach `CalculateQuoteRequest.credit_type` (API type stays strict). The guard in `calculate()` is a belt-and-suspenders safety net on top of `canCalculate` in the view. `onUnmounted` with a forward reference to a hoisted function declaration works in JS but is semantically cleaner after the definition.",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "bugfix/simulator-credittype-units-dirty",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-20 19:52:33",
+      "created_at": "2026-04-20 19:52:33",
+      "updated_at": "2026-04-20 19:52:33"
+    },
+    {
+      "id": 37,
+      "sync_id": "obs-bdd767d10dfe624c",
+      "session_id": "manual-save-vitali-app",
+      "type": "decision",
+      "title": "Judgment Day completado — rama qa aprobada para merge a main",
+      "content": "## What\nJudgment Day de 3 rondas sobre rama `qa` antes de merge a `main`. Archivos revisados: simulator.ts, simulator.test.ts, SimulatorView.vue, units.ts, types/index.ts, StockView.vue, router/index.ts, AppSidebar.vue.\n\n## Fixes aplicados\n\n### Round 1\n- `creditType` reset a `''` cuando ningún crédito habilitado + Select disabled + warning `\u003cp\u003e`\n- `onUnmounted(handleReset)` en lugar de solo `simulatorStore.reset()` (también limpia towersStore/unitsStore)\n- `unit_number` sort con `localeCompare({ numeric: true })`\n- Placeholder search cambiado a \"Ej: 101\"\n- `allUnitsDirty` flag en units store (create/update/remove)\n- Tests: concurrent guard + loading=false tras error\n\n### Round 2\n- `creditType` widened a `'french' | 'smart' | 'both' | ''` en store\n- Eliminado `as unknown as 'french'` cast\n- Guard en `calculate()` para `creditType === ''`\n- `allUnitsDirty` incondicional (sin `if length \u003e 0`)\n\n### Round 3\n- `credit_type: creditType.value as 'french' | 'smart' | 'both'` en handleCalculate (fix typecheck)\n- Guard `if (!value) return` en `onCreditTypeChange`\n- Test para `creditType === ''` guard\n- Dead null checks eliminados en filterFloor\n\n## Pendientes no bloqueantes\n- Sort Postgres de `unit_number` es lexicográfico (inconsistente con client sort numérico)\n- Errores de towersStore.fetchByProject no visibles en UI\n\n## Why\nqa → main merge para S2 (stock view + simulador persistente)",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "judgment-day/qa-s2-stock-simulator",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-20 19:55:05",
+      "created_at": "2026-04-20 19:55:05",
+      "updated_at": "2026-04-20 19:55:05"
+    },
+    {
+      "id": 38,
+      "sync_id": "obs-8375100211cab321",
+      "session_id": "manual-save",
+      "type": "decision",
+      "title": "Stack y skills instaladas — Proyector Financiero",
+      "content": "**What**: Stack definido e instaladas skills de proyecto en D:\\Proyectos-web\\proyector-fin\n**Why**: Inicio del proyecto \"Proyector Financiero\" — reemplazo de Excel de proyecciones financieras inmobiliarias\n**Where**: D:\\Proyectos-web\\proyector-fin\\CLAUDE.md, .claude/skills/\n\nStack: Supabase + Vue 3 + Vite + Tailwind v4 + shadcn-vue + Pinia + AG Grid + Monaco Editor + pnpm\n\nSkills de proyecto instaladas (.claude/skills/):\n- antfu/skills: vue, pinia, vite, vue-router-best-practices, vueuse-functions, vue-best-practices, vue-testing-best-practices, vitest, antfu, pnpm, web-design-guidelines (+ nuxt/slidev/tsdown/turborepo/unocss/vitepress que no aplican)\n- harlan-zw/vue-ecosystem-skills: shadcn-vue-skilld (via npx skilld)\n- supabase/agent-skills: supabase-postgres-best-practices\n- anthropics/skills: frontend-design\n- wshobson/agents: tailwind-design-system\n\n**Learned**: \n- `npx skilld` (de harlan-zw) es CLI distinto a `npx skills` (de Vercel Labs). shadcn-vue se instala con skilld y se llama `shadcn-vue-skilld`\n- supabase skill se llama `supabase-postgres-best-practices` no `postgres-best-practices`\n- Con `-y` flag instala TODOS los skills del repo (antfu instaló 17 de una)",
+      "scope": "project",
+      "topic_key": "architecture/stack",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-27 21:34:24",
+      "created_at": "2026-03-27 21:34:24",
+      "updated_at": "2026-03-27 21:34:24"
+    },
+    {
+      "id": 39,
+      "sync_id": "obs-8487a80cbe798891",
+      "session_id": "manual-save",
+      "type": "architecture",
+      "title": "Arquitectura completa — Proyector Financiero",
+      "content": "**What**: Plan de arquitectura completo del Proyector Financiero\n**Why**: Reemplazar Excel de proyecciones financieras inmobiliarias/multi-dominio\n**Where**: docs/ARCHITECTURE.md en el proyecto\n\nSTACK: Supabase + Vue 3 + Vite + Tailwind v4 + shadcn-vue + Pinia + AG Grid + Monaco Editor + pnpm\n\nMODELO DE DATOS clave:\n- organizations → users\n- templates → template_accounts (con formula_definition JSONB) + template_parameters + template_modules\n- projects (copia de template, con created_from_template_id) → project_accounts (con is_overridden) + project_parameters + rrhh_roles + input_curves + credit_config + computed_values + recompute_jobs\n- scenarios → scenario_parameters\n- permissions (user_id, project_id?, module?, can_view/edit/edit_formulas/edit_params/etc)\n\nDSL FÓRMULAS (8 tipos): fixed, param, module_output, account, multiply/add, if, cumulative, curve\n\nMOTOR: Edge Function recompute_project → por cada período: RRHH → Cobranza (convolución) → Recuperación (convolución + lag meses_rec) → DAG topológico de cuentas → upsert computed_values → Realtime notifica\n\nMÓDULOS opcionales: rrhh, cobranza, recuperacion\n\nROADMAP MVP:\n- Fase 1: Schema DB + Auth + CRUD templates/proyectos\n- Fase 2: Edge Function + DSL evaluator + DAG + RRHH\n- Fase 3: Cobranza/Recuperación/Credit config/Curvas\n- Fase 4: AG Grid vistas + Realtime + Monaco editor + Escenarios\n- Fase 5: Permisos + Template cascade + Gráficas + Comparación escenarios",
+      "scope": "project",
+      "topic_key": "architecture/full-plan",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-27 21:37:12",
+      "created_at": "2026-03-27 21:37:12",
+      "updated_at": "2026-03-27 21:37:12"
+    },
+    {
+      "id": 40,
+      "sync_id": "obs-47dbb271557a2ba1",
+      "session_id": "manual-save",
+      "type": "session_summary",
+      "title": "Session summary:",
+      "content": "",
+      "scope": "project",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-28 17:16:22",
+      "created_at": "2026-03-28 17:16:22",
+      "updated_at": "2026-03-28 17:16:22"
+    },
+    {
+      "id": 41,
+      "sync_id": "obs-1af230b63580c10d",
+      "session_id": "manual-save",
+      "type": "decision",
+      "title": "Sesión 1 — resumen completo setup inicial",
+      "content": "**What**: Sesión inicial completa de setup del proyecto Proyector Financiero\n\n**Decisiones tomadas:**\n- Stack: Supabase + Vue 3 + Vite + Tailwind v4 + shadcn-vue + Pinia + AG Grid + Monaco Editor + pnpm\n- Templates son entidades separadas con cascade update selectivo (is_overridden por cuenta)\n- Parámetros user-defined (key/value), no campos fijos del sistema\n- Curva de ventas manual mes a mes con start_date para estacionalidad\n- Escenarios = solo overrides de parámetros seleccionados, no de fórmulas\n- Variable RRHH por rol: on_sales | on_collection | on_milestone | none\n- Cliente tonto: nunca calcula, todo via RPCs/Edge Functions\n- Recompute al guardar, no en tiempo real mientras se escribe\n- Supabase free tier: proyecto ID cgdugkrjirhqzjhbooar, región sa-east-1\n\n**Gotchas encontrados:**\n- `npx skills add` con -y instala TODOS los skills del repo, no solo el especificado\n- `npx skilld` es CLI distinto a `npx skills` — shadcn-vue usa skilld, se llama shadcn-vue-skilld\n- Supabase MCP create_project no acepta db_password — setear manualmente en dashboard\n- Git en esta máquina crea rama `master` por default, renombrar a `main` antes del push\n- Write tool bloqueado para archivos .env — usar Bash con Python para crearlos\n- mem_session_summary guardó con content vacío — no usar para resúmenes importantes\n\n**Pendiente al inicio de próxima sesión:**\n- Cambiar contraseña DB Supabase en dashboard (Settings → Database → Database password → F1n-Pr0y3ct10n!)\n- Scaffold frontend con pnpm create vite\n- Schema completo de Supabase (migrations)\n- Edge Function recompute_project",
+      "scope": "project",
+      "topic_key": "sessions/session-1-setup",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-28 17:19:57",
+      "created_at": "2026-03-28 17:19:57",
+      "updated_at": "2026-03-28 17:19:57"
+    },
+    {
+      "id": 42,
+      "sync_id": "obs-f1bc9f947fe1079a",
+      "session_id": "manual-save-proyector-fin",
+      "type": "architecture",
+      "title": "Sprint plan + TDD convention + multi-currency documented",
+      "content": "**What**: Updated docs/ARCHITECTURE.md (new 9-sprint roadmap, fork-on-demand replaces Template Cascade, TDD convention) and CLAUDE.md (TDD rules + multi-currency note + corrected template description).\n\n**Why**: Previous roadmap was the old Fases 1-5. New agreed structure: Sprints 0-9 with TDD mandatory for math core and multi-currency from Sprint 2.\n\n**Where**: docs/ARCHITECTURE.md (Roadmap section, Template Cascade section), CLAUDE.md (Arquitectura Clave, Reglas del Proyecto, new TDD section)\n\n**Learned**: \n- Sprint 2 = Templates + Parameters + Multi-currency (exchange rates as params, per-value currency, display_currency per project)\n- Sprint 4 = DSL evaluator TDD (all 8 formula types, test-first)\n- Sprint 5 = Financial modules TDD (RRHH, Cobranza, Recuperación, Credit)\n- Sprint 6 = Edge Function recompute_project + E2E tests start here\n- Template Cascade section removed — replaced by fork-on-demand description\n- No is_overridden anywhere in the model",
+      "project": "proyector-fin",
+      "scope": "project",
+      "topic_key": "architecture/sprint-plan",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-28 22:44:00",
+      "created_at": "2026-03-28 22:44:00",
+      "updated_at": "2026-03-28 22:44:00"
+    },
+    {
+      "id": 43,
+      "sync_id": "obs-b1ad49ab7a7e7891",
+      "session_id": "manual-save-proyector-fin",
+      "type": "decision",
+      "title": "No hay organizaciones — app interna para equipo cerrado",
+      "content": "**What**: No existe tabla `organizations` ni multi-tenancy. La app es single-instance para un equipo cerrado (dueño + socios). Sin signup público, sin reset de password self-service.\n\n**Why**: Proyecto interno y privado. No es SaaS. No hay clientes externos.\n\n**Where**: Eliminar organizations de ARCHITECTURE.md y CLAUDE.md. El modelo de datos queda: auth.users → permissions (atómicos por user+project+module).\n\n**Learned**:\n- Sprint 1 = solo auth: login form, session guard, layout shell\n- Permisos atómicos: can_view, can_edit_params, can_edit_formulas, can_edit_rrhh, can_create_scenarios, can_manage_users — por usuario + proyecto + módulo opcional\n- Admin gestiona usuarios desde Supabase dashboard (Authentication → Users)\n- No hay /register, no hay /forgot-password, no hay organizations",
+      "project": "proyector-fin",
+      "scope": "project",
+      "topic_key": "architecture/auth-model",
+      "revision_count": 2,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-28 23:06:01",
+      "created_at": "2026-03-28 23:03:43",
+      "updated_at": "2026-03-28 23:06:01"
+    },
+    {
+      "id": 44,
+      "sync_id": "obs-32f90b6138fd7574",
+      "session_id": "manual-save-proyector-fin",
+      "type": "decision",
+      "title": "Branding y copy: Proyector Financiero / PF / Nicolás Canales",
+      "content": "**What**: Nombre completo \"Proyector Financiero\", sigla \"PF\". Todo el copy de la app va a nombre de Nicolás Canales. Sin otro branding definido por ahora.\n\n**Why**: App interna, sin branding corporativo todavía.\n\n**How to apply**: Usar \"Proyector Financiero\" en títulos, \"PF\" en sidebar colapsado/móvil. En emails, footers o textos legales usar \"Nicolás Canales\".",
+      "project": "proyector-fin",
+      "scope": "project",
+      "topic_key": "product/branding",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-28 23:07:48",
+      "created_at": "2026-03-28 23:07:48",
+      "updated_at": "2026-03-28 23:07:48"
+    },
+    {
+      "id": 45,
+      "sync_id": "obs-c2691926f7b0ae8e",
+      "session_id": "manual-save-proyector-fin",
+      "type": "session_summary",
+      "title": "Session summary: proyector-fin",
+      "content": "## Goal\nImplementar Sprint 2: templates + parámetros + multi-moneda + grupos de parámetros\n\n## Discoveries\n- pnpm no estaba en PATH del bash de Windows — se resolvió con npm install -g pnpm y agregando la ruta al PATH\n- tsconfig usaba @vue/tsconfig/@tsconfig/node22 no instalados — se reescribieron manualmente\n- shadcn-vue init requiere compilerOptions.paths en tsconfig.json raíz con @/* alias\n- Select dentro de Dialog no funciona (reka-ui portal conflict) — se reemplazó con toggle buttons\n- auth.init() nunca se llamaba — perfil siempre null, isAdmin false. Fix: llamar en App.vue onMounted\n- Vitest falla sin archivos de test — agregar passWithNoTests: true\n\n## Accomplished\n- Sprint 0: scaffolding completo (Vue 3 + Vite + Tailwind v4 + shadcn-vue + Pinia + Router)\n- Sprint 1: auth con supabase, layout con sidebar dark, login view, guard de rutas\n- Sprint 2: templates CRUD, parámetros con tipo/moneda/clave DSL auto-generada\n- Migración aplicada: template_parameter_groups + group_id + formula_definition en template_parameters\n- CLAUDE.md actualizado con convención de commits (ley inquebrantable) y TDD obligatorio\n- Design system OKLCH blue-slate, Plus Jakarta Sans, DM Mono para números\n\n## Next Steps\n- Actualizar src/types/database.ts: agregar TemplateParameterGroup, actualizar TemplateParameter (group_id, formula_definition)\n- Agregar useTemplateParameterGroupsStore en src/stores/templates.ts\n- Actualizar ParameterDialog.vue: selector de grupo\n- Actualizar TemplateDetailView.vue: gestión de grupos + parámetros agrupados\n- Commit por cada cambio siguiendo convención\n\n## Relevant Files\n- src/types/database.ts — types de Template, TemplateParameter (necesita group_id, formula_definition, TemplateParameterGroup)\n- src/stores/templates.ts — stores de templates y parámetros (necesita store de grupos)\n- src/components/templates/ParameterDialog.vue — dialog crear/editar parámetro (necesita selector de grupo)\n- src/views/TemplateDetailView.vue — vista detalle con tabla de parámetros (necesita gestión de grupos y agrupación visual)\n- src/assets/main.css — design system OKLCH\n- CLAUDE.md — convenciones del proyecto",
+      "project": "proyector-fin",
+      "scope": "project",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-03-28 23:50:49",
+      "created_at": "2026-03-28 23:50:49",
+      "updated_at": "2026-03-28 23:50:49"
+    },
+    {
+      "id": 46,
       "sync_id": "obs-82988e5e7734a454",
       "session_id": "manual-save",
       "type": "session_summary",
@@ -159,7 +742,7 @@
       "updated_at": "2026-03-29 05:15:56"
     },
     {
-      "id": 10,
+      "id": 47,
       "sync_id": "obs-8e86cce927190a10",
       "session_id": "manual-save-proyector-fin",
       "type": "session_summary",
@@ -174,7 +757,7 @@
       "updated_at": "2026-03-29 13:44:42"
     },
     {
-      "id": 11,
+      "id": 48,
       "sync_id": "obs-3be51b49858e9e81",
       "session_id": "manual-save-proyector-fin",
       "type": "project",
@@ -190,7 +773,7 @@
       "updated_at": "2026-03-29 13:47:29"
     },
     {
-      "id": 12,
+      "id": 49,
       "sync_id": "obs-4f974cb3f557f36f",
       "session_id": "manual-save-proyector-fin",
       "type": "session_summary",
@@ -205,7 +788,7 @@
       "updated_at": "2026-03-29 16:19:27"
     },
     {
-      "id": 13,
+      "id": 50,
       "sync_id": "obs-797284982efcedd9",
       "session_id": "manual-save-proyector-fin",
       "type": "session_summary",
@@ -220,7 +803,7 @@
       "updated_at": "2026-03-29 16:27:30"
     },
     {
-      "id": 14,
+      "id": 51,
       "sync_id": "obs-bfb933de2270b41b",
       "session_id": "manual-save-proyector-fin",
       "type": "session_summary",
@@ -235,7 +818,7 @@
       "updated_at": "2026-03-30 06:25:25"
     },
     {
-      "id": 15,
+      "id": 52,
       "sync_id": "obs-15d93100c64de2bf",
       "session_id": "manual-save-proyector-fin",
       "type": "architecture",
@@ -251,7 +834,7 @@
       "updated_at": "2026-04-01 01:53:55"
     },
     {
-      "id": 16,
+      "id": 53,
       "sync_id": "obs-18c0c47d09620b42",
       "session_id": "manual-save",
       "type": "architecture",
@@ -266,7 +849,7 @@
       "updated_at": "2026-04-01 01:59:40"
     },
     {
-      "id": 17,
+      "id": 54,
       "sync_id": "obs-c1048a762822ffdd",
       "session_id": "manual-save",
       "type": "architecture",
@@ -281,7 +864,7 @@
       "updated_at": "2026-04-01 02:00:58"
     },
     {
-      "id": 18,
+      "id": 55,
       "sync_id": "obs-0e581c52ff43e78e",
       "session_id": "manual-save-proyector-fin",
       "type": "project",
@@ -297,7 +880,7 @@
       "updated_at": "2026-04-01 02:03:40"
     },
     {
-      "id": 19,
+      "id": 56,
       "sync_id": "obs-641ad5e2f5fbb4f2",
       "session_id": "manual-save-proyector-fin",
       "type": "session_summary",
@@ -312,7 +895,7 @@
       "updated_at": "2026-04-01 02:04:08"
     },
     {
-      "id": 20,
+      "id": 57,
       "sync_id": "obs-a38d714b5cd6e177",
       "session_id": "manual-save-proyector-fin",
       "type": "session_summary",
@@ -327,7 +910,7 @@
       "updated_at": "2026-04-01 03:11:38"
     },
     {
-      "id": 21,
+      "id": 58,
       "sync_id": "obs-d5455b228d4990c3",
       "session_id": "manual-save-proyector-fin",
       "type": "decision",
@@ -342,7 +925,7 @@
       "updated_at": "2026-04-02 01:56:35"
     },
     {
-      "id": 22,
+      "id": 59,
       "sync_id": "obs-4193efd3aa87ec36",
       "session_id": "manual-save-proyector-fin",
       "type": "architecture",
@@ -358,7 +941,7 @@
       "updated_at": "2026-04-02 02:06:09"
     },
     {
-      "id": 23,
+      "id": 60,
       "sync_id": "obs-d466719e8cf22804",
       "session_id": "manual-save-proyector-fin",
       "type": "config",
@@ -374,7 +957,7 @@
       "updated_at": "2026-04-02 02:06:20"
     },
     {
-      "id": 24,
+      "id": 61,
       "sync_id": "obs-ee1bc0fb434c9147",
       "session_id": "manual-save-proyector-fin",
       "type": "architecture",
@@ -390,7 +973,7 @@
       "updated_at": "2026-04-02 02:15:53"
     },
     {
-      "id": 25,
+      "id": 62,
       "sync_id": "obs-5fd58e9e19384be7",
       "session_id": "manual-save-vitali-app",
       "type": "architecture",
@@ -406,7 +989,7 @@
       "updated_at": "2026-04-06 01:05:01"
     },
     {
-      "id": 26,
+      "id": 63,
       "sync_id": "obs-f77e45b37cc76277",
       "session_id": "manual-save-vitali-app",
       "type": "config",
@@ -422,7 +1005,7 @@
       "updated_at": "2026-04-05 03:15:23"
     },
     {
-      "id": 27,
+      "id": 64,
       "sync_id": "obs-9e5abecf1a7b6176",
       "session_id": "manual-save-vitali-app",
       "type": "config",
@@ -438,7 +1021,7 @@
       "updated_at": "2026-04-04 22:57:30"
     },
     {
-      "id": 28,
+      "id": 65,
       "sync_id": "obs-7ef0c14e99b98f3a",
       "session_id": "manual-save-vitali-app",
       "type": "session_summary",
@@ -453,7 +1036,7 @@
       "updated_at": "2026-04-06 02:49:14"
     },
     {
-      "id": 29,
+      "id": 66,
       "sync_id": "obs-0fcd7a8343c21cad",
       "session_id": "manual-save-vitali-app",
       "type": "session_summary",
@@ -468,7 +1051,7 @@
       "updated_at": "2026-04-06 02:50:38"
     },
     {
-      "id": 30,
+      "id": 67,
       "sync_id": "obs-9dc9a0bf94e724e3",
       "session_id": "manual-save-vitali-app",
       "type": "architecture",
@@ -484,7 +1067,7 @@
       "updated_at": "2026-04-06 02:58:30"
     },
     {
-      "id": 31,
+      "id": 68,
       "sync_id": "obs-ff85e8486908e766",
       "session_id": "manual-save-vitali-app",
       "type": "architecture",
@@ -500,7 +1083,7 @@
       "updated_at": "2026-04-06 10:30:49"
     },
     {
-      "id": 32,
+      "id": 69,
       "sync_id": "obs-2126bfbc615bb36c",
       "session_id": "manual-save-vitali-app",
       "type": "architecture",
@@ -516,7 +1099,7 @@
       "updated_at": "2026-04-06 10:31:32"
     },
     {
-      "id": 33,
+      "id": 70,
       "sync_id": "obs-09c988c43408a1d1",
       "session_id": "manual-save-vitali-app",
       "type": "architecture",
@@ -532,7 +1115,7 @@
       "updated_at": "2026-04-06 10:32:04"
     },
     {
-      "id": 34,
+      "id": 71,
       "sync_id": "obs-adbd6cda79f0678a",
       "session_id": "manual-save-vitali-app",
       "type": "decision",
@@ -548,7 +1131,7 @@
       "updated_at": "2026-04-06 12:36:04"
     },
     {
-      "id": 35,
+      "id": 72,
       "sync_id": "obs-a8b1b71679f21997",
       "session_id": "manual-save-vitali-app",
       "type": "session_summary",
@@ -563,7 +1146,7 @@
       "updated_at": "2026-04-06 19:38:40"
     },
     {
-      "id": 36,
+      "id": 73,
       "sync_id": "obs-4a7671d47bc75547",
       "session_id": "manual-save-vitali-app",
       "type": "session_summary",
@@ -578,7 +1161,7 @@
       "updated_at": "2026-04-06 19:55:40"
     },
     {
-      "id": 37,
+      "id": 74,
       "sync_id": "obs-d3bb42df0a96944e",
       "session_id": "manual-save-vitali-app",
       "type": "config",
@@ -594,7 +1177,7 @@
       "updated_at": "2026-04-06 19:55:44"
     },
     {
-      "id": 38,
+      "id": 75,
       "sync_id": "obs-28193357e17a4a7c",
       "session_id": "manual-save-vitali-app",
       "type": "session_summary",
@@ -609,7 +1192,7 @@
       "updated_at": "2026-04-07 00:39:31"
     },
     {
-      "id": 39,
+      "id": 76,
       "sync_id": "obs-c7da3bfe96a8ca8a",
       "session_id": "manual-save-vitali-app",
       "type": "bugfix",
@@ -625,7 +1208,7 @@
       "updated_at": "2026-04-07 00:40:49"
     },
     {
-      "id": 40,
+      "id": 77,
       "sync_id": "obs-93ef2781d1403ae5",
       "session_id": "manual-save-vitali-app",
       "type": "pattern",
@@ -641,7 +1224,7 @@
       "updated_at": "2026-04-07 00:40:50"
     },
     {
-      "id": 41,
+      "id": 78,
       "sync_id": "obs-f4ac2e540fc8ce48",
       "session_id": "manual-save-vitali-app",
       "type": "pattern",
@@ -657,7 +1240,7 @@
       "updated_at": "2026-04-07 00:41:02"
     },
     {
-      "id": 42,
+      "id": 79,
       "sync_id": "obs-1a94f3a7dde4c907",
       "session_id": "manual-save-vitali-app",
       "type": "pattern",
@@ -673,7 +1256,7 @@
       "updated_at": "2026-04-07 00:41:02"
     },
     {
-      "id": 43,
+      "id": 80,
       "sync_id": "obs-b7adcc186a08bdca",
       "session_id": "manual-save-vitali-app",
       "type": "pattern",
@@ -689,7 +1272,7 @@
       "updated_at": "2026-04-07 00:41:08"
     },
     {
-      "id": 44,
+      "id": 81,
       "sync_id": "obs-2cc852fd19b37b75",
       "session_id": "manual-save-vitali-app",
       "type": "reference",
@@ -705,7 +1288,7 @@
       "updated_at": "2026-04-07 00:41:10"
     },
     {
-      "id": 45,
+      "id": 82,
       "sync_id": "obs-6ba937e1232b1be3",
       "session_id": "manual-save-vitali-app",
       "type": "decision",
@@ -721,7 +1304,7 @@
       "updated_at": "2026-04-07 00:56:27"
     },
     {
-      "id": 46,
+      "id": 83,
       "sync_id": "obs-e212c3ad54a2a7f5",
       "session_id": "manual-save-vitali-app",
       "type": "session_summary",
@@ -736,7 +1319,7 @@
       "updated_at": "2026-04-07 03:35:15"
     },
     {
-      "id": 47,
+      "id": 84,
       "sync_id": "obs-31634d32c658b020",
       "session_id": "manual-save-vitali-app",
       "type": "bugfix",
@@ -751,7 +1334,7 @@
       "updated_at": "2026-04-07 03:38:16"
     },
     {
-      "id": 48,
+      "id": 85,
       "sync_id": "obs-68822071709795c8",
       "session_id": "manual-save-vitali-app",
       "type": "architecture",
@@ -767,7 +1350,7 @@
       "updated_at": "2026-04-07 04:57:15"
     },
     {
-      "id": 49,
+      "id": 86,
       "sync_id": "obs-93a0bb13bd3dff2c",
       "session_id": "manual-save-vitali-app",
       "type": "session_summary",
@@ -782,7 +1365,7 @@
       "updated_at": "2026-04-07 04:57:33"
     },
     {
-      "id": 50,
+      "id": 87,
       "sync_id": "obs-a1819b838bd33044",
       "session_id": "manual-save-vitali-app",
       "type": "decision",
@@ -797,7 +1380,7 @@
       "updated_at": "2026-04-07 05:00:23"
     },
     {
-      "id": 51,
+      "id": 88,
       "sync_id": "obs-cafd7c49b76b96a9",
       "session_id": "manual-save-vitali-app",
       "type": "session_summary",
@@ -812,7 +1395,7 @@
       "updated_at": "2026-04-07 05:02:40"
     },
     {
-      "id": 52,
+      "id": 89,
       "sync_id": "obs-73d4c43256b8315d",
       "session_id": "manual-save-vitali-app",
       "type": "decision",
@@ -828,7 +1411,7 @@
       "updated_at": "2026-04-07 19:49:00"
     },
     {
-      "id": 53,
+      "id": 90,
       "sync_id": "obs-c69835f3010da88c",
       "session_id": "manual-save-vitali-app",
       "type": "bugfix",
@@ -844,7 +1427,7 @@
       "updated_at": "2026-04-07 19:49:11"
     },
     {
-      "id": 54,
+      "id": 91,
       "sync_id": "obs-15fdd90ea0da52e9",
       "session_id": "manual-save-vitali-app",
       "type": "preference",
@@ -860,7 +1443,7 @@
       "updated_at": "2026-04-07 19:49:18"
     },
     {
-      "id": 55,
+      "id": 92,
       "sync_id": "obs-e9cbf3136b1fbbbb",
       "session_id": "manual-save",
       "type": "session_summary",
@@ -874,7 +1457,7 @@
       "updated_at": "2026-04-07 19:50:06"
     },
     {
-      "id": 56,
+      "id": 93,
       "sync_id": "obs-bf6330518a083eaa",
       "session_id": "manual-save",
       "type": "decision",
@@ -889,7 +1472,7 @@
       "updated_at": "2026-04-08 01:51:37"
     },
     {
-      "id": 57,
+      "id": 94,
       "sync_id": "obs-a587b55b3579dacc",
       "session_id": "manual-save",
       "type": "config",
@@ -904,7 +1487,7 @@
       "updated_at": "2026-04-12 15:51:25"
     },
     {
-      "id": 58,
+      "id": 95,
       "sync_id": "obs-1cebdfcade824f39",
       "session_id": "manual-save",
       "type": "decision",
@@ -919,7 +1502,7 @@
       "updated_at": "2026-04-12 15:51:32"
     },
     {
-      "id": 59,
+      "id": 96,
       "sync_id": "obs-17350700b022aefd",
       "session_id": "manual-save",
       "type": "session_summary",
@@ -933,7 +1516,7 @@
       "updated_at": "2026-04-12 15:52:33"
     },
     {
-      "id": 60,
+      "id": 97,
       "sync_id": "obs-b9d0e79e1c6e7c5e",
       "session_id": "manual-save-vitali-app",
       "type": "architecture",
@@ -949,7 +1532,7 @@
       "updated_at": "2026-04-21 01:01:05"
     },
     {
-      "id": 61,
+      "id": 98,
       "sync_id": "obs-09179442e2c7e7d9",
       "session_id": "manual-save-vitali-app",
       "type": "discovery",
@@ -965,7 +1548,7 @@
       "updated_at": "2026-04-21 01:01:13"
     },
     {
-      "id": 62,
+      "id": 99,
       "sync_id": "obs-bf23f56eaca68d50",
       "session_id": "manual-save-vitali-app",
       "type": "pattern",
@@ -981,7 +1564,7 @@
       "updated_at": "2026-04-21 01:01:21"
     },
     {
-      "id": 63,
+      "id": 100,
       "sync_id": "obs-0d991a1963c166cb",
       "session_id": "manual-save-vitali-app",
       "type": "architecture",
@@ -997,7 +1580,7 @@
       "updated_at": "2026-04-21 01:04:48"
     },
     {
-      "id": 64,
+      "id": 101,
       "sync_id": "obs-4e3a6a8b0dba8e99",
       "session_id": "manual-save-vitali-app",
       "type": "bugfix",
@@ -1013,7 +1596,7 @@
       "updated_at": "2026-04-21 01:04:53"
     },
     {
-      "id": 65,
+      "id": 102,
       "sync_id": "obs-427ee68a901bae4a",
       "session_id": "manual-save-vitali-app",
       "type": "decision",
@@ -1029,7 +1612,7 @@
       "updated_at": "2026-04-21 15:28:12"
     },
     {
-      "id": 66,
+      "id": 103,
       "sync_id": "obs-cae2388ed52b4616",
       "session_id": "manual-save-vitali-app",
       "type": "session_summary",
@@ -1042,6 +1625,146 @@
       "last_seen_at": "2026-04-21 15:28:30",
       "created_at": "2026-04-21 15:28:30",
       "updated_at": "2026-04-21 15:28:30"
+    },
+    {
+      "id": 104,
+      "sync_id": "obs-91ab3e77adbe522b",
+      "session_id": "manual-save-vitali-app",
+      "type": "config",
+      "title": "Carbone API keys — staging y prod",
+      "content": "**What**: API keys de Carbone.io configuradas para vitali-app.\n\n**Why**: PDF generation via Carbone cloud API. Test key en staging, prod key al mergear a main.\n\n**Staging (supabase-dev / bwiozqzevpmxjnwsjeuj)**:\n- Key type: test (prefijo `test_eyJ...`)\n- Ya configurada: `supabase secrets set CARBONE_API_KEY=test_eyJ... --project-ref bwiozqzevpmxjnwsjeuj`\n- PDFs tienen watermark de Carbone — esperado en QA\n\n**Producción (supabase-prod / cwbppfodpuknxqwrhoev)**:\n- Key type: prod (sin prefijo, empieza `eyJhbGci...`)\n- Configurar SOLO al mergear qa → main:\n  `supabase secrets set CARBONE_API_KEY=eyJhbGci... --project-ref cwbppfodpuknxqwrhoev`\n- PDFs limpios, sin watermark, facturación real\n\n**Learned**: Las keys están en app.carbone.io → cuenta → API keys. NUNCA commitear. La distinción test/prod es visual: test key tiene prefijo `test_`, prod no.",
+      "project": "vitali-app",
+      "scope": "personal",
+      "topic_key": "config/carbone-keys",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-21 15:52:15",
+      "created_at": "2026-04-21 15:52:15",
+      "updated_at": "2026-04-21 15:52:15"
+    },
+    {
+      "id": 105,
+      "sync_id": "obs-44215b0a9e0efe8e",
+      "session_id": "manual-save-vitali-app",
+      "type": "decision",
+      "title": "Judgment Day S2 — APROBADO tras 3 rondas",
+      "content": "**What**: Judgment Day completo en 3 rondas — S2 aprobado. Commits: e3e5fdb, dd87d37, 3b41d87 en rama `qa`\n\n**Why**: Adversarial review antes de merge a main del sistema S2 (clientes, cotizaciones, PDF Carbone)\n\n**Where**: 9 archivos corregidos en total a lo largo de 3 rondas\n\n**Learned**:\n- shallowRef: cualquier mutación directa de array/Set debe ser reasignación completa. unshift/[idx]=/ add() no disparan reactividad\n- btoa(String.fromCharCode(...bigBuffer)) explota con stack overflow para \u003e65KB — siempre usar chunks\n- Supabase joins nested pueden retornar arrays en vez de objetos — siempre verificar !Array.isArray\n- Para credit_type 'both': monthly_payment en BD guarda el valor francés, no el smart — la cuota smart viene del quote_data_snapshot.smart.cuotas_payment\n- SUPABASE_SERVICE_ROLE_KEY también necesita fail-fast igual que las otras env vars\n- UUID validation debe hacerse antes de queries a BD\n- Defense-in-depth: update con .eq('created_by', user.id) incluso con service role para evitar que un bug en RLS permita sobrescribir quotes ajenas",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "s2/judgment-day-fixes",
+      "revision_count": 2,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-21 19:14:20",
+      "created_at": "2026-04-21 19:09:59",
+      "updated_at": "2026-04-21 19:14:20"
+    },
+    {
+      "id": 106,
+      "sync_id": "obs-4adfda4fe328cd49",
+      "session_id": "manual-save-vitali-app",
+      "type": "pattern",
+      "title": "Patrón: extraer body real de FunctionsHttpError en supabase-js",
+      "content": "**What**: Para ver el error real que devuelve una Edge Function (en el body del 500), hay que verificar `fnError instanceof FunctionsHttpError` y leer `fnError.context.json()` (o `.text()`). El SDK de Supabase devuelve `fnError.message` con un genérico \"Edge Function returned a non-2xx status code\".\n\n**Why**: Sin esto, el frontend solo ve el mensaje genérico y nunca el detalle del error que la Edge Function pone en `JSON.stringify({ error: message })`.\n\n**Where**: `apps/app/src/stores/quotes.ts` — `generatePdf()`. Aplicar el mismo patrón en cualquier otro `supabase.functions.invoke` donde el error real importe.\n\n**Snippet**:\n```ts\nif (fnError instanceof FunctionsHttpError) {\n  try {\n    const body = await fnError.context.json()\n    if (body?.error) serverMsg = body.error\n  } catch { /* fallback a text() */ }\n}\n```\n\n**Learned**: `FunctionsHttpError.context` es el `Response` original — solo se puede consumir UNA vez (json o text, no ambos). Por eso el patrón usa try/catch encadenado.",
+      "project": "vitali-app",
+      "scope": "project",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-22 19:48:15",
+      "created_at": "2026-04-22 19:48:15",
+      "updated_at": "2026-04-22 19:48:15"
+    },
+    {
+      "id": 107,
+      "sync_id": "obs-cd7d37e7a9746d58",
+      "session_id": "manual-save-vitali-app",
+      "type": "bugfix",
+      "title": "Bug fix: 403 en generate-pdf para admins (ownership check redundante)",
+      "content": "**What**: La Edge Function `generate-pdf` tenía un check `if (record.created_by !== user.id) → 403` redundante con el RLS, que bloqueaba a admins (con `quotes.read_all`) cuando intentaban generar el PDF de una cotización ajena. Mismo problema en el UPDATE de `pdf_path`: el `.eq('created_by', user.id)` dejaba 0 rows updated sin error, regenerando el PDF cada vez.\n\n**Why**: El usuario reportaba 500 al generar PDF (en realidad era 403 enmascarado porque el SDK de Supabase swallowea el body del error). Diagnosticado con doble cambio: (1) extraer `error.context.json()` en el frontend para ver el mensaje real, (2) aplicar fix en la Edge Function.\n\n**Where**:\n- `supabase/functions/generate-pdf/index.ts` — eliminado check ownership y filter de UPDATE.\n- `apps/app/src/stores/quotes.ts` — extracción de error.context body para mensajes reales.\n- `supabase/migrations/20260422000001_vendedor_quotes_read_all.sql` — agregado `quotes.read_all` al rol Vendedor.\n\n**Decisión de negocio**: Por ahora todos los vendedores ven y generan PDFs de TODAS las cotizaciones (no solo las propias). Cuando se implemente cartera por vendedor / CRM, se puede atomizar revirtiendo el permiso.\n\n**Learned**:\n- `supabase.functions.invoke` envuelve errores HTTP en `FunctionsHttpError` con mensaje genérico. El body real está en `fnError.context` (Response object).\n- Si una Edge Function consulta con cliente autenticado (anon + Bearer), el RLS ya filtra acceso. Re-validar ownership en código es redundante y peligroso (rompe roles con `read_all`).\n- `.eq()` adicional en un UPDATE con service role NO tira error si no matchea filas — silenciosamente actualiza 0 rows. Cuidado con esto cuando se quiere fail-loud.",
+      "project": "vitali-app",
+      "scope": "project",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-22 20:01:19",
+      "created_at": "2026-04-22 20:01:19",
+      "updated_at": "2026-04-22 20:01:19"
+    },
+    {
+      "id": 108,
+      "sync_id": "obs-29ceae72b8f437e3",
+      "session_id": "manual-save-vitali-app",
+      "type": "decision",
+      "title": "S2 cierre: tests completos Edge Functions + deuda técnica",
+      "content": "**What**: Cerrado S2 con 192 tests todos en verde. Agregados tests para generate-pdf (fetcher + index), admin-create/delete/toggle-user, utils y document-variables. Eliminado import muerto base64Encode (DT-5). Constante TEMPLATE_NAME en lugar de string hardcodeado (DT-2 parcial). Extraídos handlers exportados de todos los index.ts. SPRINT-PLAN.md actualizado con checkboxes. DOCS_CARBONE reescrito con flow de 3 pasos, sección de deuda y nota sobre verify_jwt.\n\n**Why**: S2 no tenía tests de integración para generate-pdf, y la deuda técnica de base64Encode y template hardcodeado estaban pendientes. La lección pagada: sin tests de integración con mocks reales del flujo, los bugs de API v4 se encuentran tarde.\n\n**Where**:\n- `apps/app/vitest.config.ts` — alias jsr:@supabase/supabase-js@2 → absolute path npm package\n- `apps/app/src/test/setup.ts` — Deno global stub (serve + env.get) para tests Edge Functions en jsdom\n- `supabase/functions/generate-pdf/index.ts` — handler exportado, TEMPLATE_NAME const, sin base64Encode\n- `supabase/functions/admin-*/index.ts` — handler exportado (x3)\n- `supabase/functions/generate-pdf/fetcher.vitest.ts` — 9 tests validación joins\n- `supabase/functions/generate-pdf/index.vitest.ts` — 13 tests integración (auth, validación, carbone errors, happy path)\n- `supabase/functions/admin-*/index.vitest.ts` — 6/6/9 tests\n- `apps/app/src/lib/utils.test.ts` — 9 tests\n- `apps/app/src/lib/document-variables.test.ts` — 7 tests\n- `docs/SPRINT-PLAN.md` — S1 y S2 marcados como completados\n- `DOCS_CARBONE_PDF_GENERATION.md` — reescrito completo\n\n**Learned**:\n- `vi.clearAllMocks()` NO limpia colas de mockReturnValueOnce. Usar `vi.resetAllMocks()` en beforeEach cuando los tests comparten mocks que pueden tener valores pendientes de tests anteriores.\n- `vi.mock(path, factory)` con factory previene la resolución real del módulo — funciona con jsr: URLs si se provee factory. Sin factory, necesita el alias en vitest.config.ts.\n- `vi.hoisted(() =\u003e vi.fn())` es la única forma de definir variables que se pasan a vi.mock factories (ambos se hoisteen juntos).\n- jsdom's Blob polyfill no tiene `arrayBuffer()`. Para tests que necesitan un Blob con arrayBuffer, usar un objeto duck-type: `{ arrayBuffer: async () =\u003e buffer }`.\n- `??` operator no sirve para \"override con undefined\" — usar `key in overrides ? overrides[key] : defaults[key]`.\n- La deuda técnica DT-1 (templateId caching) y DT-3 (RLS bypass en UPDATE) quedan para S3 junto con multi-doc.",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "s2/closure-tests",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-23 14:55:52",
+      "created_at": "2026-04-23 14:55:52",
+      "updated_at": "2026-04-23 14:55:52"
+    },
+    {
+      "id": 109,
+      "sync_id": "obs-3ac41f7e2fa98514",
+      "session_id": "manual-save-vitali-app",
+      "type": "session_summary",
+      "title": "Session summary: vitali-app",
+      "content": "## Goal\nCerrar S2 limpiamente: tests completos para todas las Edge Functions con deuda de testing, eliminar deuda técnica menor, actualizar documentación.\n\n## Instructions\n- No buildear después de cambios\n- Commits en español con conventional commits\n- multi-doc (contratos, NDAs, proformas) → S3, no tocar en S2\n\n## Discoveries\n- `vi.clearAllMocks()` NO limpia colas de `mockReturnValueOnce`. Para test isolation correcta usar `vi.resetAllMocks()` en beforeEach.\n- `vi.hoisted(() =\u003e vi.fn())` es la única forma de definir variables que se usen dentro de factories de `vi.mock()` (ambos se hoisteen al mismo tiempo).\n- `vi.mock(path, factory)` con factory evita resolución real del módulo — funciona para `jsr:` URLs.\n- Sin embargo, hay que agregar alias `jsr:@supabase/supabase-js@2` → absolute path en vitest.config.ts para que el módulo del handler sea procesado correctamente.\n- jsdom Blob polyfill NO tiene `arrayBuffer()`. Usar objeto duck-type `{ arrayBuffer: async () =\u003e buffer }` en tests.\n- `??` no distingue entre \"key no existe\" y \"key existe con valor undefined\" — usar `key in obj ? obj[key] : default`.\n- Para testear Edge Functions (que usan `Deno.serve`) en vitest/jsdom: (1) extraer handler como función exportada, (2) stub `Deno` globalmente en setup.ts, (3) configurar env vars por test vía `(Deno as any).env.get = ...`.\n\n## Accomplished\n- ✅ Extraídos handlers exportados de todos los `index.ts` de Edge Functions (generate-pdf, admin-create/delete/toggle)\n- ✅ Stub Deno global en `apps/app/src/test/setup.ts`\n- ✅ Alias `jsr:@supabase/supabase-js@2` en `apps/app/vitest.config.ts`\n- ✅ 7 nuevos archivos de test: fetcher.vitest (9 tests), generate-pdf/index.vitest (13), admin-create (6), admin-delete (6), admin-toggle (9), utils.test (9), document-variables.test (7) → **192 tests totales, todos en verde**\n- ✅ Eliminado import muerto `base64Encode` de generate-pdf/index.ts (DT-5)\n- ✅ Constante `TEMPLATE_NAME` en lugar de string hardcodeado (DT-2 parcial)\n- ✅ `SPRINT-PLAN.md` actualizado con S1 y S2 completados\n- ✅ `DOCS_CARBONE_PDF_GENERATION.md` reescrito: flujo correcto de 3 pasos Carbone, nota sobre `verify_jwt`, deuda técnica hacia S3\n\n## Relevant Files\n- `apps/app/vitest.config.ts` — alias jsr: y config de tests\n- `apps/app/src/test/setup.ts` — Deno global stub\n- `supabase/functions/generate-pdf/index.ts` — handler exportado, TEMPLATE_NAME, sin base64Encode\n- `supabase/functions/generate-pdf/fetcher.vitest.ts` — 9 tests validación de joins\n- `supabase/functions/generate-pdf/index.vitest.ts` — 13 tests integración\n- `supabase/functions/admin-*/index.ts` — handlers exportados (x3)\n- `supabase/functions/admin-*/index.vitest.ts` — tests (x3)\n- `apps/app/src/lib/utils.test.ts` — tests utils\n- `apps/app/src/lib/document-variables.test.ts` — tests document-variables\n- `docs/SPRINT-PLAN.md` — S1 y S2 completados\n- `DOCS_CARBONE_PDF_GENERATION.md` — documentación actualizada",
+      "project": "vitali-app",
+      "scope": "project",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-23 14:56:22",
+      "created_at": "2026-04-23 14:56:22",
+      "updated_at": "2026-04-23 14:56:22"
+    },
+    {
+      "id": 110,
+      "sync_id": "obs-04e64bb944a872c0",
+      "session_id": "manual-save-vitali-app",
+      "type": "decision",
+      "title": "Judgment Day S2 completo — APROBADO",
+      "content": "**What**: Judgment Day de 3 rondas sobre S2 (generate-pdf + admin functions) — APROBADO en rama `qa`. Commit final: ead4a2b.\n\n**Why**: Pre-QA review antes de pasar a pruebas E2E humanas en staging.\n\n**Fixes aplicados (por ronda)**:\n\nRound 1 (4 CRITICALs + 9 WARNINGs):\n- RBAC check agregado en admin-create/delete/toggle via authClient.rpc('has_permission')\n- Authorization header faltante en Carbone upload + download\n- Zero-byte guard en PDF renderizado\n- UUID validation en admin-delete y admin-toggle\n- Email format validation en admin-create (con trim)\n- req.json() try/catch en todas las funciones admin\n- Phone update error propagado en admin-create\n- PERMANENT_BAN_DURATION constante en admin-toggle\n- Tests actualizados con makeAuthClient + rpc mock, tests 403 nuevos\n- afterEach(restoreAllMocks) en todos los test files\n- Dead admin client mocks eliminados de paths que salen antes\n\nRound 2 (email regex + enable null):\n- Email regex más estricto (previene a@.b.com)\n- enable === undefined → typeof enable !== 'boolean' (previene enable: null bypass)\n- Assertions de error message en tests UUID/email/enable\n\nRound 3 (test quality):\n- Message assertions en tests 401, invalid-JSON, enable-null\n- 2 tests nuevos en generate-pdf: storage upload fail + signUrl fail\n- Dead buildCarboneData mock eliminado del template-error test\n\n**Decisión arquitectónica**: generate-pdf NO necesita has_permission explícito — la RLS del auth client en fetchQuoteRecord ya enforcea quotes.read/read_all. Un check explícito rompería admins con read_all. Esto es por diseño.\n\n**Estado final**: 204 tests pasando, rama qa lista para E2E humano.",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "sdd/s2/judgment-day",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-23 20:47:34",
+      "created_at": "2026-04-23 20:47:34",
+      "updated_at": "2026-04-23 20:47:34"
+    },
+    {
+      "id": 111,
+      "sync_id": "obs-40f25d6118395aca",
+      "session_id": "manual-save-vitali-app",
+      "type": "pattern",
+      "title": "Store caching con hasFetched — evitar refetch en navegación",
+      "content": "**What**: Agregado `hasFetched` ref a todos los stores con `fetchAll()`. Si ya se cargaron los datos, la función retorna inmediatamente sin hacer un request a Supabase.\n\n**Why**: Cada `onMounted` llamaba `fetchAll()` incondicionalmente — cada navegación a una view tiraba los datos y los volvía a pedir. Con pocos datos ya tardaba ~300-500ms por el RTT fijo a Supabase cloud.\n\n**Where**: \n- `apps/app/src/stores/projects.ts` — hasFetched en fetchAll\n- `apps/app/src/stores/clients.ts` — hasFetched en fetchAll\n- `apps/app/src/stores/currencies.ts` — hasFetched en fetchAll\n- `apps/app/src/stores/quotes.ts` — hasFetched + reset en create() (quotes se crean desde el simulador)\n- `apps/app/src/stores/users.ts` — hasFetched + reset en createUser() antes de fetchAll (crea via Edge Function)\n- `apps/app/src/stores/towers.ts` — skip si currentProjectId === projectId\n- `apps/app/src/stores/units.ts` — skip si currentTowerId === towerId\n- `apps/app/src/views/projects/ProjectsView.vue` — reemplazado `unitsStore.units = []` por `unitsStore.clearUnits()` para que se resetee currentTowerId también\n\n**Learned**: \n- Tests no se rompen porque usan `setActivePinia(createPinia())` en beforeEach — fresh store con hasFetched=false cada vez\n- Para stores filtrados por ID (towers/units), el cache key es el ID mismo que ya existía (currentProjectId/currentTowerId)\n- clearTowers()/clearUnits() ya reseteaban el ID a null — actúan como invalidadores nativos\n- La latencia no es proporcional a filas sino al RTT fijo de HTTPS + JWT verification + RLS evaluation (~150-500ms por request)\n- Quotes necesita reset en create() porque se crean desde SimulatorView (otra ruta), no desde QuotesView",
+      "project": "vitali-app",
+      "scope": "project",
+      "topic_key": "pattern/store-caching",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-24 21:46:06",
+      "created_at": "2026-04-24 21:46:06",
+      "updated_at": "2026-04-24 21:46:06"
+    },
+    {
+      "id": 112,
+      "sync_id": "obs-16f2fa4a26aa4c39",
+      "session_id": "manual-save-vitali-app",
+      "type": "session_summary",
+      "title": "Session summary: vitali-app",
+      "content": "## Goal\nOptimizar el fetching de datos en las tablas (stores Pinia) para evitar refetches innecesarios en cada navegación, y diseñar la estrategia de concurrencia para la futura feature de reservas de unidades.\n\n## Instructions\n- Palabra clave de continuación: **LAGARTIJA** — si el usuario la menciona en la próxima sesión, cargar este summary y continuar desde acá\n- El usuario trabaja desde dos PCs (oficina y casa), esta sesión termina en oficina y continúa en casa\n- No buildear después de cambios — el usuario lo hace\n- Conventional commits en español\n\n## Discoveries\n- **La latencia no es proporcional a filas**: con Supabase cloud (rama `qa`), cada request tiene un costo fijo de ~150-500ms por RTT + HTTPS + JWT verification + RLS evaluation, sin importar si traés 1 fila o 1000\n- **El problema real era refetch en cada navegación**: cada `onMounted` llamaba `fetchAll()` incondicionalmente — cada visita a una view tiraba los datos y los volvía a pedir desde cero\n- **`hasFetched` pattern**: solución mínima — un `ref(false)` en el store que se setea a `true` tras el primer fetch exitoso. Navegaciones subsecuentes son instantáneas\n- **Towers/Units usan cache por ID**: en vez de `hasFetched`, comparan `currentProjectId === projectId` y `currentTowerId === towerId` — ya tenían esos refs, los aprovechamos\n- **Bug encontrado en ProjectsView**: usaba `unitsStore.units = []` directamente sin resetear `currentTowerId`, lo que habría hecho que `fetchByTower` se saltee el fetch aunque el array estuviera vacío. Fix: reemplazado por `unitsStore.clearUnits()`\n- **Quotes necesita reset en create()**: las cotizaciones se crean desde SimulatorView (otra ruta), así que `hasFetched` debe resetearse a `false` cuando se crea una quote para que QuotesView refetchee en la próxima visita\n- **Users.createUser fuerza refetch**: crea via Edge Function sin optimistic update posible, así que resetea `hasFetched = false` antes de llamar `fetchAll()` internamente\n- **Tests no se rompen**: todos usan `setActivePinia(createPinia())` en `beforeEach`, fresh store con `hasFetched = false` cada vez\n- **Stale data en multi-usuario**: el `hasFetched` introduce riesgo de ver datos viejos si otro usuario cambió algo. Para tablas de negocio (proyectos, clientes, monedas) el riesgo es bajo. Para stock/unidades con status (futura feature) habría que usar Realtime o TTL corto\n- **Race condition en reservas**: \"recargar antes de reservar\" NO resuelve el problema — siempre existe ventana de tiempo. La única solución es un UPDATE condicional atómico en Postgres: `UPDATE units SET status='reserved' WHERE id=$id AND status='available'`. Si el WHERE no matchea (otro ya reservó), devuelve 0 filas → 409 al cliente\n- **La tabla `units` NO tiene status aún**: solo tiene id, tower_id, typology_id, unit_number, floor, list_price, created_at. La feature de reservas (status: available/reserved/sold) es un sprint futuro\n\n## Accomplished\n- ✅ `hasFetched` agregado a `projects.ts`, `clients.ts`, `currencies.ts`, `quotes.ts`, `users.ts`\n- ✅ Cache por ID en `towers.ts` (`currentProjectId === projectId`) y `units.ts` (`currentTowerId === towerId`)\n- ✅ Bug fix en `ProjectsView.vue`: `unitsStore.units = []` → `unitsStore.clearUnits()` en dos lugares (selectProject y deleteTower)\n- ✅ `quotes.ts`: `hasFetched = false` en `create()` para invalidar cuando se crea desde el simulador\n- ✅ `users.ts`: `hasFetched = false` antes del `fetchAll()` interno en `createUser()`\n- ✅ Todos los stores exponen `hasFetched` en el return (por si algún componente lo necesita)\n- ✅ Commit y push a rama `qa`\n\n## Próximos pasos pendientes (NO implementados)\n- 🔲 **TTL o Realtime para stale data**: decidir estrategia. Opciones: (A) TTL de 5 min — `fetchedAt` ref con Date.now(), (B) refetch on window focus con VueUse, (C) Supabase Realtime subscriptions. Para el equipo pequeño actual, TTL es suficiente\n- 🔲 **Feature de reservas de unidades**: requiere migration con `status text CHECK IN ('available','reserved','sold')`, `reserved_by uuid`, `reserved_at timestamptz` en tabla `units`. La reserva debe hacerse en Edge Function con UPDATE condicional atómico (no dos pasos separados)\n- 🔲 **Realtime o TTL corto para units/stock**: cuando exista el status de unidades, los vendedores necesitan ver cambios de otros en tiempo real o casi real\n\n## Relevant Files\n- `apps/app/src/stores/projects.ts` — hasFetched agregado\n- `apps/app/src/stores/clients.ts` — hasFetched agregado\n- `apps/app/src/stores/currencies.ts` — hasFetched agregado\n- `apps/app/src/stores/quotes.ts` — hasFetched + reset en create()\n- `apps/app/src/stores/users.ts` — hasFetched + reset en createUser()\n- `apps/app/src/stores/towers.ts` — skip si currentProjectId === projectId\n- `apps/app/src/stores/units.ts` — skip si currentTowerId === towerId\n- `apps/app/src/views/projects/ProjectsView.vue` — clearUnits() en lugar de units = []",
+      "project": "vitali-app",
+      "scope": "project",
+      "revision_count": 1,
+      "duplicate_count": 1,
+      "last_seen_at": "2026-04-24 21:56:55",
+      "created_at": "2026-04-24 21:56:55",
+      "updated_at": "2026-04-24 21:56:55"
     }
   ],
   "prompts": [
