@@ -54,11 +54,11 @@
 
 ---
 
-## Modelo de Datos (borrador — Sprint 1)
+## Modelo de Datos
 
 ```sql
 -- Monedas del sistema
-currencies (id, code, name, symbol)
+currencies (id, code, name, symbol, decimal_places)
 
 -- Proyectos inmobiliarios
 projects (id, name, description, location, currency_id, annual_interest_rate,
@@ -88,7 +88,7 @@ permissions (id, module, action, description)
 role_permissions (role_id, permission_id)
 
 -- Usuarios (extiende auth.users de Supabase)
-user_profiles (id, user_id, full_name, email, phone, is_active,
+user_profiles (id, user_id, full_name, phone, is_active,
                smtp_host, smtp_port, smtp_user, created_at)
 -- smtp_password → en Supabase Vault, referenciado por user_id
 
@@ -97,14 +97,14 @@ user_roles (user_id, role_id)
 
 -- Clientes
 clients (id, full_name, rut, address, commune, phone, email,
-         created_by, created_at)
+         notes, created_by, created_at)
 
 -- Cotizaciones
-quotes (id, client_id, unit_id, pie_percentage, pie_amount,
-        financing_amount, credit_type, term_years, monthly_rate,
-        monthly_payment, balloon_payment, quote_data_snapshot,
+quotes (id, client_id, unit_id, status, credit_type,
+        pie_percentage, pie_amount, financing_amount, term_years,
+        monthly_payment, balloon_payment, smart_cuotas_percentage,
         pdf_path, created_by, created_at)
--- quote_data_snapshot: JSON con todos los datos al momento de cotizar
+-- status: 'draft' | 'sent' | 'expired'
 ```
 
 ---
@@ -117,34 +117,38 @@ src/
 ├── components/
 │   ├── ui/           ← shadcn-vue base components
 │   ├── layout/       ← AppShell, Sidebar, TopBar
-│   ├── projects/     ← componentes del módulo proyectos
-│   ├── towers/       ← componentes del módulo torres
-│   ├── units/        ← componentes del módulo deptos
-│   ├── typologies/   ← componentes del módulo tipologías
+│   ├── projects/     ← ProjectForm, TowerForm, UnitForm
 │   ├── simulator/    ← componentes del cotizador
-│   ├── quotes/       ← componentes de cotizaciones
-│   └── clients/      ← componentes de clientes
+│   ├── quotes/       ← QuoteForm, QuoteCard
+│   └── clients/      ← ClientForm
 ├── composables/
 │   ├── useAuth.ts
-│   ├── usePermissions.ts
-│   └── useImageUpload.ts (futuro CMS)
+│   └── usePermissions.ts
 ├── router/
 │   └── index.ts      ← rutas con guards de permiso
 ├── stores/
 │   ├── auth.ts
+│   ├── permissions.ts
+│   ├── currencies.ts
 │   ├── projects.ts
 │   ├── towers.ts
 │   ├── units.ts
 │   ├── typologies.ts
 │   ├── simulator.ts
 │   ├── quotes.ts
-│   └── clients.ts
+│   ├── clients.ts
+│   └── users.ts
 ├── views/
 │   ├── auth/         ← LoginView
-│   ├── projects/     ← ProjectsView, ProjectDetailView
+│   ├── projects/     ← ProjectsView, TypologiesView
 │   ├── simulator/    ← SimulatorView
-│   ├── quotes/       ← QuotesView, QuoteDetailView
-│   └── clients/      ← ClientsView
+│   ├── quotes/       ← QuotesView
+│   ├── clients/      ← ClientsView
+│   ├── users/        ← UsersView (gestión de usuarios y roles)
+│   ├── currencies/   ← CurrenciesView
+│   ├── settings/     ← SettingsView (perfil, SMTP, templates PDF)
+│   ├── stock/        ← StockView (inventario de departamentos)
+│   └── DashboardView.vue
 └── lib/
     └── supabase.ts   ← cliente Supabase
 ```
@@ -155,14 +159,18 @@ src/
 
 ```
 supabase/functions/
-├── calculate-quote/     ← cálculo crédito francés + inteligente
-├── generate-pdf/        ← genera PDF de cotización
-└── send-quote-email/    ← envía email con PDF adjunto (Sprint 3)
+├── calculate-quote/     ← cálculo crédito francés + inteligente (verify_jwt: true)
+├── generate-pdf/        ← genera PDF de cotización con Carbone.io (verify_jwt: false*)
+├── admin-create-user/   ← crea usuario en auth.users (verify_jwt: false*)
+├── admin-toggle-user/   ← habilita/deshabilita usuario (verify_jwt: false*)
+└── admin-delete-user/   ← elimina usuario de auth.users (verify_jwt: false*)
 ```
+
+\* `verify_jwt: false` porque el gateway de Supabase no puede validar tokens de Service Role contra auth.users de otro proyecto. La validación se hace internamente vía `auth.getUser()`, que es más estricta: valida estado actual del usuario en DB, no solo la firma del token.
 
 ---
 
-## GitHub Actions (futuro)
+## GitHub Actions
 
 ```
 .github/workflows/
@@ -170,17 +178,11 @@ supabase/functions/
 └── deploy-prod.yml      ← push a main → build → SFTP a app.vitalisuites.com
 ```
 
-### Secrets necesarios en GitHub
+### Secrets configurados en GitHub
 ```
-STAGING_FTP_HOST
-STAGING_FTP_USER
-STAGING_FTP_PASS
-STAGING_SUPABASE_URL
-STAGING_SUPABASE_ANON_KEY
+STAGING_FTP_HOST / STAGING_FTP_USER / STAGING_FTP_PASS
+STAGING_SUPABASE_URL / STAGING_SUPABASE_ANON_KEY
 
-PROD_FTP_HOST
-PROD_FTP_USER
-PROD_FTP_PASS
-PROD_SUPABASE_URL
-PROD_SUPABASE_ANON_KEY
+PROD_FTP_HOST / PROD_FTP_USER / PROD_FTP_PASS
+PROD_SUPABASE_URL / PROD_SUPABASE_ANON_KEY
 ```

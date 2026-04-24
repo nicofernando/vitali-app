@@ -24,6 +24,12 @@ vitali-app/
 ```bash
 pnpm install
 cp apps/app/.env.example apps/app/.env.local
+
+# Levantar Supabase local (Docker debe estar corriendo)
+supabase start
+supabase db reset
+# Copiar las keys de `supabase status` a apps/app/.env.local
+
 pnpm dev
 ```
 
