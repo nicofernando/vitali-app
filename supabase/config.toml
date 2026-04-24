@@ -397,3 +397,12 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 
 [functions.generate-pdf]
 verify_jwt = false
+
+[functions.admin-create-user]
+verify_jwt = false
+
+[functions.admin-toggle-user]
+verify_jwt = false
+
+[functions.admin-delete-user]
+verify_jwt = false
