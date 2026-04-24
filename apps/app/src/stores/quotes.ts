@@ -9,8 +9,10 @@ export const useQuotesStore = defineStore('quotes', () => {
   const quotes = shallowRef<QuoteSummary[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const hasFetched = ref(false)
 
   async function fetchAll() {
+    if (hasFetched.value) return
     loading.value = true
     error.value = null
     try {
@@ -18,6 +20,7 @@ export const useQuotesStore = defineStore('quotes', () => {
       if (dbError)
         throw dbError
       quotes.value = data ?? []
+      hasFetched.value = true
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al cargar cotizaciones')
@@ -35,6 +38,7 @@ export const useQuotesStore = defineStore('quotes', () => {
       .single()
     if (dbError)
       throw dbError
+    hasFetched.value = false
     return data.id
   }
 
@@ -72,5 +76,5 @@ export const useQuotesStore = defineStore('quotes', () => {
     return result
   }
 
-  return { quotes, loading, error, fetchAll, create, generatePdf }
+  return { quotes, loading, error, hasFetched, fetchAll, create, generatePdf }
 })

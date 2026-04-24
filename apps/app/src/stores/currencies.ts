@@ -8,8 +8,10 @@ export const useCurrenciesStore = defineStore('currencies', () => {
   const currencies = ref<Currency[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const hasFetched = ref(false)
 
   async function fetchAll() {
+    if (hasFetched.value) return
     loading.value = true
     error.value = null
     try {
@@ -20,6 +22,7 @@ export const useCurrenciesStore = defineStore('currencies', () => {
       if (dbError)
         throw dbError
       currencies.value = data ?? []
+      hasFetched.value = true
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al cargar monedas')
@@ -61,5 +64,5 @@ export const useCurrenciesStore = defineStore('currencies', () => {
     currencies.value = currencies.value.filter(c => c.id !== id)
   }
 
-  return { currencies, loading, error, fetchAll, create, update, remove }
+  return { currencies, loading, error, hasFetched, fetchAll, create, update, remove }
 })

@@ -10,8 +10,10 @@ export const useClientsStore = defineStore('clients', () => {
   const clients = shallowRef<Client[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const hasFetched = ref(false)
 
   async function fetchAll() {
+    if (hasFetched.value) return
     loading.value = true
     error.value = null
     try {
@@ -22,6 +24,7 @@ export const useClientsStore = defineStore('clients', () => {
       if (dbError)
         throw dbError
       clients.value = data ?? []
+      hasFetched.value = true
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al cargar clientes')
@@ -71,5 +74,5 @@ export const useClientsStore = defineStore('clients', () => {
     clients.value = clients.value.filter(c => c.id !== id)
   }
 
-  return { clients, loading, error, fetchAll, search, create, update, remove }
+  return { clients, loading, error, hasFetched, fetchAll, search, create, update, remove }
 })

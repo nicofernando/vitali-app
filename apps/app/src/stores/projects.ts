@@ -10,8 +10,10 @@ export const useProjectsStore = defineStore('projects', () => {
   const projects = ref<Project[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const hasFetched = ref(false)
 
   async function fetchAll() {
+    if (hasFetched.value) return
     loading.value = true
     error.value = null
     try {
@@ -22,6 +24,7 @@ export const useProjectsStore = defineStore('projects', () => {
       if (err)
         throw err
       projects.value = (data as unknown as Project[]) ?? []
+      hasFetched.value = true
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al cargar proyectos')
@@ -101,5 +104,5 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
-  return { projects, loading, error, fetchAll, create, update, remove }
+  return { projects, loading, error, hasFetched, fetchAll, create, update, remove }
 })

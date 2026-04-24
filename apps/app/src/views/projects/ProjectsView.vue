@@ -64,7 +64,7 @@ function formatPrice(amount: number, symbol = '$', decimalPlaces = 0) {
 function selectProject(project: Project) {
   selectedProject.value = project
   selectedTower.value = null
-  unitsStore.units = []
+  unitsStore.clearUnits()
   towersStore.fetchByProject(project.id)
 }
 
@@ -123,7 +123,7 @@ function deleteTower(tower: Tower) {
       await towersStore.remove(tower.id)
       if (selectedTower.value?.id === tower.id) {
         selectedTower.value = null
-        unitsStore.units = []
+        unitsStore.clearUnits()
       }
     },
   }

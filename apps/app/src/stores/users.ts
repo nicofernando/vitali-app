@@ -8,8 +8,10 @@ export const useUsersStore = defineStore('users', () => {
   const users = ref<UserWithRoles[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const hasFetched = ref(false)
 
   async function fetchAll() {
+    if (hasFetched.value) return
     loading.value = true
     error.value = null
     try {
@@ -51,6 +53,7 @@ export const useUsersStore = defineStore('users', () => {
             return -1
           return a.full_name.localeCompare(b.full_name, 'es')
         })
+      hasFetched.value = true
     }
     catch (err) {
       error.value = extractErrorMessage(err, 'Error al cargar usuarios')
@@ -66,6 +69,7 @@ export const useUsersStore = defineStore('users', () => {
     })
     if (fnError)
       throw fnError
+    hasFetched.value = false
     await fetchAll()
   }
 
@@ -131,5 +135,5 @@ export const useUsersStore = defineStore('users', () => {
     users.value = users.value.filter(u => u.id !== userId)
   }
 
-  return { users, loading, error, fetchAll, createUser, updateProfile, assignRole, removeRole, toggleUser, deleteUser }
+  return { users, loading, error, hasFetched, fetchAll, createUser, updateProfile, assignRole, removeRole, toggleUser, deleteUser }
 })
