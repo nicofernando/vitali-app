@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 
+defineProps<{
+  loading?: boolean
+}>()
+
 const emit = defineEmits<{
   submit: [values: { email: string, full_name: string | null, phone: string | null }]
   cancel: []
-}>()
-
-defineProps<{
-  loading?: boolean
 }>()
 
 const schema = toTypedSchema(z.object({

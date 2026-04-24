@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type { QuoteSummary } from '@/types'
 import { storeToRefs } from 'pinia'
-import { onMounted, shallowRef, ref, computed, watch } from 'vue'
+import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+import DataTableColumnHeader from '@/components/ui/data-table/DataTableColumnHeader.vue'
+import DataTablePagination from '@/components/ui/data-table/DataTablePagination.vue'
 import { Input } from '@/components/ui/input'
+import LoadingOverlay from '@/components/ui/loading-overlay/LoadingOverlay.vue'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -15,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { useQuotesStore } from '@/stores/quotes'
 
 const quotesStore = useQuotesStore()
@@ -29,7 +31,7 @@ const searchQuery = ref('')
 const sortKey = ref<SortKey>('date')
 const sortOrder = ref<'asc' | 'desc'>('desc')
 const currentPage = ref(1)
-const itemsPerPage = 10
+const itemsPerPage = ref(10)
 
 onMounted(() => quotesStore.fetchAll())
 
@@ -53,19 +55,33 @@ const sortedQuotes = computed(() => {
 
     switch (sortKey.value) {
       case 'client':
-        valA = a.client_name || ''; valB = b.client_name || ''; break
+        valA = a.client_name || ''
+        valB = b.client_name || ''
+        break
       case 'project':
-        valA = a.project_name || ''; valB = b.project_name || ''; break
+        valA = a.project_name || ''
+        valB = b.project_name || ''
+        break
       case 'list_price':
-        valA = a.list_price || 0; valB = b.list_price || 0; break
+        valA = a.list_price || 0
+        valB = b.list_price || 0
+        break
       case 'date':
-        valA = new Date(a.created_at).getTime(); valB = new Date(b.created_at).getTime(); break
+        valA = new Date(a.created_at).getTime()
+        valB = new Date(b.created_at).getTime()
+        break
       case 'status':
-        valA = statusLabel(a.status); valB = statusLabel(b.status); break
+        valA = statusLabel(a.status)
+        valB = statusLabel(b.status)
+        break
       case 'credit_type':
-        valA = a.credit_type || ''; valB = b.credit_type || ''; break
+        valA = a.credit_type || ''
+        valB = b.credit_type || ''
+        break
       default:
-        valA = new Date(a.created_at).getTime(); valB = new Date(b.created_at).getTime(); break
+        valA = new Date(a.created_at).getTime()
+        valB = new Date(b.created_at).getTime()
+        break
     }
 
     if (valA < valB)
@@ -77,21 +93,23 @@ const sortedQuotes = computed(() => {
 })
 
 const paginatedQuotes = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  return sortedQuotes.value.slice(start, start + itemsPerPage)
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  return sortedQuotes.value.slice(start, start + itemsPerPage.value)
 })
 
-const totalPages = computed(() => Math.ceil(sortedQuotes.value.length / itemsPerPage)) || 1
+const totalPages = computed(() => Math.max(1, Math.ceil(sortedQuotes.value.length / itemsPerPage.value)))
 
 watch([searchQuery, sortKey, sortOrder], () => {
   currentPage.value = 1
 })
 
-function toggleSort(key: SortKey) {
-  if (sortKey.value === key)
+function toggleSort(key: string) {
+  const k = key as SortKey
+  if (sortKey.value === k) {
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  }
   else {
-    sortKey.value = key
+    sortKey.value = k
     sortOrder.value = 'asc'
   }
 }
@@ -142,7 +160,8 @@ async function handleDownload(quote: QuoteSummary) {
     if (err instanceof Error) {
       console.error('[QuotesView] generatePdf error:', err.message, err.stack)
       toast.error(`Error al generar el PDF: ${err.message}`)
-    } else {
+    }
+    else {
       console.error('[QuotesView] generatePdf error:', err)
       toast.error('Error al generar el PDF')
     }
@@ -180,48 +199,24 @@ async function handleDownload(quote: QuoteSummary) {
       <div class="rounded-md border">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead class="cursor-pointer select-none hover:bg-muted/50" @click="toggleSort('client')">
-                <div class="flex items-center gap-1">
-                  Cliente
-                  <ChevronDown v-if="sortKey === 'client' && sortOrder === 'desc'" class="h-3 w-3" />
-                  <ChevronUp v-else-if="sortKey === 'client' && sortOrder === 'asc'" class="h-3 w-3" />
-                </div>
+            <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
+              <TableHead class="font-semibold text-foreground">
+                <DataTableColumnHeader sort-key="client" :current-sort-key="sortKey" :current-sort-order="sortOrder" label="Cliente" @sort="toggleSort" />
               </TableHead>
-              <TableHead class="cursor-pointer select-none hover:bg-muted/50" @click="toggleSort('project')">
-                <div class="flex items-center gap-1">
-                  Proyecto / Depto
-                  <ChevronDown v-if="sortKey === 'project' && sortOrder === 'desc'" class="h-3 w-3" />
-                  <ChevronUp v-else-if="sortKey === 'project' && sortOrder === 'asc'" class="h-3 w-3" />
-                </div>
+              <TableHead class="font-semibold text-foreground">
+                <DataTableColumnHeader sort-key="project" :current-sort-key="sortKey" :current-sort-order="sortOrder" label="Proyecto / Depto" @sort="toggleSort" />
               </TableHead>
-              <TableHead class="cursor-pointer select-none hover:bg-muted/50" @click="toggleSort('credit_type')">
-                <div class="flex items-center gap-1">
-                  Crédito
-                  <ChevronDown v-if="sortKey === 'credit_type' && sortOrder === 'desc'" class="h-3 w-3" />
-                  <ChevronUp v-else-if="sortKey === 'credit_type' && sortOrder === 'asc'" class="h-3 w-3" />
-                </div>
+              <TableHead class="font-semibold text-foreground">
+                <DataTableColumnHeader sort-key="credit_type" :current-sort-key="sortKey" :current-sort-order="sortOrder" label="Crédito" @sort="toggleSort" />
               </TableHead>
-              <TableHead class="cursor-pointer select-none hover:bg-muted/50" @click="toggleSort('list_price')">
-                <div class="flex items-center gap-1">
-                  Precio lista
-                  <ChevronDown v-if="sortKey === 'list_price' && sortOrder === 'desc'" class="h-3 w-3" />
-                  <ChevronUp v-else-if="sortKey === 'list_price' && sortOrder === 'asc'" class="h-3 w-3" />
-                </div>
+              <TableHead class="font-semibold text-foreground">
+                <DataTableColumnHeader sort-key="list_price" :current-sort-key="sortKey" :current-sort-order="sortOrder" label="Precio lista" @sort="toggleSort" />
               </TableHead>
-              <TableHead class="cursor-pointer select-none hover:bg-muted/50" @click="toggleSort('date')">
-                <div class="flex items-center gap-1">
-                  Fecha
-                  <ChevronDown v-if="sortKey === 'date' && sortOrder === 'desc'" class="h-3 w-3" />
-                  <ChevronUp v-else-if="sortKey === 'date' && sortOrder === 'asc'" class="h-3 w-3" />
-                </div>
+              <TableHead class="font-semibold text-foreground">
+                <DataTableColumnHeader sort-key="date" :current-sort-key="sortKey" :current-sort-order="sortOrder" label="Fecha" @sort="toggleSort" />
               </TableHead>
-              <TableHead class="cursor-pointer select-none hover:bg-muted/50" @click="toggleSort('status')">
-                <div class="flex items-center gap-1">
-                  Estado
-                  <ChevronDown v-if="sortKey === 'status' && sortOrder === 'desc'" class="h-3 w-3" />
-                  <ChevronUp v-else-if="sortKey === 'status' && sortOrder === 'asc'" class="h-3 w-3" />
-                </div>
+              <TableHead class="font-semibold text-foreground">
+                <DataTableColumnHeader sort-key="status" :current-sort-key="sortKey" :current-sort-order="sortOrder" label="Estado" @sort="toggleSort" />
               </TableHead>
               <TableHead />
             </TableRow>
@@ -279,29 +274,15 @@ async function handleDownload(quote: QuoteSummary) {
       </div>
 
       <!-- Pagination Controls -->
-      <div v-if="totalPages > 1" class="flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          class="h-8 w-8"
-          :disabled="currentPage === 1"
-          @click="currentPage--"
-        >
-          <ChevronLeft class="h-4 w-4" />
-        </Button>
-        <span class="text-sm text-muted-foreground min-w-[5rem] text-center">
-          {{ currentPage }} / {{ totalPages }}
-        </span>
-        <Button
-          variant="outline"
-          size="icon"
-          class="h-8 w-8"
-          :disabled="currentPage === totalPages"
-          @click="currentPage++"
-        >
-          <ChevronRight class="h-4 w-4" />
-        </Button>
-      </div>
+      <DataTablePagination
+        v-model:current-page="currentPage"
+        v-model:page-size="itemsPerPage"
+        :total-items="sortedQuotes.length"
+        :total-pages="totalPages"
+        :page-size-options="[10, 25, 50, 100]"
+      />
     </div>
+
+    <LoadingOverlay :show="generatingPdf.size > 0" message="Generando PDF de cotización..." />
   </div>
 </template>

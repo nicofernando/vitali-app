@@ -1,18 +1,15 @@
 <script setup lang="ts">
+import { Download } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown, Download } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
 import { Button } from '@/components/ui/button'
+import DataTableColumnHeader from '@/components/ui/data-table/DataTableColumnHeader.vue'
+import DataTablePagination from '@/components/ui/data-table/DataTablePagination.vue'
+import FilterCombobox from '@/components/ui/filter-combobox/FilterCombobox.vue'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -21,13 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Skeleton } from '@/components/ui/skeleton'
-import FilterCombobox from '@/components/ui/filter-combobox/FilterCombobox.vue'
 import { useUnitsStore } from '@/stores/units'
 
 const unitsStore = useUnitsStore()
 const { allUnits, allUnitsDirty, loadingAll, error } = storeToRefs(unitsStore)
-
 
 // Filtros
 const filterProjectId = ref<string>('')
@@ -137,9 +131,11 @@ const sortedUnits = computed(() => {
     // Por defecto: orden natural anidado (Proyecto > Torre > Depto)
     return [...filteredUnits.value].sort((a, b) => {
       const p = a.tower.project.name.localeCompare(b.tower.project.name, undefined, { numeric: true })
-      if (p !== 0) return p
+      if (p !== 0)
+        return p
       const t = a.tower.name.localeCompare(b.tower.name, undefined, { numeric: true })
-      if (t !== 0) return t
+      if (t !== 0)
+        return t
       return a.unit_number.localeCompare(b.unit_number, undefined, { numeric: true })
     })
   }
@@ -149,25 +145,60 @@ const sortedUnits = computed(() => {
     let bv: string | number | null = null
 
     switch (sortKey.value) {
-      case 'project': av = a.tower.project.name; bv = b.tower.project.name; break
-      case 'tower': av = a.tower.name; bv = b.tower.name; break
-      case 'floor': av = a.floor; bv = b.floor; break
-      case 'unit_number': av = a.unit_number; bv = b.unit_number; break
-      case 'typology': av = a.typology?.name ?? null; bv = b.typology?.name ?? null; break
-      case 'surface': av = a.typology?.surface_m2 ?? null; bv = b.typology?.surface_m2 ?? null; break
-      case 'min_pie': av = a.tower.min_pie_percentage ?? null; bv = b.tower.min_pie_percentage ?? null; break
-      case 'max_term': av = a.tower.max_financing_years ?? null; bv = b.tower.max_financing_years ?? null; break
-      case 'delivery_date': av = a.tower.delivery_date ?? null; bv = b.tower.delivery_date ?? null; break
-      case 'price': av = a.list_price; bv = b.list_price; break
+      case 'project':
+        av = a.tower.project.name
+        bv = b.tower.project.name
+        break
+      case 'tower':
+        av = a.tower.name
+        bv = b.tower.name
+        break
+      case 'floor':
+        av = a.floor
+        bv = b.floor
+        break
+      case 'unit_number':
+        av = a.unit_number
+        bv = b.unit_number
+        break
+      case 'typology':
+        av = a.typology?.name ?? null
+        bv = b.typology?.name ?? null
+        break
+      case 'surface':
+        av = a.typology?.surface_m2 ?? null
+        bv = b.typology?.surface_m2 ?? null
+        break
+      case 'min_pie':
+        av = a.tower.min_pie_percentage ?? null
+        bv = b.tower.min_pie_percentage ?? null
+        break
+      case 'max_term':
+        av = a.tower.max_financing_years ?? null
+        bv = b.tower.max_financing_years ?? null
+        break
+      case 'delivery_date':
+        av = a.tower.delivery_date ?? null
+        bv = b.tower.delivery_date ?? null
+        break
+      case 'price':
+        av = a.list_price
+        bv = b.list_price
+        break
     }
 
-    if (av === null && bv === null) return 0
-    if (av === null) return 1
-    if (bv === null) return -1
+    if (av === null && bv === null)
+      return 0
+    if (av === null)
+      return 1
+    if (bv === null)
+      return -1
     if (sortKey.value === 'unit_number')
       return (av as string).localeCompare(bv as string, undefined, { numeric: true }) * (sortDir.value === 'asc' ? 1 : -1)
-    if (av < bv) return sortDir.value === 'asc' ? -1 : 1
-    if (av > bv) return sortDir.value === 'asc' ? 1 : -1
+    if (av < bv)
+      return sortDir.value === 'asc' ? -1 : 1
+    if (av > bv)
+      return sortDir.value === 'asc' ? 1 : -1
     return 0
   })
 })
@@ -179,28 +210,15 @@ const paginatedUnits = computed(() => {
   return sortedUnits.value.slice(start, start + limit.value)
 })
 
-const pageRangeLabel = computed(() => {
-  const total = sortedUnits.value.length
-  if (total === 0) return '0 departamentos'
-  const start = (currentPage.value - 1) * limit.value + 1
-  const end = Math.min(currentPage.value * limit.value, total)
-  return `${start}–${end} de ${total}`
-})
-
-function toggleSort(key: SortKey) {
-  if (sortKey.value === key) {
+function toggleSort(key: string) {
+  const k = key as SortKey
+  if (sortKey.value === k) {
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
   }
   else {
-    sortKey.value = key
+    sortKey.value = k
     sortDir.value = 'asc'
   }
-}
-
-function sortIcon(key: SortKey) {
-  if (sortKey.value !== key)
-    return ChevronsUpDown
-  return sortDir.value === 'asc' ? ChevronUp : ChevronDown
 }
 
 function clearFilters() {
@@ -237,12 +255,12 @@ function exportToExcel() {
   const worksheet = XLSX.utils.json_to_sheet(data)
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Stock')
-  
+
   // Ajuste de ancho de columnas
   worksheet['!cols'] = [
     { wch: 25 }, // Proyecto
     { wch: 15 }, // Torre
-    { wch: 6 },  // Piso
+    { wch: 6 }, // Piso
     { wch: 12 }, // N° Depto
     { wch: 20 }, // Tipología
     { wch: 15 }, // Superficie
@@ -345,104 +363,34 @@ function exportToExcel() {
         <TableHeader>
           <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
             <TableHead class="font-semibold text-foreground">
-              <button
-                class="flex items-center gap-1.5 hover:text-primary transition-colors"
-                :class="sortKey === 'project' ? 'text-primary' : ''"
-                @click="toggleSort('project')"
-              >
-                Proyecto
-                <component :is="sortIcon('project')" class="h-3.5 w-3.5 shrink-0" />
-              </button>
+              <DataTableColumnHeader sort-key="project" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Proyecto" @sort="toggleSort" />
             </TableHead>
             <TableHead class="font-semibold text-foreground">
-              <button
-                class="flex items-center gap-1.5 hover:text-primary transition-colors"
-                :class="sortKey === 'tower' ? 'text-primary' : ''"
-                @click="toggleSort('tower')"
-              >
-                Torre
-                <component :is="sortIcon('tower')" class="h-3.5 w-3.5 shrink-0" />
-              </button>
-            </TableHead>
-            <TableHead class="font-semibold text-foreground text-center">
-              <button
-                class="flex items-center gap-1.5 hover:text-primary transition-colors mx-auto"
-                :class="sortKey === 'floor' ? 'text-primary' : ''"
-                @click="toggleSort('floor')"
-              >
-                Piso
-                <component :is="sortIcon('floor')" class="h-3.5 w-3.5 shrink-0" />
-              </button>
+              <DataTableColumnHeader sort-key="tower" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Torre" @sort="toggleSort" />
             </TableHead>
             <TableHead class="font-semibold text-foreground">
-              <button
-                class="flex items-center gap-1.5 hover:text-primary transition-colors"
-                :class="sortKey === 'unit_number' ? 'text-primary' : ''"
-                @click="toggleSort('unit_number')"
-              >
-                N° Depto
-                <component :is="sortIcon('unit_number')" class="h-3.5 w-3.5 shrink-0" />
-              </button>
+              <DataTableColumnHeader sort-key="floor" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Piso" align="center" @sort="toggleSort" />
             </TableHead>
             <TableHead class="font-semibold text-foreground">
-              <button
-                class="flex items-center gap-1.5 hover:text-primary transition-colors"
-                :class="sortKey === 'typology' ? 'text-primary' : ''"
-                @click="toggleSort('typology')"
-              >
-                Tipología
-                <component :is="sortIcon('typology')" class="h-3.5 w-3.5 shrink-0" />
-              </button>
+              <DataTableColumnHeader sort-key="unit_number" :current-sort-key="sortKey" :current-sort-order="sortDir" label="N° Depto" @sort="toggleSort" />
             </TableHead>
-            <TableHead class="font-semibold text-foreground text-right">
-              <button
-                class="flex items-center gap-1.5 hover:text-primary transition-colors ml-auto"
-                :class="sortKey === 'surface' ? 'text-primary' : ''"
-                @click="toggleSort('surface')"
-              >
-                Superficie
-                <component :is="sortIcon('surface')" class="h-3.5 w-3.5 shrink-0" />
-              </button>
+            <TableHead class="font-semibold text-foreground">
+              <DataTableColumnHeader sort-key="typology" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Tipología" @sort="toggleSort" />
             </TableHead>
-            <TableHead class="font-semibold text-foreground text-right">
-              <button
-                class="flex items-center gap-1.5 hover:text-primary transition-colors ml-auto"
-                :class="sortKey === 'min_pie' ? 'text-primary' : ''"
-                @click="toggleSort('min_pie')"
-              >
-                PIE Mín.
-                <component :is="sortIcon('min_pie')" class="h-3.5 w-3.5 shrink-0" />
-              </button>
+            <TableHead class="font-semibold text-foreground">
+              <DataTableColumnHeader sort-key="surface" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Superficie" align="right" @sort="toggleSort" />
             </TableHead>
-            <TableHead class="font-semibold text-foreground text-right">
-              <button
-                class="flex items-center gap-1.5 hover:text-primary transition-colors ml-auto"
-                :class="sortKey === 'max_term' ? 'text-primary' : ''"
-                @click="toggleSort('max_term')"
-              >
-                Plazo Máx.
-                <component :is="sortIcon('max_term')" class="h-3.5 w-3.5 shrink-0" />
-              </button>
+            <TableHead class="font-semibold text-foreground">
+              <DataTableColumnHeader sort-key="min_pie" :current-sort-key="sortKey" :current-sort-order="sortDir" label="PIE Mín." align="right" @sort="toggleSort" />
             </TableHead>
-            <TableHead class="font-semibold text-foreground text-center">
-              <button
-                class="flex items-center gap-1.5 hover:text-primary transition-colors mx-auto"
-                :class="sortKey === 'delivery_date' ? 'text-primary' : ''"
-                @click="toggleSort('delivery_date')"
-              >
-                Entrega
-                <component :is="sortIcon('delivery_date')" class="h-3.5 w-3.5 shrink-0" />
-              </button>
+            <TableHead class="font-semibold text-foreground">
+              <DataTableColumnHeader sort-key="max_term" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Plazo Máx." align="right" @sort="toggleSort" />
             </TableHead>
-            <TableHead class="font-semibold text-foreground text-right">
-              <button
-                class="flex items-center gap-1.5 hover:text-primary transition-colors ml-auto"
-                :class="sortKey === 'price' ? 'text-primary' : ''"
-                @click="toggleSort('price')"
-              >
-                Precio de lista
-                <component :is="sortIcon('price')" class="h-3.5 w-3.5 shrink-0" />
-              </button>
+            <TableHead class="font-semibold text-foreground">
+              <DataTableColumnHeader sort-key="delivery_date" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Entrega" align="center" @sort="toggleSort" />
+            </TableHead>
+            <TableHead class="font-semibold text-foreground">
+              <DataTableColumnHeader sort-key="price" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Precio de lista" align="right" @sort="toggleSort" />
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -496,48 +444,13 @@ function exportToExcel() {
     </div>
 
     <!-- Paginación -->
-    <div v-if="!loadingAll" class="flex items-center justify-between flex-wrap gap-4">
-      <div class="flex items-center gap-4">
-        <p class="text-sm text-muted-foreground">
-          {{ pageRangeLabel }}
-        </p>
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-muted-foreground">Filas por página:</span>
-          <Select :model-value="String(limit)" @update:model-value="v => limit = Number(v)">
-            <SelectTrigger class="h-8 w-[70px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="25">25</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-              <SelectItem value="500">500</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      
-      <div v-if="totalPages > 1" class="flex items-center gap-1">
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="currentPage === 1"
-          @click="currentPage--"
-        >
-          <ChevronLeft class="h-4 w-4" />
-        </Button>
-        <span class="text-sm px-2 tabular-nums">
-          {{ currentPage }} / {{ totalPages }}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="currentPage === totalPages"
-          @click="currentPage++"
-        >
-          <ChevronRight class="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
+    <DataTablePagination
+      v-if="!loadingAll"
+      v-model:current-page="currentPage"
+      v-model:page-size="limit"
+      :total-items="sortedUnits.length"
+      :total-pages="totalPages"
+      :page-size-options="[25, 50, 100, 500]"
+    />
   </div>
 </template>

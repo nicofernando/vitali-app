@@ -44,9 +44,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import CreateUserForm from '@/components/users/CreateUserForm.vue'
 import { supabase } from '@/lib/supabase'
 import { useUsersStore } from '@/stores/users'
-import CreateUserForm from '@/components/users/CreateUserForm.vue'
 
 const PAGE_SIZE = 25
 
@@ -113,11 +113,14 @@ const paginatedUsers = computed(() => {
 })
 
 // Reset de página al cambiar filtros
-function resetPage() { currentPage.value = 1 }
+function resetPage() {
+  currentPage.value = 1
+}
 
 function toggleSort(key: typeof sortKey.value) {
-  if (sortKey.value === key)
+  if (sortKey.value === key) {
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  }
   else {
     sortKey.value = key
     sortDir.value = 'asc'

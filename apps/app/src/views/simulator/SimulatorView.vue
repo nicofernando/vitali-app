@@ -10,9 +10,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import FilterCombobox from '@/components/ui/filter-combobox/FilterCombobox.vue'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import FilterCombobox from '@/components/ui/filter-combobox/FilterCombobox.vue'
 import {
   Select,
   SelectContent,
@@ -146,7 +146,8 @@ function onUnitChange(value: string) {
 }
 
 function onCreditTypeChange(value: unknown) {
-  if (!value) return
+  if (!value)
+    return
   creditType.value = value as 'french' | 'smart' | 'both'
   simulatorStore.clearResult()
   if (value === 'french')
@@ -432,7 +433,6 @@ function formatCurrency(amount: number, symbol = '$') {
       :smart-cuotas-percentage="showSmartParams ? smartCuotasPercentage : undefined"
       @saved="handleReset"
     />
-
 
     <!-- Skeleton mientras calcula -->
     <template v-if="calculating">

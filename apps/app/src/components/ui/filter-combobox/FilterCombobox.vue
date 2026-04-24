@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Check, ChevronDown, X } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 interface Option {
   id: string
@@ -8,10 +8,10 @@ interface Option {
 }
 
 const props = defineProps<{
-  modelValue: string        // '' = sin filtro
+  modelValue: string // '' = sin filtro
   options: Option[]
-  placeholder?: string      // texto cuando no hay selección
-  allLabel?: string         // etiqueta de "Todos" en el dropdown
+  placeholder?: string // texto cuando no hay selección
+  allLabel?: string // etiqueta de "Todos" en el dropdown
   disabled?: boolean
 }>()
 
@@ -27,8 +27,6 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const selectedOption = computed(() =>
   props.options.find(o => o.id === props.modelValue) ?? null,
 )
-
-
 
 const filteredOptions = computed(() => {
   if (!search.value.trim())

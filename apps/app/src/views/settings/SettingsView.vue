@@ -12,9 +12,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { usePermissions } from '@/composables/usePermissions'
 import { getBlocksForDocumentType } from '@/lib/document-variables'
 import { supabase } from '@/lib/supabase'
-import { usePermissions } from '@/composables/usePermissions'
 
 const { can } = usePermissions()
 const uploading = ref(false)

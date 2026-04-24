@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Client } from '@/types'
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import ClientForm from '@/components/clients/ClientForm.vue'
 import {
@@ -15,6 +15,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import DataTableColumnHeader from '@/components/ui/data-table/DataTableColumnHeader.vue'
+import DataTablePagination from '@/components/ui/data-table/DataTablePagination.vue'
 import { Input } from '@/components/ui/input'
 import {
   Sheet,
@@ -42,6 +44,10 @@ const editingClient = ref<Client | null>(null)
 const pendingDelete = ref<Client | null>(null)
 const submitting = ref(false)
 const searchQuery = ref('')
+const sortKey = ref<'full_name' | 'rut' | 'email' | 'phone' | 'commune'>('full_name')
+const sortDir = ref<'asc' | 'desc'>('asc')
+const currentPage = ref(1)
+const limit = ref(25)
 const formRef = ref<InstanceType<typeof ClientForm> | null>(null)
 
 onMounted(() => clientsStore.fetchAll())
@@ -109,6 +115,40 @@ const filteredClients = computed(() => {
     || (c.email ?? '').toLowerCase().includes(q),
   )
 })
+
+const sortedClients = computed(() => {
+  return [...filteredClients.value].sort((a, b) => {
+    const av = a[sortKey.value] || ''
+    const bv = b[sortKey.value] || ''
+    if (av < bv)
+      return sortDir.value === 'asc' ? -1 : 1
+    if (av > bv)
+      return sortDir.value === 'asc' ? 1 : -1
+    return 0
+  })
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(sortedClients.value.length / limit.value)))
+
+const paginatedClients = computed(() => {
+  const start = (currentPage.value - 1) * limit.value
+  return sortedClients.value.slice(start, start + limit.value)
+})
+
+watch([searchQuery, sortKey, sortDir, limit], () => {
+  currentPage.value = 1
+})
+
+function toggleSort(key: string) {
+  const k = key as typeof sortKey.value
+  if (sortKey.value === k) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  }
+  else {
+    sortKey.value = k
+    sortDir.value = 'asc'
+  }
+}
 </script>
 
 <template>
@@ -141,22 +181,32 @@ const filteredClients = computed(() => {
     <!-- Tabla -->
     <Table v-else>
       <TableHeader>
-        <TableRow>
-          <TableHead>Nombre</TableHead>
-          <TableHead>RUT</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Teléfono</TableHead>
-          <TableHead>Comuna</TableHead>
+        <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
+          <TableHead class="font-semibold text-foreground">
+            <DataTableColumnHeader sort-key="full_name" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Nombre" @sort="toggleSort" />
+          </TableHead>
+          <TableHead class="font-semibold text-foreground">
+            <DataTableColumnHeader sort-key="rut" :current-sort-key="sortKey" :current-sort-order="sortDir" label="RUT" @sort="toggleSort" />
+          </TableHead>
+          <TableHead class="font-semibold text-foreground">
+            <DataTableColumnHeader sort-key="email" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Email" @sort="toggleSort" />
+          </TableHead>
+          <TableHead class="font-semibold text-foreground">
+            <DataTableColumnHeader sort-key="phone" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Teléfono" @sort="toggleSort" />
+          </TableHead>
+          <TableHead class="font-semibold text-foreground">
+            <DataTableColumnHeader sort-key="commune" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Comuna" @sort="toggleSort" />
+          </TableHead>
           <TableHead />
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableRow v-if="filteredClients.length === 0">
+        <TableRow v-if="paginatedClients.length === 0">
           <TableCell colspan="6" class="text-center text-muted-foreground py-8">
             {{ searchQuery ? 'Sin resultados para esa búsqueda' : 'No hay clientes registrados' }}
           </TableCell>
         </TableRow>
-        <TableRow v-for="client in filteredClients" :key="client.id">
+        <TableRow v-for="client in paginatedClients" :key="client.id">
           <TableCell class="font-medium">
             {{ client.full_name }}
           </TableCell>
@@ -174,10 +224,10 @@ const filteredClients = computed(() => {
           </TableCell>
           <TableCell class="text-right">
             <div class="flex items-center justify-end gap-2">
-              <Button variant="ghost" size="sm" @click="openEdit(client)">
+              <Button variant="outline" size="sm" @click="openEdit(client)">
                 Editar
               </Button>
-              <Button variant="ghost" size="sm" class="text-destructive hover:text-destructive" @click="pendingDelete = client">
+              <Button variant="destructive" size="sm" @click="pendingDelete = client">
                 Eliminar
               </Button>
             </div>
@@ -185,6 +235,15 @@ const filteredClients = computed(() => {
         </TableRow>
       </TableBody>
     </Table>
+
+    <DataTablePagination
+      v-if="!loading"
+      v-model:current-page="currentPage"
+      v-model:page-size="limit"
+      :total-items="sortedClients.length"
+      :total-pages="totalPages"
+      :page-size-options="[10, 25, 50, 100]"
+    />
 
     <!-- Sheet de formulario -->
     <Sheet :open="showForm" @update:open="v => !v && closeForm()">
