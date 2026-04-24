@@ -267,7 +267,7 @@ function toggleSort(key: string) {
     </Sheet>
 
     <!-- Confirm delete -->
-    <AlertDialog :open="!!pendingDelete" @update:open="v => !v && (pendingDelete = null)">
+    <AlertDialog :open="!!pendingDelete">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>

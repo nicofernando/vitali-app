@@ -530,7 +530,7 @@ function getInitials(user: UserWithRoles): string {
     </Sheet>
 
     <!-- Confirmación deshabilitar / habilitar -->
-    <AlertDialog :open="!!pendingToggleUser" @update:open="(v) => { if (!v) pendingToggleUser = null }">
+    <AlertDialog :open="!!pendingToggleUser">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
@@ -557,7 +557,7 @@ function getInitials(user: UserWithRoles): string {
     </AlertDialog>
 
     <!-- Confirmación eliminar (solo usuarios deshabilitados) -->
-    <AlertDialog :open="!!pendingDeleteUser" @update:open="(v) => { if (!v) pendingDeleteUser = null }">
+    <AlertDialog :open="!!pendingDeleteUser">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Eliminar usuario permanentemente?</AlertDialogTitle>
@@ -581,7 +581,7 @@ function getInitials(user: UserWithRoles): string {
     </AlertDialog>
 
     <!-- Confirmación remover rol -->
-    <AlertDialog :open="!!pendingRemoveRole" @update:open="(v) => { if (!v) pendingRemoveRole = null }">
+    <AlertDialog :open="!!pendingRemoveRole">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Remover rol?</AlertDialogTitle>

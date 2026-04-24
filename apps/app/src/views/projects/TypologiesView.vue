@@ -237,7 +237,7 @@ const onSubmit = handleSubmit(async (values) => {
     </Sheet>
 
     <!-- Confirmación de eliminación -->
-    <AlertDialog :open="!!pendingDeleteTypology" @update:open="(v) => { if (!v) pendingDeleteTypology = null }">
+    <AlertDialog :open="!!pendingDeleteTypology">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Eliminar tipología?</AlertDialogTitle>

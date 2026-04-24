@@ -425,7 +425,7 @@ async function handleConfirmDelete() {
     />
 
     <!-- Confirmación de eliminación -->
-    <AlertDialog :open="!!pendingDelete" @update:open="(v) => { if (!v) pendingDelete = null }">
+    <AlertDialog :open="!!pendingDelete">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
