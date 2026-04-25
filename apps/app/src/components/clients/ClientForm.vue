@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { validateRut } from '@/lib/rut'
 
 const props = defineProps<{
   client?: Client | null
@@ -19,7 +20,10 @@ const emit = defineEmits<{
 
 const schema = toTypedSchema(z.object({
   full_name: z.string().min(1, 'El nombre es requerido'),
-  rut: z.string().optional().transform(v => v || null),
+  rut: z.string().optional().transform(v => v?.trim() || null).refine(
+    v => !v || validateRut(v),
+    { message: 'El RUT ingresado no es válido' },
+  ),
   email: z.string().email('Email inválido').optional().or(z.literal('')).transform(v => v || null),
   phone: z.string().optional().transform(v => v || null),
   address: z.string().optional().transform(v => v || null),

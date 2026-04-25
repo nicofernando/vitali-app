@@ -1,3 +1,4 @@
+import type { DocumentTemplate } from '@/types'
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,14 +15,14 @@ vi.mock('@/lib/supabase', () => ({
 vi.mock('@supabase/supabase-js', () => ({
   FunctionsHttpError: class extends Error {
     context: any
-    constructor(message: string, context: any) {
-      super(message)
+    constructor(context: any) {
+      super(context?.statusText ?? 'FunctionsHttpError')
       this.context = context
     }
   },
 }))
 
-const baseTemplate = {
+const baseTemplate: DocumentTemplate = {
   id: 'tpl1',
   name: 'Contrato de reserva',
   description: null,
@@ -29,7 +30,7 @@ const baseTemplate = {
   context_needs: ['cliente'],
   is_active: true,
   version: 1,
-  created_by: 'user1',
+  created_by: null,
   created_at: '2026-04-25T00:00:00Z',
   updated_at: '2026-04-25T00:00:00Z',
 }
@@ -325,9 +326,10 @@ describe('useDocumentTemplatesStore', () => {
 
   it('generateTest: FunctionsHttpError extrae el mensaje del body JSON', async () => {
     const { supabase } = await import('@/lib/supabase')
-    const httpErr = new FunctionsHttpError('HTTP error', {
+    const httpErr = new FunctionsHttpError({
+      statusText: 'HTTP error',
       json: vi.fn().mockResolvedValue({ error: 'Template no encontrado' }),
-    })
+    } as unknown as Response)
     vi.mocked(supabase.functions.invoke).mockResolvedValue({
       data: null,
       error: httpErr,
@@ -342,9 +344,10 @@ describe('useDocumentTemplatesStore', () => {
 
   it('generateTest: FunctionsHttpError con body inválido usa el mensaje del error', async () => {
     const { supabase } = await import('@/lib/supabase')
-    const httpErr = new FunctionsHttpError('Error genérico EF', {
+    const httpErr = new FunctionsHttpError({
+      statusText: 'Error genérico EF',
       json: vi.fn().mockRejectedValue(new Error('Not JSON')),
-    })
+    } as unknown as Response)
     vi.mocked(supabase.functions.invoke).mockResolvedValue({
       data: null,
       error: httpErr,

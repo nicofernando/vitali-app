@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { usePermissions } from '@/composables/usePermissions'
 import { getBlocksForDocumentType } from '@/lib/document-variables'
 import { supabase } from '@/lib/supabase'
@@ -70,95 +69,87 @@ async function handleUpload(event: Event) {
       </p>
     </div>
 
-    <Tabs default-value="documentos">
-      <TabsList>
-        <TabsTrigger value="documentos">
-          Documentos
-        </TabsTrigger>
-      </TabsList>
+    <div class="space-y-6">
+      <!-- Upload template -->
+      <Card>
+        <CardHeader>
+          <CardTitle class="text-base">
+            Template de cotización
+          </CardTitle>
+          <CardDescription>
+            Subí una nueva versión del archivo .docx usado para generar las cotizaciones en PDF.
+            Las variables deben seguir la sintaxis Carbone: <code class="text-xs bg-muted px-1 rounded">{d.variable}</code>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div class="flex items-center gap-4">
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept=".docx"
+              class="hidden"
+              @change="handleUpload"
+            >
+            <Button
+              variant="outline"
+              :disabled="uploading || !can('settings.templates.write')"
+              @click="fileInputRef?.click()"
+            >
+              {{ uploading ? 'Subiendo...' : 'Subir nuevo template (.docx)' }}
+            </Button>
+            <p class="text-sm text-muted-foreground">
+              Archivo actual: <code class="text-xs">cotizacion.docx</code>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
-      <TabsContent value="documentos" class="space-y-6 mt-4">
-        <!-- Upload template -->
-        <Card>
-          <CardHeader>
-            <CardTitle class="text-base">
-              Template de cotización
-            </CardTitle>
-            <CardDescription>
-              Subí una nueva versión del archivo .docx usado para generar las cotizaciones en PDF.
-              Las variables deben seguir la sintaxis Carbone: <code class="text-xs bg-muted px-1 rounded">{d.variable}</code>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div class="flex items-center gap-4">
-              <input
-                ref="fileInputRef"
-                type="file"
-                accept=".docx"
-                class="hidden"
-                @change="handleUpload"
-              >
-              <Button
-                variant="outline"
-                :disabled="uploading || !can('settings.templates.write')"
-                @click="fileInputRef?.click()"
-              >
-                {{ uploading ? 'Subiendo...' : 'Subir nuevo template (.docx)' }}
-              </Button>
-              <p class="text-sm text-muted-foreground">
-                Archivo actual: <code class="text-xs">cotizacion.docx</code>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <!-- Tabla de variables -->
-        <Card>
-          <CardHeader>
-            <CardTitle class="text-base">
-              Variables disponibles
-            </CardTitle>
-            <CardDescription>
-              Usá estas variables en el .docx con la sintaxis <code class="text-xs bg-muted px-1 rounded">{d.variable}</code>
-            </CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-6">
-            <div v-for="block in documentBlocks" :key="block.id">
-              <h3 class="text-sm font-semibold mb-2">
-                {{ block.label }}
-              </h3>
-              <Table>
-                <TableHeader>
-                  <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
-                    <TableHead class="font-semibold text-foreground">
-                      Variable
-                    </TableHead>
-                    <TableHead class="font-semibold text-foreground">
-                      Descripción
-                    </TableHead>
-                    <TableHead class="font-semibold text-foreground">
-                      Ejemplo
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="variable in block.variables" :key="variable.key">
-                    <TableCell>
-                      <code class="text-xs bg-muted px-1.5 py-0.5 rounded">{{ variable.key }}</code>
-                    </TableCell>
-                    <TableCell class="text-sm">
-                      {{ variable.label }}
-                    </TableCell>
-                    <TableCell class="text-sm text-muted-foreground">
-                      {{ variable.example }}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+      <!-- Tabla de variables -->
+      <Card>
+        <CardHeader>
+          <CardTitle class="text-base">
+            Variables disponibles
+          </CardTitle>
+          <CardDescription>
+            Usá estas variables en el .docx con la sintaxis <code class="text-xs bg-muted px-1 rounded">{d.variable}</code>
+          </CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-6">
+          <div v-for="block in documentBlocks" :key="block.id">
+            <h3 class="text-sm font-semibold mb-2">
+              {{ block.label }}
+            </h3>
+            <Table>
+              <TableHeader>
+                <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
+                  <TableHead class="font-semibold text-foreground">
+                    Variable
+                  </TableHead>
+                  <TableHead class="font-semibold text-foreground">
+                    Descripción
+                  </TableHead>
+                  <TableHead class="font-semibold text-foreground">
+                    Ejemplo
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="variable in block.variables" :key="variable.key">
+                  <TableCell>
+                    <code class="text-xs bg-muted px-1.5 py-0.5 rounded">{{ variable.key }}</code>
+                  </TableCell>
+                  <TableCell class="text-sm">
+                    {{ variable.label }}
+                  </TableCell>
+                  <TableCell class="text-sm text-muted-foreground">
+                    {{ variable.example }}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   </div>
 </template>

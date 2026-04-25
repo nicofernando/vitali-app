@@ -189,14 +189,14 @@ export interface QuoteInsert {
 // Motor de Documentos
 // ============================================================
 
-export type DocumentContext =
-  | 'cliente'
-  | 'proyecto'
-  | 'torre'
-  | 'unidad'
-  | 'cotizacion'
-  | 'credito_frances'
-  | 'credito_inteligente'
+export type DocumentContext
+  = | 'cliente'
+    | 'proyecto'
+    | 'torre'
+    | 'unidad'
+    | 'cotizacion'
+    | 'credito_frances'
+    | 'credito_inteligente'
 
 export interface DocumentTemplate {
   id: string

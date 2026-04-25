@@ -17,17 +17,6 @@ import {
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionsStore } from '@/stores/permissions'
 
@@ -151,8 +140,6 @@ function handleNavClick(): void {
 
 // ─── Logout ──────────────────────────────────────────────────────────
 
-const logoutOpen = ref(false)
-
 async function handleLogout(): Promise<void> {
   await authStore.logout()
   permissionsStore.reset()
@@ -246,7 +233,7 @@ async function handleLogout(): Promise<void> {
           @click="exitModule"
         >
           <ArrowLeft class="w-3.5 h-3.5 shrink-0" />
-          Inicio
+          Volver
         </button>
 
         <!-- Label de sección del módulo -->
@@ -292,31 +279,14 @@ async function handleLogout(): Promise<void> {
         </p>
       </div>
 
-      <AlertDialog v-model:open="logoutOpen">
-        <AlertDialogTrigger as-child>
-          <button
-            class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-            aria-label="Cerrar sesión"
-          >
-            <LogOut class="w-4 h-4 shrink-0" />
-            Cerrar sesión
-          </button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Cerrás sesión?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se cerrará tu sesión actual. Cualquier trabajo no guardado se perderá.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction @click="handleLogout">
-              Cerrar sesión
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <button
+        class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+        aria-label="Cerrar sesión"
+        @click="handleLogout"
+      >
+        <LogOut class="w-4 h-4 shrink-0" />
+        Cerrar sesión
+      </button>
     </div>
   </aside>
 </template>

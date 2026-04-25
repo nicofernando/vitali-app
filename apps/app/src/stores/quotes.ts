@@ -43,6 +43,19 @@ export const useQuotesStore = defineStore('quotes', () => {
     return data.id
   }
 
+  async function downloadPdf(quoteId: string): Promise<string> {
+    const quote = quotes.value.find(q => q.id === quoteId)
+    if (quote?.pdf_path) {
+      const { data, error: signError } = await supabase.storage
+        .from('quotes')
+        .createSignedUrl(quote.pdf_path, 3600)
+      if (!signError && data?.signedUrl)
+        return data.signedUrl
+    }
+    const result = await generatePdf(quoteId)
+    return result.url
+  }
+
   async function generatePdf(quoteId: string): Promise<GeneratePdfResponse> {
     const { data, error: fnError } = await supabase.functions.invoke('generate-pdf', {
       body: { quote_id: quoteId },
@@ -77,5 +90,5 @@ export const useQuotesStore = defineStore('quotes', () => {
     return result
   }
 
-  return { quotes, loading, error, hasFetched, fetchAll, create, generatePdf }
+  return { quotes, loading, error, hasFetched, fetchAll, create, generatePdf, downloadPdf }
 })

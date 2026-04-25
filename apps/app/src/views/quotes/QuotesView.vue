@@ -3,7 +3,6 @@ import type { QuoteSummary } from '@/types'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import DataTableColumnHeader from '@/components/ui/data-table/DataTableColumnHeader.vue'
 import DataTablePagination from '@/components/ui/data-table/DataTablePagination.vue'
@@ -26,7 +25,7 @@ const { quotes, loading } = storeToRefs(quotesStore)
 const generatingPdf = shallowRef<Set<string>>(new Set())
 
 // --- Pagination, Filtering & Sorting logic ---
-type SortKey = 'client' | 'project' | 'credit_type' | 'list_price' | 'date' | 'status'
+type SortKey = 'client' | 'project' | 'credit_type' | 'list_price' | 'date'
 const searchQuery = ref('')
 const sortKey = ref<SortKey>('date')
 const sortOrder = ref<'asc' | 'desc'>('desc')
@@ -45,6 +44,7 @@ const filteredQuotes = computed(() => {
       || (q.client_rut ?? '').toLowerCase().includes(query)
       || (q.project_name ?? '').toLowerCase().includes(query)
       || (q.tower_name ?? '').toLowerCase().includes(query)
+      || (q.unit_number ?? '').toLowerCase().includes(query)
   })
 })
 
@@ -69,10 +69,6 @@ const sortedQuotes = computed(() => {
       case 'date':
         valA = new Date(a.created_at).getTime()
         valB = new Date(b.created_at).getTime()
-        break
-      case 'status':
-        valA = statusLabel(a.status)
-        valB = statusLabel(b.status)
         break
       case 'credit_type':
         valA = a.credit_type || ''
@@ -132,38 +128,22 @@ function creditTypeLabel(type: string) {
   return 'Ambos'
 }
 
-function statusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-  if (status === 'sent')
-    return 'default'
-  if (status === 'expired')
-    return 'destructive'
-  return 'secondary'
-}
-
-function statusLabel(status: string) {
-  if (status === 'sent')
-    return 'Enviada'
-  if (status === 'expired')
-    return 'Vencida'
-  return 'Borrador'
-}
-
 async function handleDownload(quote: QuoteSummary) {
   if (generatingPdf.value.has(quote.id))
     return
   generatingPdf.value = new Set([...generatingPdf.value, quote.id])
   try {
-    const result = await quotesStore.generatePdf(quote.id)
-    window.open(result.url, '_blank')
+    const url = await quotesStore.downloadPdf(quote.id)
+    window.open(url, '_blank')
   }
   catch (err) {
     if (err instanceof Error) {
-      console.error('[QuotesView] generatePdf error:', err.message, err.stack)
-      toast.error(`Error al generar el PDF: ${err.message}`)
+      console.error('[QuotesView] downloadPdf error:', err.message, err.stack)
+      toast.error(`Error al obtener el PDF: ${err.message}`)
     }
     else {
-      console.error('[QuotesView] generatePdf error:', err)
-      toast.error('Error al generar el PDF')
+      console.error('[QuotesView] downloadPdf error:', err)
+      toast.error('Error al obtener el PDF')
     }
   }
   finally {
@@ -215,15 +195,12 @@ async function handleDownload(quote: QuoteSummary) {
               <TableHead class="font-semibold text-foreground">
                 <DataTableColumnHeader sort-key="date" :current-sort-key="sortKey" :current-sort-order="sortOrder" label="Fecha" @sort="toggleSort" />
               </TableHead>
-              <TableHead class="font-semibold text-foreground">
-                <DataTableColumnHeader sort-key="status" :current-sort-key="sortKey" :current-sort-order="sortOrder" label="Estado" @sort="toggleSort" />
-              </TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="paginatedQuotes.length === 0">
-              <TableCell colspan="7" class="text-center text-muted-foreground py-8">
+              <TableCell colspan="6" class="text-center text-muted-foreground py-8">
                 {{ searchQuery ? 'Sin resultados para esa búsqueda' : 'Aún no hay cotizaciones registradas' }}
               </TableCell>
             </TableRow>
@@ -253,11 +230,6 @@ async function handleDownload(quote: QuoteSummary) {
               <TableCell class="text-muted-foreground text-sm">
                 {{ formatDate(quote.created_at) }}
               </TableCell>
-              <TableCell>
-                <Badge :variant="statusVariant(quote.status)">
-                  {{ statusLabel(quote.status) }}
-                </Badge>
-              </TableCell>
               <TableCell class="text-right">
                 <Button
                   variant="outline"
@@ -265,7 +237,7 @@ async function handleDownload(quote: QuoteSummary) {
                   :disabled="generatingPdf.has(quote.id)"
                   @click="handleDownload(quote)"
                 >
-                  {{ generatingPdf.has(quote.id) ? 'Generando...' : quote.pdf_path ? 'Descargar PDF' : 'Generar PDF' }}
+                  {{ generatingPdf.has(quote.id) ? (quote.pdf_path ? 'Descargando...' : 'Generando...') : (quote.pdf_path ? 'Descargar PDF' : 'Generar PDF') }}
                 </Button>
               </TableCell>
             </TableRow>
