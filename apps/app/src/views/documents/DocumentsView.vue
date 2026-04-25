@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DocumentTemplate } from '@/types'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import DocumentTestSheet from '@/components/documents/DocumentTestSheet.vue'
 import DocumentUploadSheet from '@/components/documents/DocumentUploadSheet.vue'
@@ -17,9 +17,26 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import DataTableColumnHeader from '@/components/ui/data-table/DataTableColumnHeader.vue'
+import DataTablePagination from '@/components/ui/data-table/DataTablePagination.vue'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { DATA_BLOCKS } from '@/lib/document-variables'
 import { useDocumentTemplatesStore } from '@/stores/documentTemplates'
 
@@ -30,10 +47,78 @@ const showUpload = ref(false)
 const testTarget = ref<DocumentTemplate | null>(null)
 const pendingDelete = ref<DocumentTemplate | null>(null)
 
+const searchQuery = ref('')
+const statusFilter = ref<'all' | 'active' | 'inactive'>('all')
+const sortKey = ref<'name' | 'context_needs' | 'created_at'>('created_at')
+const sortDir = ref<'asc' | 'desc'>('desc')
+const currentPage = ref(1)
+const limit = ref(25)
+
 onMounted(() => store.fetchAll())
 
 function labelFor(need: string): string {
   return DATA_BLOCKS.find(b => b.id === need)?.label ?? need
+}
+
+const filtered = computed(() => {
+  let list = templates.value
+
+  if (statusFilter.value === 'active')
+    list = list.filter(t => t.is_active)
+  else if (statusFilter.value === 'inactive')
+    list = list.filter(t => !t.is_active)
+
+  const q = searchQuery.value.toLowerCase().trim()
+  if (q) {
+    list = list.filter(t =>
+      t.name.toLowerCase().includes(q)
+      || (t.description ?? '').toLowerCase().includes(q),
+    )
+  }
+
+  return [...list].sort((a, b) => {
+    let av: string | number = ''
+    let bv: string | number = ''
+    if (sortKey.value === 'name') {
+      av = a.name.toLowerCase()
+      bv = b.name.toLowerCase()
+    }
+    else if (sortKey.value === 'context_needs') {
+      av = a.context_needs.length
+      bv = b.context_needs.length
+    }
+    else {
+      av = a.created_at
+      bv = b.created_at
+    }
+    if (av < bv)
+      return sortDir.value === 'asc' ? -1 : 1
+    if (av > bv)
+      return sortDir.value === 'asc' ? 1 : -1
+    return 0
+  })
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / limit.value)))
+
+const paginated = computed(() => {
+  const start = (currentPage.value - 1) * limit.value
+  return filtered.value.slice(start, start + limit.value)
+})
+
+watch([searchQuery, statusFilter, sortKey, sortDir, limit], () => {
+  currentPage.value = 1
+})
+
+function toggleSort(key: string) {
+  const k = key as typeof sortKey.value
+  if (sortKey.value === k) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  }
+  else {
+    sortKey.value = k
+    sortDir.value = 'asc'
+  }
 }
 
 async function handleToggle(id: string) {
@@ -45,12 +130,13 @@ async function handleToggle(id: string) {
 async function handleDelete() {
   if (!pendingDelete.value)
     return
+  const name = pendingDelete.value.name
   await store.remove(pendingDelete.value.id)
   if (store.error) {
     toast.error(store.error)
   }
   else {
-    toast.success('Documento eliminado')
+    toast.success(`"${name}" eliminado`)
     pendingDelete.value = null
   }
 }
@@ -58,6 +144,7 @@ async function handleDelete() {
 
 <template>
   <div class="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+    <!-- Header -->
     <div class="flex items-start justify-between gap-4">
       <div>
         <h1 class="text-2xl font-heading font-bold text-foreground">
@@ -72,79 +159,138 @@ async function handleDelete() {
       </Button>
     </div>
 
+    <!-- Filtros -->
+    <div class="flex flex-wrap items-center gap-3">
+      <Input
+        v-model="searchQuery"
+        placeholder="Buscar por nombre o descripción..."
+        class="max-w-sm"
+      />
+      <Select v-model="statusFilter">
+        <SelectTrigger class="w-36">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">
+            Todos
+          </SelectItem>
+          <SelectItem value="active">
+            Activos
+          </SelectItem>
+          <SelectItem value="inactive">
+            Inactivos
+          </SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
     <!-- Skeleton -->
-    <div v-if="loading" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <Skeleton v-for="i in 3" :key="i" class="h-40" />
+    <div v-if="loading" class="space-y-2">
+      <Skeleton v-for="i in 5" :key="i" class="h-10 w-full" />
     </div>
 
-    <!-- Empty state -->
-    <div
-      v-else-if="templates.length === 0"
-      class="flex flex-col items-center justify-center py-20 gap-3 text-center"
-    >
-      <p class="text-muted-foreground text-sm">
-        No hay documentos todavía
-      </p>
-      <Button variant="outline" @click="showUpload = true">
-        Subir primer template
-      </Button>
-    </div>
-
-    <!-- Grid de cards -->
-    <div v-else class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <Card v-for="tpl in templates" :key="tpl.id" class="flex flex-col">
-        <CardHeader class="pb-2">
-          <div class="flex items-start justify-between gap-2">
-            <CardTitle class="text-base leading-tight">
+    <!-- Tabla -->
+    <Table v-else>
+      <TableHeader>
+        <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
+          <TableHead class="font-semibold text-foreground">
+            <DataTableColumnHeader
+              sort-key="name"
+              :current-sort-key="sortKey"
+              :current-sort-order="sortDir"
+              label="Nombre"
+              @sort="toggleSort"
+            />
+          </TableHead>
+          <TableHead class="font-semibold text-foreground">
+            Bloques de datos
+          </TableHead>
+          <TableHead class="font-semibold text-foreground">
+            <DataTableColumnHeader
+              sort-key="created_at"
+              :current-sort-key="sortKey"
+              :current-sort-order="sortDir"
+              label="Creado"
+              @sort="toggleSort"
+            />
+          </TableHead>
+          <TableHead class="font-semibold text-foreground text-center w-24">
+            Activo
+          </TableHead>
+          <TableHead />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow v-if="paginated.length === 0">
+          <TableCell colspan="5" class="text-center text-muted-foreground py-8">
+            {{ searchQuery || statusFilter !== 'all' ? 'Sin resultados para ese filtro' : 'No hay documentos registrados' }}
+          </TableCell>
+        </TableRow>
+        <TableRow v-for="tpl in paginated" :key="tpl.id">
+          <TableCell>
+            <p class="font-medium text-sm">
               {{ tpl.name }}
-            </CardTitle>
+            </p>
+            <p v-if="tpl.description" class="text-xs text-muted-foreground mt-0.5">
+              {{ tpl.description }}
+            </p>
+          </TableCell>
+          <TableCell>
+            <div class="flex flex-wrap gap-1">
+              <Badge
+                v-for="need in tpl.context_needs"
+                :key="need"
+                variant="secondary"
+                class="text-[10px]"
+              >
+                {{ labelFor(need) }}
+              </Badge>
+              <span v-if="tpl.context_needs.length === 0" class="text-xs text-muted-foreground italic">
+                Sin bloques
+              </span>
+            </div>
+          </TableCell>
+          <TableCell class="text-sm text-muted-foreground whitespace-nowrap">
+            {{ new Date(tpl.created_at).toLocaleDateString('es-CL') }}
+          </TableCell>
+          <TableCell class="text-center">
             <Switch
               :checked="tpl.is_active"
               :title="tpl.is_active ? 'Desactivar' : 'Activar'"
               @update:checked="handleToggle(tpl.id)"
             />
-          </div>
-          <CardDescription class="text-xs" :class="{ italic: !tpl.description }">
-            {{ tpl.description ?? 'Sin descripción' }}
-          </CardDescription>
-        </CardHeader>
-        <CardContent class="flex-1 flex flex-col justify-between gap-4">
-          <!-- Bloques de datos -->
-          <div class="flex flex-wrap gap-1 min-h-[1.5rem]">
-            <Badge
-              v-for="need in tpl.context_needs"
-              :key="need"
-              variant="secondary"
-              class="text-[10px]"
-            >
-              {{ labelFor(need) }}
-            </Badge>
-            <span v-if="tpl.context_needs.length === 0" class="text-xs text-muted-foreground italic">
-              Sin bloques configurados
-            </span>
-          </div>
-          <!-- Acciones -->
-          <div class="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              class="flex-1"
-              :disabled="!tpl.is_active"
-              @click="testTarget = tpl"
-            >
-              Probar
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              @click="pendingDelete = tpl"
-            >
-              Eliminar
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </TableCell>
+          <TableCell class="text-right">
+            <div class="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                :disabled="!tpl.is_active"
+                @click="testTarget = tpl"
+              >
+                Probar
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                @click="pendingDelete = tpl"
+              >
+                Eliminar
+              </Button>
+            </div>
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
+
+    <DataTablePagination
+      v-if="!loading"
+      v-model:current-page="currentPage"
+      v-model:page-size="limit"
+      :total-items="filtered.length"
+      :total-pages="totalPages"
+      :page-size-options="[10, 25, 50]"
+    />
 
     <!-- Sheet: subir nuevo template -->
     <DocumentUploadSheet

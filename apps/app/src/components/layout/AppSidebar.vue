@@ -249,11 +249,10 @@ async function handleLogout(): Promise<void> {
           Inicio
         </button>
 
-        <!-- Header del módulo -->
-        <div class="px-3 mt-5 mb-3 flex items-center gap-2.5">
-          <component :is="activeModule?.icon" class="w-4 h-4 shrink-0 text-white/50" />
-          <span class="text-sm font-semibold text-white/80">{{ activeModule?.label }}</span>
-        </div>
+        <!-- Label de sección del módulo -->
+        <p class="px-3 mt-5 mb-2 text-[10px] font-semibold uppercase tracking-widest text-white/40 select-none">
+          {{ activeModule?.label }}
+        </p>
 
         <!-- Ítems del módulo -->
         <div class="space-y-0.5">
