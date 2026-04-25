@@ -112,7 +112,9 @@ const filteredClients = computed(() => {
   return clients.value.filter(c =>
     c.full_name.toLowerCase().includes(q)
     || (c.rut ?? '').toLowerCase().includes(q)
-    || (c.email ?? '').toLowerCase().includes(q),
+    || (c.email ?? '').toLowerCase().includes(q)
+    || (c.phone ?? '').toLowerCase().includes(q)
+    || (c.commune ?? '').toLowerCase().includes(q),
   )
 })
 
@@ -169,7 +171,7 @@ function toggleSort(key: string) {
 
     <Input
       v-model="searchQuery"
-      placeholder="Buscar por nombre, RUT o email..."
+      placeholder="Buscar por nombre, RUT, email, teléfono o comuna..."
       class="max-w-sm"
     />
 

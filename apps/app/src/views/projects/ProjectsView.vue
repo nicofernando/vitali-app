@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Project, Tower, Unit } from '@/types'
+import { ChevronRight } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
@@ -243,7 +244,8 @@ async function handleConfirmDelete() {
                     :variant="selectedProject?.id === project.id ? 'default' : 'outline'"
                     @click="selectProject(project)"
                   >
-                    Torres →
+                    <ChevronRight class="size-3.5 mr-1" />
+                    Ver torres
                   </Button>
                   <Button size="sm" variant="outline" @click="openEditProject(project)">
                     Editar
@@ -332,7 +334,8 @@ async function handleConfirmDelete() {
                         :variant="selectedTower?.id === tower.id ? 'default' : 'outline'"
                         @click="selectTower(tower)"
                       >
-                        Deptos →
+                        <ChevronRight class="size-3.5 mr-1" />
+                        Ver deptos
                       </Button>
                       <Button size="sm" variant="outline" @click="openEditTower(tower)">
                         Editar

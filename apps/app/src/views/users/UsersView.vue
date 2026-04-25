@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Role, UserWithRoles } from '@/types'
 import { toTypedSchema } from '@vee-validate/zod'
+import { X } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -46,6 +47,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import CreateUserForm from '@/components/users/CreateUserForm.vue'
 import { supabase } from '@/lib/supabase'
 import { useUsersStore } from '@/stores/users'
@@ -62,7 +64,7 @@ const deleting = ref(false)
 
 const roles = ref<Role[]>([])
 const search = ref('')
-const filterStatus = ref<'active' | 'disabled' | 'all'>('active')
+const filterStatus = ref('active')
 const sortKey = ref<'name' | 'email' | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
 const currentPage = ref(1)
@@ -326,30 +328,19 @@ function getInitials(user: UserWithRoles): string {
 
     <!-- Filtros y búsqueda -->
     <div class="flex flex-wrap gap-3 items-center">
-      <!-- Tabs de estado -->
-      <div class="flex rounded-md border overflow-hidden text-sm">
-        <button
-          class="px-3 py-1.5 transition-colors"
-          :class="filterStatus === 'active' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
-          @click="filterStatus = 'active'"
-        >
-          Activos
-        </button>
-        <button
-          class="px-3 py-1.5 border-l transition-colors"
-          :class="filterStatus === 'disabled' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
-          @click="filterStatus = 'disabled'"
-        >
-          Deshabilitados
-        </button>
-        <button
-          class="px-3 py-1.5 border-l transition-colors"
-          :class="filterStatus === 'all' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
-          @click="filterStatus = 'all'"
-        >
-          Todos
-        </button>
-      </div>
+      <Tabs v-model="filterStatus">
+        <TabsList>
+          <TabsTrigger value="active">
+            Activos
+          </TabsTrigger>
+          <TabsTrigger value="disabled">
+            Deshabilitados
+          </TabsTrigger>
+          <TabsTrigger value="all">
+            Todos
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <Input
         v-model="search"
@@ -590,7 +581,7 @@ function getInitials(user: UserWithRoles): string {
     <Sheet :open="!!editingUserId" @update:open="(v) => { if (!v) editingUserId = null }">
       <SheetContent class="overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{{ editingUser?.full_name ?? editingUser?.email ?? 'Editar usuario' }}</SheetTitle>
+          <SheetTitle>{{ editingUser?.full_name ?? 'Editar usuario' }}</SheetTitle>
           <SheetDescription>{{ editingUser?.email }}</SheetDescription>
         </SheetHeader>
 
@@ -646,7 +637,7 @@ function getInitials(user: UserWithRoles): string {
                 type="button"
                 @click="handleRemoveRole(editingUser.id, role.id, role.name)"
               >
-                ×
+                <X class="size-3" />
               </button>
             </Badge>
           </div>

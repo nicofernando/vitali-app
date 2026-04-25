@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Client } from '@/types'
 import { toTypedSchema } from '@vee-validate/zod'
+import { Loader2 } from 'lucide-vue-next'
 import { useForm } from 'vee-validate'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -119,12 +120,13 @@ const onSubmit = handleSubmit((values) => {
       </FormItem>
     </FormField>
 
-    <div class="flex gap-2 pt-2">
-      <Button type="submit" :disabled="submitting" class="flex-1">
-        {{ submitting ? 'Guardando...' : props.client ? 'Guardar cambios' : 'Crear cliente' }}
-      </Button>
+    <div class="flex gap-2 justify-end pt-2">
       <Button type="button" variant="outline" @click="emit('cancel')">
         Cancelar
+      </Button>
+      <Button type="submit" :disabled="submitting">
+        <Loader2 v-if="submitting" class="size-4 mr-2 animate-spin" />
+        {{ submitting ? 'Guardando...' : props.client ? 'Guardar cambios' : 'Crear cliente' }}
       </Button>
     </div>
   </form>

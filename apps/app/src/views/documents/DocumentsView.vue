@@ -155,7 +155,7 @@ async function handleDelete() {
         </p>
       </div>
       <Button @click="showUpload = true">
-        Nuevo documento
+        + Nuevo documento
       </Button>
     </div>
 
@@ -262,14 +262,16 @@ async function handleDelete() {
           </TableCell>
           <TableCell class="text-right">
             <div class="flex items-center justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="!tpl.is_active"
-                @click="testTarget = tpl"
-              >
-                Probar
-              </Button>
+              <span :title="!tpl.is_active ? 'Activá el template para poder probarlo' : undefined">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :disabled="!tpl.is_active"
+                  @click="testTarget = tpl"
+                >
+                  Probar
+                </Button>
+              </span>
               <Button
                 variant="destructive"
                 size="sm"

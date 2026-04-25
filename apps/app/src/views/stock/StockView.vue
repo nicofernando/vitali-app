@@ -2,6 +2,7 @@
 import { Download } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import * as XLSX from 'xlsx'
 import { Button } from '@/components/ui/button'
 import DataTableColumnHeader from '@/components/ui/data-table/DataTableColumnHeader.vue'
@@ -407,7 +408,15 @@ function exportToExcel() {
           <!-- Sin resultados -->
           <TableRow v-else-if="paginatedUnits.length === 0">
             <TableCell colspan="10" class="text-center text-muted-foreground py-12">
-              {{ allUnits.length === 0 ? 'Sin departamentos. Agregá unidades desde Proyectos.' : 'No hay departamentos que coincidan con los filtros' }}
+              <template v-if="allUnits.length === 0">
+                Sin departamentos aún.
+                <RouterLink to="/projects" class="text-primary underline underline-offset-4">
+                  Agregá unidades desde Proyectos
+                </RouterLink>.
+              </template>
+              <template v-else>
+                No hay departamentos que coincidan con los filtros
+              </template>
             </TableCell>
           </TableRow>
 

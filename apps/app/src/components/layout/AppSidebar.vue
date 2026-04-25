@@ -271,9 +271,12 @@ async function handleLogout(): Promise<void> {
       </nav>
     </Transition>
 
-    <!-- Footer: email + logout -->
+    <!-- Footer: nombre + email + logout -->
     <div class="border-t border-white/10 px-3 py-4 shrink-0">
       <div class="px-3 py-2 mb-1">
+        <p v-if="authStore.profile?.full_name" class="text-xs font-medium text-white/70 truncate">
+          {{ authStore.profile.full_name }}
+        </p>
         <p class="text-xs text-white/40 truncate">
           {{ authStore.user?.email }}
         </p>
