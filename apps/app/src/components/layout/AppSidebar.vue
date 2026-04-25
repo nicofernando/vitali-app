@@ -7,6 +7,7 @@ import {
   Coins,
   Contact,
   FileText,
+  Files,
   Layers,
   LayoutDashboard,
   LayoutList,
@@ -76,7 +77,7 @@ const modules: SidebarModule[] = [
       { name: 'Tipologías', to: '/typologies', icon: Layers, permission: 'typologies.read' },
       { name: 'Usuarios', to: '/users', icon: Users, permission: 'users.read' },
       { name: 'Monedas', to: '/currencies', icon: Coins, permission: 'settings.read' },
-      { name: 'Configuración', to: '/settings', icon: Settings, permission: 'settings.read' },
+      { name: 'Documentos', to: '/documents', icon: Files, permission: 'settings.read' },
     ],
   },
 ]

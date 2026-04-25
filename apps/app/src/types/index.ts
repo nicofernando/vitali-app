@@ -185,6 +185,53 @@ export interface QuoteInsert {
 // S2 — Edge Function: generate-pdf
 // ============================================================
 
+// ============================================================
+// Motor de Documentos
+// ============================================================
+
+export type DocumentContext =
+  | 'cliente'
+  | 'proyecto'
+  | 'torre'
+  | 'unidad'
+  | 'cotizacion'
+  | 'credito_frances'
+  | 'credito_inteligente'
+
+export interface DocumentTemplate {
+  id: string
+  name: string
+  description: string | null
+  storage_path: string
+  context_needs: DocumentContext[]
+  is_active: boolean
+  version: number
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type DocumentTemplateInsert = Pick<DocumentTemplate, 'name' | 'description' | 'storage_path' | 'context_needs' | 'is_active' | 'version'>
+export type DocumentTemplateUpdate = Partial<Pick<DocumentTemplate, 'name' | 'description' | 'context_needs' | 'is_active'>>
+
+export interface GenerateDocumentRequest {
+  template_id: string
+  context: {
+    quote_id?: string
+    unit_id?: string
+    client_id?: string
+  }
+}
+
+export interface GenerateDocumentResponse {
+  url: string
+  expires_at: string
+}
+
+// ============================================================
+// S2 — Edge Function: generate-pdf
+// ============================================================
+
 export interface GeneratePdfRequest {
   quote_id: string
 }

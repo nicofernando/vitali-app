@@ -98,7 +98,7 @@ export const DATA_BLOCKS: DataBlock[] = [
 ]
 
 /**
- * Qué bloques aplican a cada tipo de documento.
+ * Qué bloques aplican a cada tipo de documento (legado: cotización hardcodeada).
  */
 export const DOCUMENT_TYPE_BLOCKS: Record<string, string[]> = {
   cotizacion: ['cliente', 'proyecto', 'torre', 'unidad', 'cotizacion', 'credito_frances', 'credito_inteligente'],
@@ -110,4 +110,35 @@ export const DOCUMENT_TYPE_BLOCKS: Record<string, string[]> = {
 export function getBlocksForDocumentType(documentType: string): DataBlock[] {
   const blockIds = DOCUMENT_TYPE_BLOCKS[documentType] ?? []
   return DATA_BLOCKS.filter(b => blockIds.includes(b.id))
+}
+
+/**
+ * Retorna los bloques de datos para un template personalizado dado su context_needs.
+ */
+export function getBlocksForContextNeeds(contextNeeds: string[]): DataBlock[] {
+  return DATA_BLOCKS.filter(b => contextNeeds.includes(b.id))
+}
+
+// ─── Agrupación de bloques por tipo de datos requeridos en el área de prueba ───
+
+export const CONTEXT_NEED_GROUPS = {
+  quote: ['cotizacion', 'credito_frances', 'credito_inteligente'],
+  unit: ['unidad', 'torre', 'proyecto'],
+  client: ['cliente'],
+} as const
+
+/** Los bloques de cotización están presentes → el test necesita una cotización. */
+export function needsQuote(contextNeeds: string[]): boolean {
+  return CONTEXT_NEED_GROUPS.quote.some(b => contextNeeds.includes(b))
+}
+
+/** Bloques de unidad/torre/proyecto sin bloque de cotización → el test necesita una unidad. */
+export function needsUnit(contextNeeds: string[]): boolean {
+  return !needsQuote(contextNeeds)
+    && CONTEXT_NEED_GROUPS.unit.some(b => contextNeeds.includes(b))
+}
+
+/** Bloque de cliente sin bloque de cotización → el test necesita un cliente. */
+export function needsClient(contextNeeds: string[]): boolean {
+  return !needsQuote(contextNeeds) && contextNeeds.includes('cliente')
 }

@@ -83,6 +83,12 @@ const router = createRouter({
           component: () => import('@/views/settings/SettingsView.vue'),
           meta: { permission: 'settings.read' },
         },
+        {
+          path: 'documents',
+          name: 'documents',
+          component: () => import('@/views/documents/DocumentsView.vue'),
+          meta: { permission: 'settings.read' },
+        },
       ],
     },
     {
