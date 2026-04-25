@@ -6,8 +6,8 @@ import {
   ChevronRight,
   Coins,
   Contact,
-  FileText,
   Files,
+  FileText,
   Layers,
   LayoutDashboard,
   LayoutList,
@@ -215,8 +215,7 @@ async function handleLogout(): Promise<void> {
 
         <!-- Entradas a módulos (al fondo) -->
         <template v-if="visibleModules.length > 0">
-          <div class="my-4 border-t border-white/10" />
-          <div class="space-y-0.5">
+          <div class="mt-auto pt-4 space-y-0.5">
             <button
               v-for="mod in visibleModules"
               :key="mod.key"
@@ -243,46 +242,45 @@ async function handleLogout(): Promise<void> {
         <!-- Volver -->
         <button
           class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium
-                 text-white/45 hover:text-white/75 hover:bg-white/5 transition-colors mb-3"
+                 text-white/40 hover:text-white/70 hover:bg-white/5 transition-colors"
           @click="exitModule"
         >
-          <ArrowLeft class="w-4 h-4 shrink-0" />
+          <ArrowLeft class="w-3.5 h-3.5 shrink-0" />
           Inicio
         </button>
 
-        <!-- Label del módulo -->
-        <div class="border-t border-white/10 pt-4">
-          <p class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-white/35">
-            {{ activeModule?.label }}
-          </p>
+        <!-- Header del módulo -->
+        <div class="px-3 mt-5 mb-3 flex items-center gap-2.5">
+          <component :is="activeModule?.icon" class="w-4 h-4 shrink-0 text-white/50" />
+          <span class="text-sm font-semibold text-white/80">{{ activeModule?.label }}</span>
+        </div>
 
-          <!-- Ítems del módulo -->
-          <div class="space-y-0.5">
-            <template v-for="item in visibleModuleItems" :key="item.name">
-              <RouterLink
-                v-if="!item.comingSoon"
-                :to="item.to"
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                :class="isActive(item.to)
-                  ? 'bg-white/15 text-white'
-                  : 'text-white/70 hover:bg-white/10 hover:text-white'"
-                @click="handleNavClick"
-              >
-                <component :is="item.icon" class="w-4 h-4 shrink-0" />
-                {{ item.name }}
-              </RouterLink>
-              <span
-                v-else
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium opacity-50 cursor-not-allowed text-white/70"
-              >
-                <component :is="item.icon" class="w-4 h-4 shrink-0" />
-                {{ item.name }}
-                <span class="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-white/10 text-white/60 rounded px-1.5 py-0.5">
-                  Próximamente
-                </span>
+        <!-- Ítems del módulo -->
+        <div class="space-y-0.5">
+          <template v-for="item in visibleModuleItems" :key="item.name">
+            <RouterLink
+              v-if="!item.comingSoon"
+              :to="item.to"
+              class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+              :class="isActive(item.to)
+                ? 'bg-white/15 text-white'
+                : 'text-white/70 hover:bg-white/10 hover:text-white'"
+              @click="handleNavClick"
+            >
+              <component :is="item.icon" class="w-4 h-4 shrink-0" />
+              {{ item.name }}
+            </RouterLink>
+            <span
+              v-else
+              class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium opacity-50 cursor-not-allowed text-white/70"
+            >
+              <component :is="item.icon" class="w-4 h-4 shrink-0" />
+              {{ item.name }}
+              <span class="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-white/10 text-white/60 rounded px-1.5 py-0.5">
+                Próximamente
               </span>
-            </template>
-          </div>
+            </span>
+          </template>
         </div>
       </nav>
     </Transition>
