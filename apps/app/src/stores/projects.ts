@@ -13,7 +13,8 @@ export const useProjectsStore = defineStore('projects', () => {
   const hasFetched = ref(false)
 
   async function fetchAll() {
-    if (hasFetched.value) return
+    if (hasFetched.value)
+      return
     loading.value = true
     error.value = null
     try {

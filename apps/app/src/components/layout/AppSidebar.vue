@@ -44,23 +44,28 @@ interface NavItem {
   comingSoon?: boolean
 }
 
-const navItems: NavItem[] = [
+const mainNavItems: NavItem[] = [
   { name: 'Dashboard', to: '/', icon: LayoutDashboard },
-  { name: 'Proyectos', to: '/projects', icon: Building2, permission: 'projects.read' },
-  { name: 'Tipologías', to: '/typologies', icon: Layers, permission: 'typologies.read' },
   { name: 'Cotizador', to: '/simulator', icon: Calculator, permission: 'simulator.use' },
   { name: 'Stock', to: '/stock', icon: LayoutList, permission: 'units.read' },
   { name: 'Cotizaciones', to: '/quotes', icon: FileText, permission: 'quotes.read' },
   { name: 'Clientes', to: '/clients', icon: Contact, permission: 'clients.read' },
-  { name: 'Monedas', to: '/currencies', icon: Coins, permission: 'settings.read' },
+]
+
+const adminNavItems: NavItem[] = [
+  { name: 'Proyectos', to: '/projects', icon: Building2, permission: 'projects.read' },
+  { name: 'Tipologías', to: '/typologies', icon: Layers, permission: 'typologies.read' },
   { name: 'Usuarios', to: '/users', icon: Users, permission: 'users.read' },
+  { name: 'Monedas', to: '/currencies', icon: Coins, permission: 'settings.read' },
   { name: 'Configuración', to: '/settings', icon: Settings, permission: 'settings.read' },
 ]
 
-const visibleItems = computed(() =>
-  navItems.filter(item =>
-    !item.permission || permissionsStore.can(item.permission),
-  ),
+const visibleMain = computed(() =>
+  mainNavItems.filter(item => !item.permission || permissionsStore.can(item.permission)),
+)
+
+const visibleAdmin = computed(() =>
+  adminNavItems.filter(item => !item.permission || permissionsStore.can(item.permission)),
 )
 
 function isActive(to: string) {
@@ -96,31 +101,65 @@ async function handleLogout() {
       >
     </div>
 
-    <nav class="flex-1 py-6 px-3 space-y-0.5 overflow-y-auto">
-      <template v-for="item in visibleItems" :key="item.name">
-        <RouterLink
-          v-if="!item.comingSoon"
-          :to="item.to"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
-          :class="isActive(item.to)
-            ? 'bg-white/15 text-white'
-            : 'text-white/70 hover:bg-white/10 hover:text-white'"
-          @click="handleNavClick"
-        >
-          <component :is="item.icon" class="w-4 h-4 shrink-0" />
-          {{ item.name }}
-        </RouterLink>
-
-        <span
-          v-else
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium opacity-50 cursor-not-allowed text-white/70"
-        >
-          <component :is="item.icon" class="w-4 h-4 shrink-0" />
-          {{ item.name }}
-          <span class="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-white/10 text-white/60 rounded px-1.5 py-0.5">
-            Próximamente
+    <nav class="flex-1 py-6 px-3 overflow-y-auto">
+      <div class="space-y-0.5">
+        <template v-for="item in visibleMain" :key="item.name">
+          <RouterLink
+            v-if="!item.comingSoon"
+            :to="item.to"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            :class="isActive(item.to)
+              ? 'bg-white/15 text-white'
+              : 'text-white/70 hover:bg-white/10 hover:text-white'"
+            @click="handleNavClick"
+          >
+            <component :is="item.icon" class="w-4 h-4 shrink-0" />
+            {{ item.name }}
+          </RouterLink>
+          <span
+            v-else
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium opacity-50 cursor-not-allowed text-white/70"
+          >
+            <component :is="item.icon" class="w-4 h-4 shrink-0" />
+            {{ item.name }}
+            <span class="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-white/10 text-white/60 rounded px-1.5 py-0.5">
+              Próximamente
+            </span>
           </span>
-        </span>
+        </template>
+      </div>
+
+      <template v-if="visibleAdmin.length > 0">
+        <div class="my-4 border-t border-white/10" />
+        <p class="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/35">
+          Administración
+        </p>
+        <div class="space-y-0.5">
+          <template v-for="item in visibleAdmin" :key="item.name">
+            <RouterLink
+              v-if="!item.comingSoon"
+              :to="item.to"
+              class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+              :class="isActive(item.to)
+                ? 'bg-white/15 text-white'
+                : 'text-white/70 hover:bg-white/10 hover:text-white'"
+              @click="handleNavClick"
+            >
+              <component :is="item.icon" class="w-4 h-4 shrink-0" />
+              {{ item.name }}
+            </RouterLink>
+            <span
+              v-else
+              class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium opacity-50 cursor-not-allowed text-white/70"
+            >
+              <component :is="item.icon" class="w-4 h-4 shrink-0" />
+              {{ item.name }}
+              <span class="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-white/10 text-white/60 rounded px-1.5 py-0.5">
+                Próximamente
+              </span>
+            </span>
+          </template>
+        </div>
       </template>
     </nav>
 

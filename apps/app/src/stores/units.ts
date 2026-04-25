@@ -39,7 +39,8 @@ export const useUnitsStore = defineStore('units', () => {
   }
 
   async function fetchByTower(towerId: string) {
-    if (currentTowerId.value === towerId) return
+    if (currentTowerId.value === towerId)
+      return
     loading.value = true
     error.value = null
     currentTowerId.value = towerId

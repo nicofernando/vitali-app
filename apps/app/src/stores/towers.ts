@@ -18,7 +18,8 @@ export const useTowersStore = defineStore('towers', () => {
   }
 
   async function fetchByProject(projectId: string) {
-    if (currentProjectId.value === projectId) return
+    if (currentProjectId.value === projectId)
+      return
     loading.value = true
     error.value = null
     currentProjectId.value = projectId
