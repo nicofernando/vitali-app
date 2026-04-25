@@ -407,7 +407,7 @@ function exportToExcel() {
           <!-- Sin resultados -->
           <TableRow v-else-if="paginatedUnits.length === 0">
             <TableCell colspan="10" class="text-center text-muted-foreground py-12">
-              No hay departamentos que coincidan con los filtros
+              {{ allUnits.length === 0 ? 'Sin departamentos. Agregá unidades desde Proyectos.' : 'No hay departamentos que coincidan con los filtros' }}
             </TableCell>
           </TableRow>
 

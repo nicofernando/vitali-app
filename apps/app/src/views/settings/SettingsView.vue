@@ -129,10 +129,16 @@ async function handleUpload(event: Event) {
               </h3>
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Variable</TableHead>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead>Ejemplo</TableHead>
+                  <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
+                    <TableHead class="font-semibold text-foreground">
+                      Variable
+                    </TableHead>
+                    <TableHead class="font-semibold text-foreground">
+                      Descripción
+                    </TableHead>
+                    <TableHead class="font-semibold text-foreground">
+                      Ejemplo
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
