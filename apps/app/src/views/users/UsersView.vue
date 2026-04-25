@@ -3,7 +3,7 @@ import type { Role, UserWithRoles } from '@/types'
 import { toTypedSchema } from '@vee-validate/zod'
 import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { z } from 'zod'
 import {
@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import DataTableColumnHeader from '@/components/ui/data-table/DataTableColumnHeader.vue'
+import DataTablePagination from '@/components/ui/data-table/DataTablePagination.vue'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import {
@@ -48,8 +50,6 @@ import CreateUserForm from '@/components/users/CreateUserForm.vue'
 import { supabase } from '@/lib/supabase'
 import { useUsersStore } from '@/stores/users'
 
-const PAGE_SIZE = 25
-
 const usersStore = useUsersStore()
 const { users, loading, error } = storeToRefs(usersStore)
 
@@ -66,6 +66,7 @@ const filterStatus = ref<'active' | 'disabled' | 'all'>('active')
 const sortKey = ref<'name' | 'email' | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
 const currentPage = ref(1)
+const pageSize = ref(25)
 const showCreateSheet = ref(false)
 const editingUserId = ref<string | null>(null)
 const selectedRole = ref<Record<string, string>>({})
@@ -105,27 +106,27 @@ const filteredUsers = computed(() => {
   return list
 })
 
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredUsers.value.length / PAGE_SIZE)))
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredUsers.value.length / pageSize.value)))
 
 const paginatedUsers = computed(() => {
-  const start = (currentPage.value - 1) * PAGE_SIZE
-  return filteredUsers.value.slice(start, start + PAGE_SIZE)
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredUsers.value.slice(start, start + pageSize.value)
 })
 
-// Reset de página al cambiar filtros
-function resetPage() {
+watch([search, filterStatus, pageSize], () => {
   currentPage.value = 1
-}
+})
 
-function toggleSort(key: typeof sortKey.value) {
-  if (sortKey.value === key) {
+function toggleSort(key: string) {
+  const k = key as 'name' | 'email'
+  if (sortKey.value === k) {
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
   }
   else {
-    sortKey.value = key
+    sortKey.value = k
     sortDir.value = 'asc'
   }
-  resetPage()
+  currentPage.value = 1
 }
 
 onMounted(async () => {
@@ -330,21 +331,21 @@ function getInitials(user: UserWithRoles): string {
         <button
           class="px-3 py-1.5 transition-colors"
           :class="filterStatus === 'active' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
-          @click="filterStatus = 'active'; resetPage()"
+          @click="filterStatus = 'active'"
         >
           Activos
         </button>
         <button
           class="px-3 py-1.5 border-l transition-colors"
           :class="filterStatus === 'disabled' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
-          @click="filterStatus = 'disabled'; resetPage()"
+          @click="filterStatus = 'disabled'"
         >
           Deshabilitados
         </button>
         <button
           class="px-3 py-1.5 border-l transition-colors"
           :class="filterStatus === 'all' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
-          @click="filterStatus = 'all'; resetPage()"
+          @click="filterStatus = 'all'"
         >
           Todos
         </button>
@@ -354,7 +355,6 @@ function getInitials(user: UserWithRoles): string {
         v-model="search"
         placeholder="Buscar por nombre o email..."
         class="max-w-xs h-9"
-        @input="resetPage()"
       />
     </div>
 
@@ -362,31 +362,21 @@ function getInitials(user: UserWithRoles): string {
     <div class="rounded-lg border bg-card overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
             <TableHead class="w-10" />
-            <TableHead>
-              <button
-                class="flex items-center gap-1 hover:text-primary transition-colors"
-                :class="sortKey === 'name' ? 'text-primary' : ''"
-                @click="toggleSort('name')"
-              >
-                Nombre
-                <span class="text-xs">{{ sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
-              </button>
+            <TableHead class="font-semibold text-foreground">
+              <DataTableColumnHeader sort-key="name" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Nombre" @sort="toggleSort" />
             </TableHead>
-            <TableHead>
-              <button
-                class="flex items-center gap-1 hover:text-primary transition-colors"
-                :class="sortKey === 'email' ? 'text-primary' : ''"
-                @click="toggleSort('email')"
-              >
-                Email
-                <span class="text-xs">{{ sortKey === 'email' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
-              </button>
+            <TableHead class="font-semibold text-foreground">
+              <DataTableColumnHeader sort-key="email" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Email" @sort="toggleSort" />
             </TableHead>
-            <TableHead>Roles</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead class="text-right">
+            <TableHead class="font-semibold text-foreground">
+              Roles
+            </TableHead>
+            <TableHead class="font-semibold text-foreground">
+              Estado
+            </TableHead>
+            <TableHead class="text-right font-semibold text-foreground">
               Acciones
             </TableHead>
           </TableRow>
@@ -496,21 +486,14 @@ function getInitials(user: UserWithRoles): string {
       </Table>
     </div>
 
-    <!-- Footer: contador + paginación -->
-    <div v-if="!loading" class="flex items-center justify-between">
-      <p class="text-xs text-muted-foreground">
-        {{ filteredUsers.length }} usuario{{ filteredUsers.length !== 1 ? 's' : '' }}
-      </p>
-      <div v-if="totalPages > 1" class="flex items-center gap-2">
-        <Button variant="outline" size="sm" :disabled="currentPage === 1" @click="currentPage--">
-          ‹
-        </Button>
-        <span class="text-sm tabular-nums">{{ currentPage }} / {{ totalPages }}</span>
-        <Button variant="outline" size="sm" :disabled="currentPage === totalPages" @click="currentPage++">
-          ›
-        </Button>
-      </div>
-    </div>
+    <DataTablePagination
+      v-if="!loading"
+      v-model:current-page="currentPage"
+      v-model:page-size="pageSize"
+      :total-items="filteredUsers.length"
+      :total-pages="totalPages"
+      :page-size-options="[10, 25, 50]"
+    />
 
     <!-- Sheet: nuevo usuario -->
     <Sheet v-model:open="showCreateSheet">

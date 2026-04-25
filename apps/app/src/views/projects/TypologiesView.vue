@@ -110,7 +110,7 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <div class="p-4 md:p-6 space-y-6">
+  <div class="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-heading font-bold text-foreground">
@@ -128,11 +128,17 @@ const onSubmit = handleSubmit(async (values) => {
     <div class="rounded-lg border bg-card overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Nombre</TableHead>
-            <TableHead>Superficie (m²)</TableHead>
-            <TableHead>Descripción</TableHead>
-            <TableHead class="text-right">
+          <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
+            <TableHead class="font-semibold text-foreground">
+              Nombre
+            </TableHead>
+            <TableHead class="font-semibold text-foreground">
+              Superficie (m²)
+            </TableHead>
+            <TableHead class="font-semibold text-foreground">
+              Descripción
+            </TableHead>
+            <TableHead class="text-right font-semibold text-foreground">
               Acciones
             </TableHead>
           </TableRow>

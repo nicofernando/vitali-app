@@ -101,4 +101,48 @@ describe('usePermissionsStore', () => {
     expect(store.permissions).toEqual([])
     expect(store.loaded).toBe(false)
   })
+
+  // ── reload ────────────────────────────────────────────────────
+  it('reload() fuerza una nueva carga aunque ya esté loaded', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.from).mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue(mockDbResponse),
+      }),
+    } as any)
+
+    const store = usePermissionsStore()
+    await store.load('user-1')
+    expect(supabase.from).toHaveBeenCalledTimes(1)
+
+    await store.reload('user-1')
+    expect(supabase.from).toHaveBeenCalledTimes(2)
+    expect(store.loaded).toBe(true)
+    expect(store.permissions).toContain('projects.read')
+  })
+
+  // ── deduplicación concurrente ──────────────────────────────────
+  it('load() concurrente usa la misma promesa en vuelo y no hace doble request', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    let resolveLoad!: (val: any) => void
+    const pendingLoad = new Promise<any>((resolve) => {
+      resolveLoad = resolve
+    })
+
+    vi.mocked(supabase.from).mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue(pendingLoad),
+      }),
+    } as any)
+
+    const store = usePermissionsStore()
+    const p1 = store.load('user-1')
+    const p2 = store.load('user-1')
+
+    resolveLoad(mockDbResponse)
+    await Promise.all([p1, p2])
+
+    expect(supabase.from).toHaveBeenCalledTimes(1)
+    expect(store.permissions).toContain('projects.read')
+  })
 })

@@ -196,4 +196,66 @@ describe('useUsersStore', () => {
     await expect(store.removeRole('u1', 'r1')).rejects.toThrow()
     expect(store.users[0].roles).toHaveLength(1)
   })
+
+  // ── toggleUser ───────────────────────────────────────────────
+  it('toggleUser: llama a admin-toggle-user con los parámetros correctos', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.functions.invoke).mockResolvedValue({ error: null } as any)
+
+    const store = useUsersStore()
+    store.users = [{ ...baseUser, is_active: true }]
+    await store.toggleUser('u1', false)
+
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('admin-toggle-user', {
+      body: { user_id: 'u1', enable: false },
+    })
+    expect(store.users[0].is_active).toBe(false)
+  })
+
+  it('toggleUser: activa un usuario desactivado', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.functions.invoke).mockResolvedValue({ error: null } as any)
+
+    const store = useUsersStore()
+    store.users = [{ ...baseUser, is_active: false }]
+    await store.toggleUser('u1', true)
+
+    expect(store.users[0].is_active).toBe(true)
+  })
+
+  it('toggleUser: si falla, relanza el error y el estado queda sin cambios', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.functions.invoke).mockResolvedValue({ error: { message: 'Sin permisos' } } as any)
+
+    const store = useUsersStore()
+    store.users = [{ ...baseUser, is_active: true }]
+    await expect(store.toggleUser('u1', false)).rejects.toThrow()
+    expect(store.users[0].is_active).toBe(true)
+  })
+
+  // ── deleteUser ───────────────────────────────────────────────
+  it('deleteUser: llama a admin-delete-user y elimina el usuario de la lista', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.functions.invoke).mockResolvedValue({ error: null } as any)
+
+    const store = useUsersStore()
+    store.users = [{ ...baseUser }, { ...baseUser, id: 'u2', email: 'b@test.com', full_name: 'Bob' }]
+    await store.deleteUser('u1')
+
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('admin-delete-user', {
+      body: { user_id: 'u1' },
+    })
+    expect(store.users.find(u => u.id === 'u1')).toBeUndefined()
+    expect(store.users).toHaveLength(1)
+  })
+
+  it('deleteUser: si falla, relanza el error y la lista queda intacta', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.functions.invoke).mockResolvedValue({ error: { message: 'No autorizado' } } as any)
+
+    const store = useUsersStore()
+    store.users = [{ ...baseUser }]
+    await expect(store.deleteUser('u1')).rejects.toThrow()
+    expect(store.users).toHaveLength(1)
+  })
 })

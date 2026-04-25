@@ -128,12 +128,20 @@ async function confirmDelete() {
     <div class="rounded-lg border bg-card overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Código</TableHead>
-            <TableHead>Nombre</TableHead>
-            <TableHead>Símbolo</TableHead>
-            <TableHead>Decimales</TableHead>
-            <TableHead class="text-right">
+          <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
+            <TableHead class="font-semibold text-foreground">
+              Código
+            </TableHead>
+            <TableHead class="font-semibold text-foreground">
+              Nombre
+            </TableHead>
+            <TableHead class="font-semibold text-foreground">
+              Símbolo
+            </TableHead>
+            <TableHead class="font-semibold text-foreground">
+              Decimales
+            </TableHead>
+            <TableHead class="text-right font-semibold text-foreground">
               Acciones
             </TableHead>
           </TableRow>

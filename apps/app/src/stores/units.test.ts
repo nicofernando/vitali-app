@@ -199,4 +199,117 @@ describe('useUnitsStore', () => {
     await expect(store.remove('u1')).rejects.toThrow()
     expect(store.units).toHaveLength(2)
   })
+
+  // ── fetchAll ─────────────────────────────────────────────────
+  it('fetchAll: carga allUnits con contexto completo', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    const unitWithCtx = {
+      ...baseUnit,
+      typology: { id: 'ty1', name: '2D', surface_m2: 68 },
+      tower: {
+        id: 't1',
+        name: 'Torre A',
+        delivery_date: null,
+        min_pie_percentage: 20,
+        max_financing_years: 20,
+        project: { id: 'p1', name: 'Vitali', currency: { id: 'c1', code: 'CLP', symbol: '$', decimal_places: 0 } },
+      },
+    }
+    vi.mocked(supabase.from).mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          order: vi.fn().mockResolvedValue({ data: [unitWithCtx], error: null }),
+        }),
+      }),
+    } as any)
+
+    const store = useUnitsStore()
+    await store.fetchAll()
+
+    expect(store.allUnits).toHaveLength(1)
+    expect(store.allUnits[0].tower.project.name).toBe('Vitali')
+    expect(store.loadingAll).toBe(false)
+    expect(store.allUnitsDirty).toBe(false)
+  })
+
+  it('fetchAll: si falla, guarda error y allUnits queda vacío', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.from).mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          order: vi.fn().mockResolvedValue({ data: null, error: { message: 'Sin acceso' } }),
+        }),
+      }),
+    } as any)
+
+    const store = useUnitsStore()
+    await store.fetchAll()
+
+    expect(store.allUnits).toEqual([])
+    expect(store.error).toBe('Sin acceso')
+  })
+
+  // ── allUnitsDirty ─────────────────────────────────────────────
+  it('create: marca allUnitsDirty como true', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.from).mockReturnValue({
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: baseUnit, error: null }),
+        }),
+      }),
+    } as any)
+
+    const store = useUnitsStore()
+    await store.create({ tower_id: 't1', typology_id: 'ty1', unit_number: '103', floor: 1, list_price: 5_000_000 })
+
+    expect(store.allUnitsDirty).toBe(true)
+  })
+
+  it('update: marca allUnitsDirty como true', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.from).mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: baseUnit, error: null }),
+          }),
+        }),
+      }),
+    } as any)
+
+    const store = useUnitsStore()
+    store.units = [{ ...baseUnit }]
+    await store.update('u1', { list_price: 6_000_000 })
+
+    expect(store.allUnitsDirty).toBe(true)
+  })
+
+  it('remove: marca allUnitsDirty y elimina la unidad de allUnits también', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.from).mockReturnValue({
+      delete: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }),
+    } as any)
+
+    const store = useUnitsStore()
+    store.units = [...fakeUnits]
+    store.allUnits = [{ ...baseUnit } as any]
+    await store.remove('u1')
+
+    expect(store.allUnitsDirty).toBe(true)
+    expect(store.allUnits).toHaveLength(0)
+  })
+
+  // ── clearUnits ───────────────────────────────────────────────
+  it('clearUnits: limpia units y currentTowerId', () => {
+    const store = useUnitsStore()
+    store.units = [...fakeUnits]
+    store.currentTowerId = 't1'
+    store.clearUnits()
+
+    expect(store.units).toEqual([])
+    expect(store.currentTowerId).toBeNull()
+  })
 })

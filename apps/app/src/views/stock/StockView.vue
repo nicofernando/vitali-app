@@ -276,7 +276,7 @@ function exportToExcel() {
 </script>
 
 <template>
-  <div class="p-4 md:p-6 space-y-5">
+  <div class="p-4 md:p-6 max-w-screen-xl mx-auto space-y-5">
     <div class="flex items-start justify-between flex-wrap gap-4">
       <div>
         <h1 class="text-2xl font-heading font-bold text-foreground">

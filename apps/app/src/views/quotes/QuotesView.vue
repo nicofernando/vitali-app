@@ -224,7 +224,7 @@ async function handleDownload(quote: QuoteSummary) {
           <TableBody>
             <TableRow v-if="paginatedQuotes.length === 0">
               <TableCell colspan="7" class="text-center text-muted-foreground py-8">
-                No hay cotizaciones para mostrar
+                {{ searchQuery ? 'Sin resultados para esa búsqueda' : 'Aún no hay cotizaciones registradas' }}
               </TableCell>
             </TableRow>
             <TableRow v-for="quote in paginatedQuotes" :key="quote.id">

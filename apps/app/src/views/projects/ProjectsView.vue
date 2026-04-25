@@ -153,7 +153,7 @@ async function handleConfirmDelete() {
 </script>
 
 <template>
-  <div class="p-4 md:p-6 space-y-6">
+  <div class="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
@@ -178,13 +178,23 @@ async function handleConfirmDelete() {
     <div class="rounded-lg border bg-card overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Nombre</TableHead>
-            <TableHead>Ubicación</TableHead>
-            <TableHead>Moneda</TableHead>
-            <TableHead>Tasa anual</TableHead>
-            <TableHead>Créditos</TableHead>
-            <TableHead class="text-right">
+          <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
+            <TableHead class="font-semibold text-foreground">
+              Nombre
+            </TableHead>
+            <TableHead class="font-semibold text-foreground">
+              Ubicación
+            </TableHead>
+            <TableHead class="font-semibold text-foreground">
+              Moneda
+            </TableHead>
+            <TableHead class="font-semibold text-foreground">
+              Tasa anual
+            </TableHead>
+            <TableHead class="font-semibold text-foreground">
+              Créditos
+            </TableHead>
+            <TableHead class="text-right font-semibold text-foreground">
               Acciones
             </TableHead>
           </TableRow>
@@ -270,12 +280,20 @@ async function handleConfirmDelete() {
         <div class="rounded-lg border bg-card overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Entrega</TableHead>
-                <TableHead>Plazo máx.</TableHead>
-                <TableHead>PIE mín.</TableHead>
-                <TableHead class="text-right">
+              <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
+                <TableHead class="font-semibold text-foreground">
+                  Nombre
+                </TableHead>
+                <TableHead class="font-semibold text-foreground">
+                  Entrega
+                </TableHead>
+                <TableHead class="font-semibold text-foreground">
+                  Plazo máx.
+                </TableHead>
+                <TableHead class="font-semibold text-foreground">
+                  PIE mín.
+                </TableHead>
+                <TableHead class="text-right font-semibold text-foreground">
                   Acciones
                 </TableHead>
               </TableRow>
@@ -353,13 +371,23 @@ async function handleConfirmDelete() {
         <div class="rounded-lg border bg-card overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Número</TableHead>
-                <TableHead>Piso</TableHead>
-                <TableHead>Tipología</TableHead>
-                <TableHead>M²</TableHead>
-                <TableHead>Precio lista</TableHead>
-                <TableHead class="text-right">
+              <TableRow class="bg-muted/60 hover:bg-muted/60 border-b-2">
+                <TableHead class="font-semibold text-foreground">
+                  Número
+                </TableHead>
+                <TableHead class="font-semibold text-foreground">
+                  Piso
+                </TableHead>
+                <TableHead class="font-semibold text-foreground">
+                  Tipología
+                </TableHead>
+                <TableHead class="font-semibold text-foreground">
+                  M²
+                </TableHead>
+                <TableHead class="font-semibold text-foreground">
+                  Precio lista
+                </TableHead>
+                <TableHead class="text-right font-semibold text-foreground">
                   Acciones
                 </TableHead>
               </TableRow>
