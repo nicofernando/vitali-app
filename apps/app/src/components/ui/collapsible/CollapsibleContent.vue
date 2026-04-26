@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import type { CollapsibleContentProps } from 'reka-ui'
-import { reactiveOmit } from '@vueuse/core'
 import { CollapsibleContent, useForwardProps } from 'reka-ui'
 
 const props = defineProps<CollapsibleContentProps>()
-const delegatedProps = reactiveOmit(props, 'class')
-const forwardedProps = useForwardProps(delegatedProps)
+const forwardedProps = useForwardProps(props)
 </script>
 
 <template>
