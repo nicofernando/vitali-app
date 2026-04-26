@@ -1,19 +1,22 @@
 <script setup lang="ts">
+import type { AuditLookups } from '@/lib/audit-format'
 import type { AuditLogEntry } from '@/types'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { actionLabel, formatChangedFields } from '@/lib/audit-format'
+import { actionLabel, EMPTY_LOOKUPS, formatPayloadSummary } from '@/lib/audit-format'
 import { useAuditStore } from '@/stores/audit'
 
 const props = defineProps<{
   entityType: string
   entityId: string
+  lookups?: AuditLookups
 }>()
 
 const auditStore = useAuditStore()
 const entries = ref<AuditLogEntry[]>([])
 const loading = ref(false)
+const error = ref<string | null>(null)
 
 const ACTION_COLORS: Record<string, string> = {
   create: 'bg-green-100 text-green-700',
@@ -31,13 +34,40 @@ function formatDate(iso: string) {
 
 onMounted(async () => {
   loading.value = true
-  entries.value = await auditStore.fetchByEntity(props.entityType, props.entityId)
-  loading.value = false
+  try {
+    entries.value = await auditStore.fetchByEntity(props.entityType, props.entityId)
+  }
+  catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'Error al cargar historial'
+  }
+  finally {
+    loading.value = false
+  }
 })
+
+watch(
+  [() => props.entityType, () => props.entityId],
+  async ([newType, newId]) => {
+    loading.value = true
+    error.value = null
+    try {
+      entries.value = await auditStore.fetchByEntity(newType, newId)
+    }
+    catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : 'Error al cargar historial'
+    }
+    finally {
+      loading.value = false
+    }
+  },
+)
 </script>
 
 <template>
   <div class="space-y-4">
+    <p v-if="error" class="text-xs text-destructive">
+      {{ error }}
+    </p>
     <template v-if="loading">
       <div v-for="i in 3" :key="i" class="flex gap-3">
         <Skeleton class="h-8 w-8 rounded-full shrink-0" />
@@ -72,15 +102,9 @@ onMounted(async () => {
           <p class="text-xs text-muted-foreground mt-0.5">
             {{ entry.actor_name ?? entry.actor_id?.slice(0, 8) ?? 'Sistema' }}
           </p>
-          <div v-if="entry.payload.changed_fields?.length" class="mt-1 space-y-0.5">
-            <p
-              v-for="line in formatChangedFields(entry.payload)"
-              :key="line"
-              class="text-xs font-mono text-muted-foreground"
-            >
-              {{ line }}
-            </p>
-          </div>
+          <p class="text-xs text-muted-foreground mt-1">
+            {{ formatPayloadSummary(entry, props.lookups ?? EMPTY_LOOKUPS) }}
+          </p>
         </div>
       </div>
     </template>

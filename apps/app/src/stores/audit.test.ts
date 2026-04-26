@@ -82,6 +82,24 @@ describe('useAuditStore', () => {
       await store.fetchAll({ actor_id: 'u1' })
       expect(chain.eq).toHaveBeenCalledWith('actor_id', 'u1')
     })
+
+    it('aplica filtro action cuando se provee', async () => {
+      const chain = mockChain({ data: [mockEntry], error: null, count: 1 })
+      vi.mocked(supabase.from).mockReturnValue(chain as any)
+      const store = useAuditStore()
+      await store.fetchAll({ action: 'role_assigned' })
+      expect(chain.eq).toHaveBeenCalledWith('action', 'role_assigned')
+    })
+
+    it('no aplica filtro action cuando no se provee', async () => {
+      const chain = mockChain({ data: [mockEntry], error: null, count: 1 })
+      vi.mocked(supabase.from).mockReturnValue(chain as any)
+      const store = useAuditStore()
+      await store.fetchAll({})
+      const eqCalls = (chain.eq as ReturnType<typeof vi.fn>).mock.calls
+      const actionCall = eqCalls.find((c: unknown[]) => c[0] === 'action')
+      expect(actionCall).toBeUndefined()
+    })
   })
 
   describe('fetchByEntity', () => {

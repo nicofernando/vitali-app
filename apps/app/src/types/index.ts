@@ -325,6 +325,15 @@ export interface AuditLogEntry {
     before?: Record<string, unknown>
     after?: Record<string, unknown>
     changed_fields?: string[]
+    // Relational enrichment (post-migration triggers)
+    role_id?: string
+    role_name?: string
+    permission_id?: string
+    module?: string
+    permission_action?: string
+    user_id?: string
+    user_name?: string
+    assignment_type?: string
     [key: string]: unknown
   }
   created_at: string

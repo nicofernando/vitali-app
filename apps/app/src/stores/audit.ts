@@ -11,7 +11,7 @@ export interface AuditFilters {
   action?: string
 }
 
-const PAGE_SIZE = 50
+export const PAGE_SIZE = 50
 
 export const useAuditStore = defineStore('audit', () => {
   const entries = ref<AuditLogEntry[]>([])
@@ -49,7 +49,12 @@ export const useAuditStore = defineStore('audit', () => {
       page.value = pageNum
     }
     catch (e: unknown) {
-      error.value = e instanceof Error ? e.message : (e as { message: string }).message
+      // Supabase devuelve errores como objetos { message: string }, no como instancias de Error
+      error.value = e instanceof Error
+        ? e.message
+        : (typeof e === 'object' && e !== null && 'message' in e)
+            ? String((e as { message: unknown }).message)
+            : String(e)
       entries.value = []
     }
     finally {

@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import type { AuditLookups } from '@/lib/audit-format'
 import type { AuditFilters } from '@/stores/audit'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, shallowRef } from 'vue'
+import AuditEntryDetail from '@/components/audit/AuditEntryDetail.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,16 +23,29 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { actionLabel, entityLabel, formatChangedFields } from '@/lib/audit-format'
-import { useAuditStore } from '@/stores/audit'
+import { actionLabel, entityLabel, formatPayloadSummary } from '@/lib/audit-format'
+import { PAGE_SIZE, useAuditStore } from '@/stores/audit'
+import { useRolesStore } from '@/stores/roles'
+import { useUsersStore } from '@/stores/users'
 
 const auditStore = useAuditStore()
 const { entries, loading, error, total, page } = storeToRefs(auditStore)
 
-const PAGE_SIZE = 50
+const rolesStore = useRolesStore()
+const usersStore = useUsersStore()
+
 const filterEntity = ref('all')
 const filterAction = ref('all')
-const selectedEntry = ref<(typeof entries.value)[0] | null>(null)
+const expandedIds = shallowRef(new Set<string>())
+
+function toggleRow(id: string) {
+  if (expandedIds.value.has(id))
+    expandedIds.value.delete(id)
+  else
+    expandedIds.value.add(id)
+  // Forzar reactividad en el Set (Vue no trackea mutaciones de Set directamente)
+  expandedIds.value = new Set(expandedIds.value)
+}
 
 const ENTITY_OPTIONS = [
   { value: 'clients', label: 'Clientes' },
@@ -59,6 +74,22 @@ function getActionColor(action: string) {
   return ACTION_COLORS[action] ?? 'bg-gray-100 text-gray-700'
 }
 
+// Construye los tres Maps de lookup desde los stores cargados
+const lookups = computed<AuditLookups>(() => {
+  const rolesById = new Map<string, string>(
+    rolesStore.roles.map(r => [r.id, r.name]),
+  )
+  const permissionsById = new Map<string, { module: string, action: string }>(
+    rolesStore.allPermissions.map(p => [p.id, { module: p.module, action: p.action }]),
+  )
+  const usersById = new Map<string, string>(
+    usersStore.users
+      .filter(u => u.full_name !== null)
+      .map(u => [u.id, u.full_name as string]),
+  )
+  return { rolesById, permissionsById, usersById }
+})
+
 function buildFilters(): AuditFilters {
   const f: AuditFilters = {}
   if (filterEntity.value !== 'all')
@@ -80,9 +111,14 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })
 }
 
-const totalPages = () => Math.ceil(total.value / PAGE_SIZE)
+const totalPages = computed(() => Math.ceil(total.value / PAGE_SIZE))
 
-onMounted(() => loadPage(0))
+onMounted(() => Promise.all([
+  loadPage(0),
+  rolesStore.fetchAll(),
+  rolesStore.fetchPermissions(),
+  usersStore.fetchAll(),
+]))
 </script>
 
 <template>
@@ -129,6 +165,24 @@ onMounted(() => loadPage(0))
           <SelectItem value="delete">
             Eliminó
           </SelectItem>
+          <SelectItem value="role_assigned">
+            Asignó rol
+          </SelectItem>
+          <SelectItem value="role_removed">
+            Removió rol
+          </SelectItem>
+          <SelectItem value="permission_added">
+            Agregó permiso
+          </SelectItem>
+          <SelectItem value="permission_removed">
+            Removió permiso
+          </SelectItem>
+          <SelectItem value="assignment_added">
+            Asignó cliente
+          </SelectItem>
+          <SelectItem value="assignment_removed">
+            Removió asignación
+          </SelectItem>
         </SelectContent>
       </Select>
     </div>
@@ -140,6 +194,7 @@ onMounted(() => loadPage(0))
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead class="w-8" />
           <TableHead>Fecha</TableHead>
           <TableHead>Actor</TableHead>
           <TableHead>Acción</TableHead>
@@ -150,75 +205,49 @@ onMounted(() => loadPage(0))
       <TableBody>
         <template v-if="loading">
           <TableRow v-for="i in 8" :key="i">
-            <TableCell v-for="j in 5" :key="j">
+            <TableCell v-for="j in 6" :key="j">
               <Skeleton class="h-4 w-full" />
             </TableCell>
           </TableRow>
         </template>
         <template v-else>
-          <TableRow
-            v-for="entry in entries"
-            :key="entry.id"
-            class="cursor-pointer hover:bg-muted/50"
-            @click="selectedEntry = selectedEntry?.id === entry.id ? null : entry"
-          >
-            <TableCell class="text-sm text-muted-foreground whitespace-nowrap">
-              {{ formatDate(entry.created_at) }}
-            </TableCell>
-            <TableCell class="text-sm">
-              {{ entry.actor_name ?? entry.actor_id?.slice(0, 8) ?? 'Sistema' }}
-            </TableCell>
-            <TableCell>
-              <Badge class="text-xs" :class="[getActionColor(entry.action)]" variant="outline">
-                {{ actionLabel(entry.action) }}
-              </Badge>
-            </TableCell>
-            <TableCell class="text-sm font-medium">
-              {{ entityLabel(entry.entity_type) }}
-            </TableCell>
-            <TableCell class="text-sm text-muted-foreground max-w-xs">
-              <template v-if="entry.action === 'create'">
-                <span class="text-green-600">Nuevo registro</span>
-              </template>
-              <template v-else-if="entry.action === 'delete'">
-                <span class="text-destructive">Eliminado</span>
-              </template>
-              <template v-else-if="entry.payload.changed_fields?.length">
-                <div class="space-y-0.5">
-                  <p
-                    v-for="line in formatChangedFields(entry.payload)"
-                    :key="line"
-                    class="font-mono text-xs truncate"
-                  >
-                    {{ line }}
-                  </p>
-                </div>
-              </template>
-            </TableCell>
-          </TableRow>
-          <!-- Detalle expandido -->
-          <TableRow v-if="selectedEntry" class="bg-muted/30">
-            <TableCell colspan="5" class="py-4">
-              <p class="text-xs font-mono text-muted-foreground mb-2">
-                Entity ID: {{ selectedEntry.entity_id }}
-              </p>
-              <div v-if="selectedEntry.payload.changed_fields?.length" class="space-y-1">
-                <p
-                  v-for="line in formatChangedFields(selectedEntry.payload)"
-                  :key="line"
-                  class="text-xs font-mono"
-                >
-                  {{ line }}
-                </p>
-              </div>
-              <pre
-                v-else
-                class="text-xs overflow-auto max-h-40 bg-muted rounded p-2"
-              >{{ JSON.stringify(selectedEntry.payload, null, 2) }}</pre>
-            </TableCell>
-          </TableRow>
+          <template v-for="entry in entries" :key="entry.id">
+            <TableRow
+              class="cursor-pointer hover:bg-muted/50"
+              @click="toggleRow(entry.id)"
+            >
+              <TableCell class="w-8 pr-0">
+                <ChevronRight
+                  class="size-4 text-muted-foreground transition-transform duration-200"
+                  :class="{ 'rotate-90': expandedIds.has(entry.id) }"
+                />
+              </TableCell>
+              <TableCell class="text-sm text-muted-foreground whitespace-nowrap">
+                {{ formatDate(entry.created_at) }}
+              </TableCell>
+              <TableCell class="text-sm">
+                {{ entry.actor_name ?? entry.actor_id?.slice(0, 8) ?? 'Sistema' }}
+              </TableCell>
+              <TableCell>
+                <Badge class="text-xs" :class="[getActionColor(entry.action)]" variant="outline">
+                  {{ actionLabel(entry.action) }}
+                </Badge>
+              </TableCell>
+              <TableCell class="text-sm font-medium">
+                {{ entityLabel(entry.entity_type) }}
+              </TableCell>
+              <TableCell class="text-sm text-muted-foreground max-w-xs truncate">
+                {{ formatPayloadSummary(entry, lookups) }}
+              </TableCell>
+            </TableRow>
+            <TableRow v-if="expandedIds.has(entry.id)" class="bg-muted/20 hover:bg-muted/20">
+              <TableCell :colspan="6" class="py-0">
+                <AuditEntryDetail :entry="entry" :lookups="lookups" />
+              </TableCell>
+            </TableRow>
+          </template>
           <TableRow v-if="entries.length === 0 && !loading">
-            <TableCell colspan="5" class="text-center text-muted-foreground py-8">
+            <TableCell colspan="6" class="text-center text-muted-foreground py-8">
               No hay entradas de auditoría
             </TableCell>
           </TableRow>
@@ -227,14 +256,14 @@ onMounted(() => loadPage(0))
     </Table>
 
     <!-- Paginación -->
-    <div v-if="totalPages() > 1" class="flex items-center justify-end gap-2">
+    <div v-if="totalPages > 1" class="flex items-center justify-end gap-2">
       <span class="text-sm text-muted-foreground">
-        Página {{ page + 1 }} de {{ totalPages() }} ({{ total }} entradas)
+        Página {{ page + 1 }} de {{ totalPages }} ({{ total }} entradas)
       </span>
       <Button variant="outline" size="sm" :disabled="page === 0" @click="loadPage(page - 1)">
         <ChevronLeft class="h-4 w-4" />
       </Button>
-      <Button variant="outline" size="sm" :disabled="page + 1 >= totalPages()" @click="loadPage(page + 1)">
+      <Button variant="outline" size="sm" :disabled="page + 1 >= totalPages" @click="loadPage(page + 1)">
         <ChevronRight class="h-4 w-4" />
       </Button>
     </div>
