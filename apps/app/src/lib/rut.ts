@@ -1,22 +1,14 @@
+// Validación y formato de RUT chileno (Módulo 11, algoritmo del SII).
+// Los factores rotan en la serie 2→3→4→5→6→7→2→3... de derecha a izquierda.
+const MOD11_FACTORS = [2, 3, 4, 5, 6, 7]
+
 export function validateRut(rut: string): boolean {
   const clean = rut.replace(/[.\-\s]/g, '').toUpperCase()
-  if (!/^\d+[0-9K]$/.test(clean) || clean.length < 2 || clean.length > 9)
+  if (!isFormatValid(clean))
     return false
-
   const body = clean.slice(0, -1)
   const check = clean.slice(-1)
-
-  let sum = 0
-  let factor = 2
-  for (let i = body.length - 1; i >= 0; i--) {
-    sum += Number(body[i]) * factor
-    factor = factor === 7 ? 2 : factor + 1
-  }
-
-  const remainder = sum % 11
-  const expected = remainder === 0 ? '0' : remainder === 1 ? 'K' : String(11 - remainder)
-
-  return check === expected
+  return computeCheckDigit(body) === check
 }
 
 /** `12.345.678-5` → `12345678-5` */
@@ -34,6 +26,25 @@ export function formatRut(rut: string): string {
     return rut
   const body = clean.slice(0, -1)
   const check = clean.slice(-1)
-  const formatted = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-  return `${formatted}-${check}`
+  return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${check}`
+}
+
+// ── Helpers internos ──────────────────────────────────────────────────────────
+
+function isFormatValid(clean: string): boolean {
+  return /^\d+[0-9K]$/.test(clean) && clean.length >= 2 && clean.length <= 9
+}
+
+function computeCheckDigit(body: string): string {
+  let sum = 0
+  for (let i = body.length - 1; i >= 0; i--) {
+    const factor = MOD11_FACTORS[(body.length - 1 - i) % MOD11_FACTORS.length]
+    sum += Number(body[i]) * factor
+  }
+  const rem = sum % 11
+  if (rem === 0)
+    return '0'
+  if (rem === 1)
+    return 'K'
+  return String(11 - rem)
 }

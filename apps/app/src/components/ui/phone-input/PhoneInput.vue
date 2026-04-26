@@ -24,33 +24,34 @@ const search = ref('')
 const containerRef = ref<HTMLDivElement | null>(null)
 const searchRef = ref<HTMLInputElement | null>(null)
 
+// US y Canadá comparten el código +1. Excluimos CA para que el selector
+// muestre la bandera de EEUU cuando el código activo es +1.
 const selected = computed(() =>
   PHONE_COUNTRIES.find(c => c.dial_code === props.countryCode && c.code !== 'CA')
   ?? PHONE_COUNTRIES[0],
 )
 
+function matchesSearch(country: { name: string, dial_code: string }, q: string): boolean {
+  // También busca sin el "+" para que "56" encuentre "+56"
+  return country.name.toLowerCase().includes(q)
+    || country.dial_code.includes(q)
+    || country.dial_code.replace('+', '').startsWith(q)
+}
+
+function filterCountryList(isPriority: boolean, q: string) {
+  return PHONE_COUNTRIES
+    .filter(c => PRIORITY_DIAL_CODES.has(c.dial_code) === isPriority)
+    .filter(c => !q || matchesSearch(c, q))
+}
+
 const priorityList = computed(() => {
   const q = search.value.toLowerCase().trim()
-  const list = PHONE_COUNTRIES.filter(c => PRIORITY_DIAL_CODES.has(c.dial_code))
-  if (!q)
-    return list
-  return list.filter(c =>
-    c.name.toLowerCase().includes(q)
-    || c.dial_code.includes(q)
-    || c.dial_code.replace('+', '').startsWith(q),
-  )
+  return filterCountryList(true, q)
 })
 
 const otherList = computed(() => {
   const q = search.value.toLowerCase().trim()
-  const list = PHONE_COUNTRIES.filter(c => !PRIORITY_DIAL_CODES.has(c.dial_code))
-  if (!q)
-    return list
-  return list.filter(c =>
-    c.name.toLowerCase().includes(q)
-    || c.dial_code.includes(q)
-    || c.dial_code.replace('+', '').startsWith(q),
-  )
+  return filterCountryList(false, q)
 })
 
 const hasResults = computed(() => priorityList.value.length > 0 || otherList.value.length > 0)

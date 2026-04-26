@@ -63,9 +63,7 @@ export const useClientsStore = defineStore('clients', () => {
       .single()
     if (dbError)
       throw dbError
-    const idx = clients.value.findIndex(c => c.id === id)
-    if (idx !== -1)
-      clients.value = clients.value.map((c, i) => i === idx ? data : c)
+    clients.value = clients.value.map(c => c.id === id ? data : c)
   }
 
   async function remove(id: string) {

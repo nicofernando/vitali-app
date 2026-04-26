@@ -17,52 +17,51 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!session.value)
 
   async function fetchProfile(userId: string): Promise<void> {
-    const { data, error } = await supabase
+    const { data, error: dbError } = await supabase
       .from('user_profiles')
       .select('id, user_id, full_name, phone, created_at')
       .eq('user_id', userId)
       .single()
-    if (error) {
-      console.warn('[auth] fetchProfile error:', error.message)
+    if (dbError) {
+      console.warn('[auth] fetchProfile error:', dbError.message)
       return
     }
-    profile.value = (data as UserProfile) ?? null
+    profile.value = data as UserProfile
+  }
+
+  // Aplica una sesión al estado local: actualiza user/session y carga el perfil.
+  // Centralizar esto evita duplicar la misma lógica en el listener y en initialize().
+  async function applySession(newSession: Session | null): Promise<void> {
+    session.value = newSession
+    user.value = newSession?.user ?? null
+    if (newSession?.user)
+      await fetchProfile(newSession.user.id)
+    else
+      profile.value = null
   }
 
   async function initialize() {
+    // El listener se registra antes de getSession() para capturar cualquier
+    // cambio de auth (refresh, sign-out) que ocurra durante la inicialización.
     if (!_subscription) {
-      const { data: listenerData } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-        session.value = newSession
-        user.value = newSession?.user ?? null
-        if (newSession?.user)
-          await fetchProfile(newSession.user.id)
-        else
-          profile.value = null
-      })
+      const { data: listenerData } = supabase.auth.onAuthStateChange(
+        (_event, newSession) => { applySession(newSession) },
+      )
       _subscription = listenerData.subscription
     }
 
     const { data } = await supabase.auth.getSession()
-    session.value = data.session
-    user.value = data.session?.user ?? null
-    if (data.session?.user)
-      await fetchProfile(data.session.user.id)
+    await applySession(data.session)
   }
 
   async function login(email: string, password: string) {
     loading.value = true
     error.value = null
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
       if (authError)
         throw authError
-      session.value = data.session
-      user.value = data.user
-      if (data.user)
-        await fetchProfile(data.user.id)
+      await applySession(data.session)
     }
     catch (err) {
       error.value = err instanceof Error ? err.message : 'Error al iniciar sesión'

@@ -29,19 +29,17 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+// Campo de texto opcional: vacío o solo espacios → null (no guardamos strings vacíos en DB)
+const optionalString = z.string().optional().transform(v => v?.trim() || null)
+
 const schema = toTypedSchema(z.object({
   full_name: z.string().min(1, 'El nombre es requerido'),
-  rut: z.string().optional().transform((v) => {
-    const trimmed = v?.trim()
-    return trimmed ? normalizeRut(trimmed) : null
-  }).refine(
-    v => !v || validateRut(v),
-    { message: 'El RUT ingresado no es válido' },
-  ),
-  email: z.string().email('Email inválido').optional().or(z.literal('')).transform(v => v || null),
-  phone: z.string().optional().transform(v => v || null),
-  address: z.string().optional().transform(v => v || null),
-  commune: z.string().optional().transform(v => v || null),
+  rut: z.string().optional().transform(v => v?.trim() ? normalizeRut(v.trim()) : null).refine(v => !v || validateRut(v), { message: 'El RUT ingresado no es válido' }),
+  // Email acepta string vacío para que limpiar el campo guarde null y no falle la validación de formato
+  email: z.string().email('Email inválido').optional().or(z.literal('')).transform(v => v?.trim() || null),
+  phone: optionalString,
+  address: optionalString,
+  commune: optionalString,
 }))
 
 const phoneCC = ref('+56')

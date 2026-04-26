@@ -85,6 +85,15 @@ Setup en máquina nueva: `supabase start && supabase db reset` — ver `docs/S2-
 - Ramas: `feat/*` (local) → `qa` (staging) → `main` (producción)
 - Un commit = un cambio lógico completo
 
+## Calidad de Código — Estándares
+
+- **Funciones atómicas**: una función, una responsabilidad. Si una función hace dos cosas, separarla.
+- **Sin OR chains largas**: más de 3 condiciones `||` en un `if` o `.filter()` → extraer predicados con nombre.
+- **Sin if anidados**: usar early returns y guard clauses.
+- **Sin lógica duplicada**: si la misma secuencia aparece dos veces, extraerla a un helper.
+- **Comentarios humanos**: escribir el *por qué*, no el *qué*. Usar ejemplos concretos (`12345678-5 → 12.345.678-5`). Sin comentarios de trámite ("This function does X").
+- **Comentarios obligatorios cuando**: hay un algoritmo no obvio, una exclusión mágica, una workaround de librería, o una decisión que sorprendería a otro developer.
+
 ## TDD — Reglas de Hierro
 
 **Strict TDD Mode: ENABLED — sin excepciones.**
