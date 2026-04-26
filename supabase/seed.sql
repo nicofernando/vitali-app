@@ -18,10 +18,12 @@ insert into currencies (id, code, name, symbol, decimal_places) values
 -- ============================================================
 truncate roles cascade;
 
-insert into roles (id, name, description, created_at) values
-  ('cc7f53ec-8419-40a6-a2c6-6ade56145c65', 'Super Admin', 'Acceso total al sistema', '2026-04-06T01:04:40.343381+00:00'),
-  ('8343d14c-efe2-4b50-a9c8-04b5d7faa739', 'Admin Inmobiliario', 'Gestiona proyectos, torres, tipologías y departamentos', '2026-04-06T01:04:40.343381+00:00'),
-  ('1c7934a6-224e-4e8f-bb49-070f9bf8dad1', 'Vendedor', 'Accede al cotizador y emite cotizaciones', '2026-04-06T01:04:40.343381+00:00');
+-- is_system = true solo en Super Admin (bootstrap del sistema, ver migration
+-- 20260426000009). Los demás roles son configurables por el cliente desde la UI.
+insert into roles (id, name, description, is_system, created_at) values
+  ('cc7f53ec-8419-40a6-a2c6-6ade56145c65', 'Super Admin', 'Acceso total al sistema', true, '2026-04-06T01:04:40.343381+00:00'),
+  ('8343d14c-efe2-4b50-a9c8-04b5d7faa739', 'Admin Inmobiliario', 'Gestiona proyectos, torres, tipologías y departamentos', false, '2026-04-06T01:04:40.343381+00:00'),
+  ('1c7934a6-224e-4e8f-bb49-070f9bf8dad1', 'Vendedor', 'Accede al cotizador y emite cotizaciones', false, '2026-04-06T01:04:40.343381+00:00');
 
 -- ============================================================
 -- TYPOLOGIES
