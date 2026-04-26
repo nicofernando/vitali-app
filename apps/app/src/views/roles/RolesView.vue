@@ -136,11 +136,15 @@ function onSaved() {
 }
 
 async function confirmDelete() {
-  if (!pendingDelete.value)
+  // Capturar antes del await — reka-ui emite update:open=false al clickear
+  // AlertDialogAction, lo que nulifica pendingDelete antes de que este handler
+  // pueda leerlo si se hace el check después.
+  const role = pendingDelete.value
+  if (!role)
     return
   deleting.value = true
   try {
-    await rolesStore.deleteRole(pendingDelete.value.id)
+    await rolesStore.deleteRole(role.id)
     toast.success('Rol eliminado')
   }
   catch (e: unknown) {
