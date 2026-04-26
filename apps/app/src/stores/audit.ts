@@ -25,7 +25,7 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
     try {
       let query = supabase
-        .from('audit_log')
+        .from('audit_log_with_actor')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1)
@@ -59,7 +59,7 @@ export const useAuditStore = defineStore('audit', () => {
 
   async function fetchByEntity(entityType: string, entityId: string): Promise<AuditLogEntry[]> {
     const { data, error: dbError } = await supabase
-      .from('audit_log')
+      .from('audit_log_with_actor')
       .select('*')
       .eq('entity_type', entityType)
       .eq('entity_id', entityId)

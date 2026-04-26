@@ -258,9 +258,10 @@ async function confirmDeleteUser() {
 
 // ── Gestión de rol único ──────────────────────────────────────
 function requestRoleChange(user: UserWithRoles, newRoleId: string) {
-  if (newRoleId === (user.roles[0]?.id ?? ''))
+  const normalizedNew = newRoleId === '__none__' ? '' : newRoleId
+  if (normalizedNew === (user.roles[0]?.id ?? ''))
     return
-  pendingRoleChange.value = { user, newRoleId }
+  pendingRoleChange.value = { user, newRoleId: normalizedNew }
 }
 
 async function confirmRoleChange() {
@@ -630,7 +631,7 @@ function getInitials(user: UserWithRoles): string {
             Rol asignado
           </p>
           <Select
-            :model-value="editingUser.roles[0]?.id ?? ''"
+            :model-value="editingUser.roles[0]?.id ?? '__none__'"
             :disabled="assigning[editingUser.id]"
             @update:model-value="(v) => requestRoleChange(editingUser!, String(v))"
           >
@@ -638,7 +639,7 @@ function getInitials(user: UserWithRoles): string {
               <SelectValue placeholder="Sin rol asignado" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">
+              <SelectItem value="__none__">
                 Sin rol
               </SelectItem>
               <SelectItem

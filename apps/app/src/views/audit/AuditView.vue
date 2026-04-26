@@ -5,7 +5,6 @@ import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -29,9 +28,8 @@ const auditStore = useAuditStore()
 const { entries, loading, error, total, page } = storeToRefs(auditStore)
 
 const PAGE_SIZE = 50
-const filterEntity = ref('')
-const filterActor = ref('')
-const filterAction = ref('')
+const filterEntity = ref('all')
+const filterAction = ref('all')
 const selectedEntry = ref<(typeof entries.value)[0] | null>(null)
 
 const ENTITY_OPTIONS = [
@@ -63,11 +61,9 @@ function getActionColor(action: string) {
 
 function buildFilters(): AuditFilters {
   const f: AuditFilters = {}
-  if (filterEntity.value)
+  if (filterEntity.value !== 'all')
     f.entity_type = filterEntity.value
-  if (filterActor.value)
-    f.actor_id = filterActor.value
-  if (filterAction.value)
+  if (filterAction.value !== 'all')
     f.action = filterAction.value
   return f
 }
@@ -107,8 +103,8 @@ onMounted(() => loadPage(0))
           <SelectValue placeholder="Entidad" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">
-            Todas
+          <SelectItem value="all">
+            Todas las entidades
           </SelectItem>
           <SelectItem v-for="opt in ENTITY_OPTIONS" :key="opt.value" :value="opt.value">
             {{ opt.label }}
@@ -121,8 +117,8 @@ onMounted(() => loadPage(0))
           <SelectValue placeholder="Acción" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">
-            Todas
+          <SelectItem value="all">
+            Todas las acciones
           </SelectItem>
           <SelectItem value="create">
             Creó
@@ -135,17 +131,6 @@ onMounted(() => loadPage(0))
           </SelectItem>
         </SelectContent>
       </Select>
-
-      <Input
-        v-model="filterActor"
-        placeholder="UUID del actor"
-        class="w-64"
-        @keydown.enter="applyFilters"
-      />
-
-      <Button variant="outline" @click="applyFilters">
-        Filtrar
-      </Button>
     </div>
 
     <div v-if="error" class="text-destructive text-sm">
@@ -191,10 +176,24 @@ onMounted(() => loadPage(0))
             <TableCell class="text-sm font-medium">
               {{ entityLabel(entry.entity_type) }}
             </TableCell>
-            <TableCell class="text-sm text-muted-foreground">
-              <span v-if="entry.payload.changed_fields?.length">
-                {{ entry.payload.changed_fields.join(', ') }}
-              </span>
+            <TableCell class="text-sm text-muted-foreground max-w-xs">
+              <template v-if="entry.action === 'create'">
+                <span class="text-green-600">Nuevo registro</span>
+              </template>
+              <template v-else-if="entry.action === 'delete'">
+                <span class="text-destructive">Eliminado</span>
+              </template>
+              <template v-else-if="entry.payload.changed_fields?.length">
+                <div class="space-y-0.5">
+                  <p
+                    v-for="line in formatChangedFields(entry.payload)"
+                    :key="line"
+                    class="font-mono text-xs truncate"
+                  >
+                    {{ line }}
+                  </p>
+                </div>
+              </template>
             </TableCell>
           </TableRow>
           <!-- Detalle expandido -->
