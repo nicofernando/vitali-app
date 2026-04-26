@@ -34,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { filterClients } from '@/lib/clients-filter'
 import { formatRut } from '@/lib/rut'
 import { useClientsStore } from '@/stores/clients'
 
@@ -106,21 +107,7 @@ async function handleDelete() {
   }
 }
 
-const filteredClients = computed(() => {
-  const q = searchQuery.value.toLowerCase()
-  if (!q)
-    return clients.value
-  const qRut = q.replace(/[.\-]/g, '')
-  const qPhone = q.replace(/[\s\-()]/g, '')
-  return clients.value.filter(c =>
-    c.full_name.toLowerCase().includes(q)
-    || (c.email ?? '').toLowerCase().includes(q)
-    || (c.commune ?? '').toLowerCase().includes(q)
-    || (c.rut ?? '').replace(/[.\-]/g, '').toLowerCase().includes(qRut)
-    || (c.phone ?? '').replace(/[\s\-()]/g, '').includes(qPhone)
-    || `${c.phone_country_code}${c.phone ?? ''}`.replace(/[\s\-()]/g, '').includes(qPhone),
-  )
-})
+const filteredClients = computed(() => filterClients(clients.value, searchQuery.value))
 
 const sortedClients = computed(() => {
   return [...filteredClients.value].sort((a, b) => {

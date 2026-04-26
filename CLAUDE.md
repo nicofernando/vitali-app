@@ -82,10 +82,60 @@ Setup en máquina nueva: `supabase start && supabase db reset` — ver `docs/S2-
 - Conventional Commits en español: `feat(scope): descripción`
 - **NO buildear** después de cambios — el usuario lo hace
 - Pre-commit: `pnpm typecheck && pnpm lint && pnpm test:run`
-- **TDD** para todo lo que tenga comportamiento verificable: Edge Functions, composables, stores con lógica, permisos, componentes con comportamiento. No para CRUD simple ni componentes presentacionales.
-- Strict TDD Mode: ENABLED
 - Ramas: `feat/*` (local) → `qa` (staging) → `main` (producción)
 - Un commit = un cambio lógico completo
+
+## TDD — Reglas de Hierro
+
+**Strict TDD Mode: ENABLED — sin excepciones.**
+
+El orden es SIEMPRE: test rojo → implementación → test verde. Nunca al revés.
+
+### Qué SIEMPRE tiene tests
+
+- Edge Functions (toda la lógica de negocio)
+- Stores Pinia con lógica (no CRUD puro)
+- Composables con comportamiento
+- Funciones puras en `lib/` (filtros, formateo, validación, cálculos)
+- Permisos y guards
+
+### Qué NO necesita tests
+
+- Componentes puramente presentacionales (solo markup + props)
+- CRUD simple sin lógica condicional
+- Datos estáticos (listas, constantes)
+
+### Regla de extracción obligatoria
+
+Si hay lógica verificable dentro de un componente Vue (computed compleja, transformaciones, filtros), se extrae a una función pura en `lib/` **antes** de escribir el componente. La función se testea. El componente la llama.
+
+**Ejemplo correcto**: `filterClients(clients, query)` en `lib/clients-filter.ts` con 20 tests → `ClientsView.vue` la llama en un computed de una línea.
+
+**Ejemplo incorrecto**: lógica de filtro directamente en el computed del componente, sin tests.
+
+### Auto-check después de cada tarea
+
+Antes de dar la tarea por terminada, responder: "¿Agregué comportamiento verificable sin un test correspondiente?" Si la respuesta es sí → escribir el test antes de hacer commit.
+
+## Subagentes — Gestión Eficiente de Contexto
+
+El contexto del agente principal es un recurso limitado. Usarlo para exploración o ejecución larga lo degrada para las decisiones importantes.
+
+### Cuándo SIEMPRE delegar a subagente
+
+| Situación | Acción |
+|-----------|--------|
+| Explorar más de 3 archivos para entender algo | `Agent(subagent_type=Explore)` |
+| Ejecutar tests, builds o linters como tarea principal | Delegar |
+| Implementar cambios en múltiples archivos con lógica nueva | Delegar |
+| Investigar un bug que requiere rastrear varias capas | `Agent(subagent_type=Explore)` |
+
+### Cuándo resolver inline
+
+- Leer 1-3 archivos para tomar una decisión
+- Editar un archivo mecánico (ya sé exactamente qué cambiar)
+- Comandos git de estado (`git status`, `git log`)
+- Responder preguntas conceptuales
 
 ## Memoria Persistente — Engram
 
