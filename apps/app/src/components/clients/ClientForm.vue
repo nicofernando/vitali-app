@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { validateRut } from '@/lib/rut'
+import { formatRut, normalizeRut, validateRut } from '@/lib/rut'
 
 const props = defineProps<{
   client?: Client | null
@@ -21,7 +21,10 @@ const emit = defineEmits<{
 
 const schema = toTypedSchema(z.object({
   full_name: z.string().min(1, 'El nombre es requerido'),
-  rut: z.string().optional().transform(v => v?.trim() || null).refine(
+  rut: z.string().optional().transform((v) => {
+    const trimmed = v?.trim()
+    return trimmed ? normalizeRut(trimmed) : null
+  }).refine(
     v => !v || validateRut(v),
     { message: 'El RUT ingresado no es válido' },
   ),
@@ -31,13 +34,13 @@ const schema = toTypedSchema(z.object({
   commune: z.string().optional().transform(v => v || null),
 }))
 
-const { handleSubmit, resetForm, setValues } = useForm({ validationSchema: schema })
+const { handleSubmit, resetForm, setValues, setFieldValue } = useForm({ validationSchema: schema })
 
 function init(client?: Client | null) {
   if (client) {
     setValues({
       full_name: client.full_name,
-      rut: client.rut ?? '',
+      rut: client.rut ? formatRut(client.rut) : '',
       email: client.email ?? '',
       phone: client.phone ?? '',
       address: client.address ?? '',
@@ -50,6 +53,12 @@ function init(client?: Client | null) {
 }
 
 defineExpose({ init })
+
+function handleRutBlur(e: FocusEvent) {
+  const val = (e.target as HTMLInputElement).value.trim()
+  if (val && validateRut(val))
+    setFieldValue('rut', formatRut(val))
+}
 
 const onSubmit = handleSubmit((values) => {
   emit('submit', values)
@@ -73,7 +82,7 @@ const onSubmit = handleSubmit((values) => {
         <FormItem>
           <FormLabel>RUT</FormLabel>
           <FormControl>
-            <Input v-bind="componentField" placeholder="12.345.678-9" />
+            <Input v-bind="componentField" placeholder="12.345.678-9" @blur="handleRutBlur" />
           </FormControl>
           <FormMessage />
         </FormItem>

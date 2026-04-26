@@ -34,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { formatRut } from '@/lib/rut'
 import { useClientsStore } from '@/stores/clients'
 
 const clientsStore = useClientsStore()
@@ -109,12 +110,13 @@ const filteredClients = computed(() => {
   const q = searchQuery.value.toLowerCase()
   if (!q)
     return clients.value
+  const qRut = q.replace(/[.\-]/g, '')
   return clients.value.filter(c =>
     c.full_name.toLowerCase().includes(q)
-    || (c.rut ?? '').toLowerCase().includes(q)
     || (c.email ?? '').toLowerCase().includes(q)
     || (c.phone ?? '').toLowerCase().includes(q)
-    || (c.commune ?? '').toLowerCase().includes(q),
+    || (c.commune ?? '').toLowerCase().includes(q)
+    || (c.rut ?? '').replace(/[.\-]/g, '').toLowerCase().includes(qRut),
   )
 })
 
@@ -213,7 +215,7 @@ function toggleSort(key: string) {
             {{ client.full_name }}
           </TableCell>
           <TableCell class="text-muted-foreground">
-            {{ client.rut ?? '—' }}
+            {{ client.rut ? formatRut(client.rut) : '—' }}
           </TableCell>
           <TableCell class="text-muted-foreground">
             {{ client.email ?? '—' }}

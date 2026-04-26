@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { validateRut } from './rut'
+import { formatRut, normalizeRut, validateRut } from './rut'
 
 describe('validateRut', () => {
   // ── RUTs válidos con formato estándar ──────────────────────────
@@ -69,5 +69,57 @@ describe('validateRut', () => {
 
   it('rechaza RUT con solo puntos y guiones sin dígitos', () => {
     expect(validateRut('...-')).toBe(false)
+  })
+})
+
+describe('normalizeRut', () => {
+  it('elimina puntos y preserva guión (12.345.678-5 → 12345678-5)', () => {
+    expect(normalizeRut('12.345.678-5')).toBe('12345678-5')
+  })
+
+  it('no modifica RUT ya normalizado (12345678-5)', () => {
+    expect(normalizeRut('12345678-5')).toBe('12345678-5')
+  })
+
+  it('pone K en mayúscula (6-k → 6-K)', () => {
+    expect(normalizeRut('6-k')).toBe('6-K')
+  })
+
+  it('normaliza RUT corto (1-9)', () => {
+    expect(normalizeRut('1-9')).toBe('1-9')
+  })
+
+  it('agrega guión si no lo tiene (123456785 → 12345678-5)', () => {
+    expect(normalizeRut('123456785')).toBe('12345678-5')
+  })
+})
+
+describe('formatRut', () => {
+  it('formatea RUT normalizado (12345678-5 → 12.345.678-5)', () => {
+    expect(formatRut('12345678-5')).toBe('12.345.678-5')
+  })
+
+  it('es idempotente con RUT ya formateado (12.345.678-5)', () => {
+    expect(formatRut('12.345.678-5')).toBe('12.345.678-5')
+  })
+
+  it('formatea RUT de 7 dígitos (7654321-6 → 7.654.321-6)', () => {
+    expect(formatRut('7654321-6')).toBe('7.654.321-6')
+  })
+
+  it('formatea RUT de 6 dígitos (654321-X)', () => {
+    expect(formatRut('654321-0')).toBe('654.321-0')
+  })
+
+  it('preserva K mayúscula (6-K)', () => {
+    expect(formatRut('6-K')).toBe('6-K')
+  })
+
+  it('sube K minúscula (6-k → 6-K)', () => {
+    expect(formatRut('6-k')).toBe('6-K')
+  })
+
+  it('formatea RUT corto de 1 dígito (1-9)', () => {
+    expect(formatRut('1-9')).toBe('1-9')
   })
 })
