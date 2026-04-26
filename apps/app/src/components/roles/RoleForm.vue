@@ -68,7 +68,7 @@ const onSubmit = handleSubmit(async (formValues) => {
           <Input
             :model-value="values.name"
             placeholder="ej. Supervisor Regional"
-            @update:model-value="(v: string) => setValues({ name: v })"
+            @update:model-value="(v) => setValues({ name: String(v) })"
           />
         </FormControl>
         <FormMessage>{{ errors.name }}</FormMessage>
@@ -82,7 +82,7 @@ const onSubmit = handleSubmit(async (formValues) => {
           <Input
             :model-value="values.description ?? ''"
             placeholder="Describe brevemente el rol"
-            @update:model-value="(v: string) => setValues({ description: v })"
+            @update:model-value="(v) => setValues({ description: String(v) })"
           />
         </FormControl>
       </FormItem>

@@ -10,7 +10,7 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
-const role = { id: 'r1', name: 'Admin', description: null, created_at: '' }
+const role = { id: 'r1', name: 'Admin', description: null, is_system: false, created_at: '' }
 const baseUser = { id: 'u1', email: 'a@test.com', full_name: 'Ana', phone: null, is_active: true, roles: [] }
 
 describe('useUsersStore', () => {

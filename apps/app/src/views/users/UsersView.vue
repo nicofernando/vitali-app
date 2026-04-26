@@ -596,7 +596,7 @@ function getInitials(user: UserWithRoles): string {
           <Select
             :model-value="editingUser.roles[0]?.id ?? ''"
             :disabled="assigning[editingUser.id]"
-            @update:model-value="(v) => requestRoleChange(editingUser!, v)"
+            @update:model-value="(v) => requestRoleChange(editingUser!, String(v))"
           >
             <SelectTrigger class="w-full">
               <SelectValue placeholder="Sin rol asignado" />
