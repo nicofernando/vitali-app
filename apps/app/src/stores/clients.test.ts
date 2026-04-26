@@ -13,7 +13,8 @@ const fakeClients = [
     rut: '12.345.678-9',
     address: 'Av. Providencia 1234',
     commune: 'Providencia',
-    phone: '+56912345678',
+    phone_country_code: '+56',
+    phone: '912345678',
     email: 'juan@test.com',
     created_by: 'u1',
     created_at: '2026-04-07T00:00:00Z',
@@ -24,6 +25,7 @@ const fakeClients = [
     rut: '9.876.543-2',
     address: null,
     commune: null,
+    phone_country_code: '+56',
     phone: null,
     email: null,
     created_by: 'u1',
@@ -112,7 +114,7 @@ describe('useClientsStore', () => {
 
     const store = useClientsStore()
     store.clients = [...fakeClients]
-    const result = await store.create({ full_name: 'Pedro López', rut: null, address: null, commune: null, phone: null, email: null })
+    const result = await store.create({ full_name: 'Pedro López', rut: null, address: null, commune: null, phone: null, email: null, phone_country_code: '+56' })
 
     expect(result).toEqual(newClient)
     expect(store.clients[0]).toEqual(newClient)
@@ -131,7 +133,7 @@ describe('useClientsStore', () => {
 
     const store = useClientsStore()
     store.clients = [...fakeClients]
-    await expect(store.create({ full_name: 'X', rut: null, address: null, commune: null, phone: null, email: null })).rejects.toThrow()
+    await expect(store.create({ full_name: 'X', rut: null, address: null, commune: null, phone: null, email: null, phone_country_code: '+56' })).rejects.toThrow()
     expect(store.clients).toHaveLength(2)
   })
 
