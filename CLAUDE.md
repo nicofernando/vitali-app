@@ -81,9 +81,28 @@ Setup en máquina nueva: `supabase start && supabase db reset` — ver `docs/S2-
 - `<script setup lang="ts">` siempre — nunca Options API
 - Conventional Commits en español: `feat(scope): descripción`
 - **NO buildear** después de cambios — el usuario lo hace
-- Pre-commit: `pnpm typecheck && pnpm lint && pnpm test:run`
 - Ramas: `feat/*` (local) → `qa` (staging) → `main` (producción)
 - Un commit = un cambio lógico completo
+
+## Checklist pre-commit (OBLIGATORIO — en este orden)
+
+```
+1. pnpm typecheck   → sin errores de tipos
+2. pnpm lint        → sin errores de estilo
+3. pnpm test:run    → todos los tests en verde
+4. Revisión de calidad del código modificado:
+   □ Funciones atómicas (una responsabilidad)
+   □ Sin ifs anidados (early returns)
+   □ Sin OR-chains > 3 condiciones (extraer predicados)
+   □ Sin lógica duplicada
+   □ Comentarios donde el WHY no es obvio
+   □ Sin `any` o `as X` sin justificación
+   □ Sin inputs de usuario sin validar
+   □ Sin v-html con contenido dinámico
+```
+
+El paso 4 es manual — Claude lo hace mentalmente antes de cada commit.
+Si algún punto falla, corregir antes de commitear.
 
 ## Calidad de Código — Estándares
 
