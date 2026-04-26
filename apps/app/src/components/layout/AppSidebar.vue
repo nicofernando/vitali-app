@@ -8,11 +8,13 @@ import {
   Contact,
   Files,
   FileText,
+  History,
   Layers,
   LayoutDashboard,
   LayoutList,
   LogOut,
   Settings,
+  ShieldCheck,
   Users,
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
@@ -67,6 +69,8 @@ const modules: SidebarModule[] = [
       { name: 'Usuarios', to: '/users', icon: Users, permission: 'users.read' },
       { name: 'Monedas', to: '/currencies', icon: Coins, permission: 'settings.read' },
       { name: 'Documentos', to: '/documents', icon: Files, permission: 'settings.read' },
+      { name: 'Roles', to: '/roles', icon: ShieldCheck, permission: 'roles.read' },
+      { name: 'Auditoría', to: '/audit', icon: History, permission: 'audit.read' },
     ],
   },
 ]

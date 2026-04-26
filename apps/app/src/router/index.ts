@@ -89,7 +89,24 @@ const router = createRouter({
           component: () => import('@/views/documents/DocumentsView.vue'),
           meta: { permission: 'settings.read' },
         },
+        {
+          path: 'roles',
+          name: 'roles',
+          component: () => import('@/views/roles/RolesView.vue'),
+          meta: { permission: 'roles.read' },
+        },
+        {
+          path: 'audit',
+          name: 'audit',
+          component: () => import('@/views/audit/AuditView.vue'),
+          meta: { permission: 'audit.read' },
+        },
       ],
+    },
+    {
+      path: '/no-role',
+      name: 'no-role',
+      component: () => import('@/views/auth/NoRoleView.vue'),
     },
     {
       path: '/:pathMatch(.*)*',
@@ -117,7 +134,7 @@ router.beforeEach(async (to) => {
     return { name: 'dashboard' }
   }
 
-  if (to.meta.permission && authStore.user) {
+  if (authStore.user && to.name !== 'no-role' && to.name !== 'login') {
     const permStore = usePermissionsStore()
     if (!permStore.loaded) {
       try {
@@ -128,7 +145,10 @@ router.beforeEach(async (to) => {
         return { name: 'dashboard' }
       }
     }
-    if (!permStore.can(to.meta.permission)) {
+    if (permStore.loaded && permStore.permissions.length === 0) {
+      return { name: 'no-role' }
+    }
+    if (to.meta.permission && !permStore.can(to.meta.permission)) {
       return { name: 'dashboard' }
     }
   }

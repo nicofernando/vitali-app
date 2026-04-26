@@ -28,9 +28,11 @@ export const usePermissionsStore = defineStore('permissions', () => {
   const permissions = ref<string[]>([])
   const loaded = ref(false)
   const error = ref<string | null>(null)
+  const permissionsChanged = ref(false)
 
   // Prevents concurrent loads: second caller waits for the in-flight promise
   let _loadPromise: Promise<void> | null = null
+  let _realtimeChannel: ReturnType<typeof supabase.channel> | null = null
 
   function can(permission: string): boolean {
     return permissions.value.includes(permission)
@@ -72,13 +74,41 @@ export const usePermissionsStore = defineStore('permissions', () => {
 
     permissions.value = extractPermissionsFromRoles(result.data ?? [])
     loaded.value = true
+
+    _subscribeRealtime(userId)
+  }
+
+  function _subscribeRealtime(userId: string): void {
+    if (_realtimeChannel)
+      return
+
+    _realtimeChannel = supabase
+      .channel(`user_roles_${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_roles', filter: `user_id=eq.${userId}` },
+        async () => {
+          const prev = [...permissions.value]
+          await reload(userId)
+          const next = permissions.value
+          if (JSON.stringify(prev.sort()) !== JSON.stringify([...next].sort())) {
+            permissionsChanged.value = true
+          }
+        },
+      )
+      .subscribe()
   }
 
   function reset() {
     permissions.value = []
     loaded.value = false
     error.value = null
+    permissionsChanged.value = false
     _loadPromise = null
+    if (_realtimeChannel) {
+      supabase.removeChannel(_realtimeChannel)
+      _realtimeChannel = null
+    }
   }
 
   async function reload(userId: string): Promise<void> {
@@ -86,14 +116,20 @@ export const usePermissionsStore = defineStore('permissions', () => {
     return load(userId)
   }
 
+  function dismissChange() {
+    permissionsChanged.value = false
+  }
+
   return {
     permissions,
     loaded,
     error,
+    permissionsChanged,
     can,
     canAny,
     load,
     reload,
     reset,
+    dismissChange,
   }
 })

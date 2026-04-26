@@ -75,6 +75,7 @@ export async function handler(req: Request): Promise<Response> {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
+    await adminClient.rpc('set_audit_actor', { p_user_id: user.id })
 
     // Invitar usuario — el trigger handle_new_user crea el perfil automáticamente
     // con full_name desde raw_user_meta_data

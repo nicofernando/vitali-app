@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Menu } from 'lucide-vue-next'
 import { onMounted, ref } from 'vue'
+import PermissionRefreshBanner from '@/components/users/PermissionRefreshBanner.vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionsStore } from '@/stores/permissions'
 import AppSidebar from './AppSidebar.vue'
@@ -18,6 +19,7 @@ onMounted(async () => {
 
 <template>
   <div class="flex h-screen overflow-hidden">
+    <PermissionRefreshBanner />
     <!-- Overlay mobile -->
     <div
       v-if="sidebarOpen"

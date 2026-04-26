@@ -74,6 +74,7 @@ export async function handler(req: Request): Promise<Response> {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
+    await adminClient.rpc('set_audit_actor', { p_user_id: user.id })
 
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(user_id)
     if (deleteError) throw deleteError

@@ -18,7 +18,10 @@ function makeAuthClient(user: object | null, err: object | null = null, hasPerm 
 }
 
 function makeAdminClient(deleteError: Error | null = null) {
-  return { auth: { admin: { deleteUser: vi.fn().mockResolvedValue({ error: deleteError }) } } }
+  return {
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+    auth: { admin: { deleteUser: vi.fn().mockResolvedValue({ error: deleteError }) } },
+  }
 }
 
 function makeRequest(body: unknown, auth = 'Bearer valid'): Request {

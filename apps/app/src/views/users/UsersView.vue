@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { Role, UserWithRoles } from '@/types'
+import type { UserWithRoles } from '@/types'
 import { toTypedSchema } from '@vee-validate/zod'
-import { X } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -49,21 +48,23 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import CreateUserForm from '@/components/users/CreateUserForm.vue'
-import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
+import { usePermissionsStore } from '@/stores/permissions'
+import { useRolesStore } from '@/stores/roles'
 import { useUsersStore } from '@/stores/users'
 
 const usersStore = useUsersStore()
+const rolesStore = useRolesStore()
+const permissionsStore = usePermissionsStore()
 const { users, loading, error } = storeToRefs(usersStore)
 
-interface PendingRemoveRole { userId: string, roleId: string, roleName: string }
-const pendingRemoveRole = ref<PendingRemoveRole | null>(null)
+interface PendingRoleChange { user: UserWithRoles, newRoleId: string }
+const pendingRoleChange = ref<PendingRoleChange | null>(null)
 const pendingDeleteUser = ref<UserWithRoles | null>(null)
 const pendingToggleUser = ref<UserWithRoles | null>(null)
 const toggling = ref(false)
 const deleting = ref(false)
 
-const roles = ref<Role[]>([])
 const search = ref('')
 const filterStatus = ref('active')
 const sortKey = ref<'name' | 'email' | null>(null)
@@ -72,7 +73,6 @@ const currentPage = ref(1)
 const pageSize = ref(25)
 const showCreateSheet = ref(false)
 const editingUserId = ref<string | null>(null)
-const selectedRole = ref<Record<string, string>>({})
 const assigning = ref<Record<string, boolean>>({})
 const creating = ref(false)
 const saving = ref(false)
@@ -84,18 +84,15 @@ const editingUser = computed<UserWithRoles | null>(
 const filteredUsers = computed(() => {
   let list = users.value
 
-  // Filtro por estado
   if (filterStatus.value === 'active')
     list = list.filter(u => u.is_active)
   else if (filterStatus.value === 'disabled')
     list = list.filter(u => !u.is_active)
 
-  // Búsqueda
   const q = search.value.toLowerCase().trim()
   if (q)
     list = list.filter(u => u.email.toLowerCase().includes(q) || (u.full_name?.toLowerCase().includes(q) ?? false))
 
-  // Ordenamiento
   if (sortKey.value) {
     const key = sortKey.value
     list = [...list].sort((a, b) => {
@@ -133,12 +130,10 @@ function toggleSort(key: string) {
 }
 
 onMounted(async () => {
-  await usersStore.fetchAll()
-  const { data } = await supabase.from('roles').select('id, name, description, created_at').order('name')
-  roles.value = data ?? []
+  await Promise.all([usersStore.fetchAll(), rolesStore.fetchAll()])
 })
 
-// ── Formulario crear usuario ──────────────────────────────────
+// ── Crear usuario ─────────────────────────────────────────────
 function openCreate() {
   showCreateSheet.value = true
 }
@@ -158,7 +153,7 @@ async function handleCreateSubmit(values: { email: string, full_name: string | n
   }
 }
 
-// ── Formulario editar perfil ──────────────────────────────────
+// ── Editar perfil ─────────────────────────────────────────────
 const editSchema = toTypedSchema(z.object({
   full_name: z.string().optional(),
   phone: z.string().optional(),
@@ -215,7 +210,7 @@ async function confirmToggleUser() {
   }
 }
 
-// ── Eliminar usuario (solo si ya está deshabilitado) ──────────
+// ── Eliminar usuario ──────────────────────────────────────────
 async function confirmDeleteUser() {
   const user = pendingDeleteUser.value
   pendingDeleteUser.value = null
@@ -239,57 +234,44 @@ async function confirmDeleteUser() {
   }
 }
 
-// ── Gestión de roles ──────────────────────────────────────────
-function availableRoles(userId: string): Role[] {
-  const user = users.value.find(u => u.id === userId)
-  if (!user)
-    return roles.value
-  const assignedIds = new Set(user.roles.map(r => r.id))
-  return roles.value.filter(r => !assignedIds.has(r.id))
-}
-
-async function handleAssignRole(userId: string) {
-  const roleId = selectedRole.value[userId]
-  if (!roleId)
+// ── Gestión de rol único ──────────────────────────────────────
+function requestRoleChange(user: UserWithRoles, newRoleId: string) {
+  if (newRoleId === (user.roles[0]?.id ?? ''))
     return
-  const role = roles.value.find(r => r.id === roleId)
-  if (!role)
-    return
-  assigning.value[userId] = true
-  try {
-    await usersStore.assignRole(userId, roleId, role)
-    selectedRole.value[userId] = ''
-    toast.success(`Rol "${role.name}" asignado`)
-  }
-  catch {
-    toast.error('No se pudo asignar el rol')
-  }
-  finally {
-    assigning.value[userId] = false
-  }
+  pendingRoleChange.value = { user, newRoleId }
 }
 
-function handleRemoveRole(userId: string, roleId: string, roleName: string) {
-  pendingRemoveRole.value = { userId, roleId, roleName }
-}
-
-async function confirmRemoveRole() {
-  const pending = pendingRemoveRole.value
-  pendingRemoveRole.value = null
+async function confirmRoleChange() {
+  const pending = pendingRoleChange.value
+  pendingRoleChange.value = null
   if (!pending)
     return
-  const { userId, roleId, roleName } = pending
-  assigning.value[userId] = true
+  const { user, newRoleId } = pending
+  assigning.value[user.id] = true
   try {
-    await usersStore.removeRole(userId, roleId)
-    toast.success(`Rol "${roleName}" removido`)
+    if (newRoleId) {
+      const role = rolesStore.roles.find(r => r.id === newRoleId)
+      await usersStore.assignRole(user.id, newRoleId, role)
+      toast.success(`Rol "${role?.name}" asignado`)
+    }
+    else {
+      if (user.roles[0])
+        await usersStore.removeRole(user.id, user.roles[0].id)
+      toast.success('Rol removido')
+    }
   }
   catch {
-    toast.error('No se pudo remover el rol')
+    toast.error('No se pudo cambiar el rol')
   }
   finally {
-    assigning.value[userId] = false
+    assigning.value[user.id] = false
   }
+}
+
+function pendingRoleNewName(): string {
+  if (!pendingRoleChange.value?.newRoleId)
+    return 'Sin rol'
+  return rolesStore.roles.find(r => r.id === pendingRoleChange.value!.newRoleId)?.name ?? 'Sin rol'
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -327,7 +309,7 @@ function getInitials(user: UserWithRoles): string {
       {{ error }}
     </p>
 
-    <!-- Filtros y búsqueda -->
+    <!-- Filtros -->
     <div class="flex flex-wrap gap-3 items-center">
       <Tabs v-model="filterStatus">
         <TabsList>
@@ -363,7 +345,7 @@ function getInitials(user: UserWithRoles): string {
               <DataTableColumnHeader sort-key="email" :current-sort-key="sortKey" :current-sort-order="sortDir" label="Email" @sort="toggleSort" />
             </TableHead>
             <TableHead class="font-semibold text-foreground">
-              Roles
+              Rol
             </TableHead>
             <TableHead class="font-semibold text-foreground">
               Estado
@@ -421,24 +403,14 @@ function getInitials(user: UserWithRoles): string {
                 {{ user.email }}
               </TableCell>
 
-              <!-- Roles -->
+              <!-- Rol único -->
               <TableCell>
-                <div v-if="user.roles.length === 0" class="text-sm text-muted-foreground italic">
-                  Sin roles
-                </div>
-                <div v-else class="flex flex-wrap gap-1">
-                  <Badge
-                    v-for="role in user.roles.slice(0, 2)"
-                    :key="role.id"
-                    variant="secondary"
-                    class="text-xs"
-                  >
-                    {{ role.name }}
-                  </Badge>
-                  <Badge v-if="user.roles.length > 2" variant="outline" class="text-xs">
-                    +{{ user.roles.length - 2 }}
-                  </Badge>
-                </div>
+                <Badge v-if="user.roles[0]" variant="secondary" class="text-xs">
+                  {{ user.roles[0].name }}
+                </Badge>
+                <Badge v-else variant="destructive" class="text-xs">
+                  Sin rol
+                </Badge>
               </TableCell>
 
               <!-- Estado -->
@@ -455,13 +427,13 @@ function getInitials(user: UserWithRoles): string {
                     Editar
                   </Button>
                   <Button
+                    v-if="permissionsStore.can('users.disable')"
                     size="sm"
                     :variant="user.is_active ? 'outline' : 'default'"
                     @click="pendingToggleUser = user"
                   >
                     {{ user.is_active ? 'Deshabilitar' : 'Habilitar' }}
                   </Button>
-                  <!-- Eliminar: solo visible si ya está deshabilitado -->
                   <Button
                     v-if="!user.is_active"
                     size="sm"
@@ -531,7 +503,7 @@ function getInitials(user: UserWithRoles): string {
       </AlertDialogContent>
     </AlertDialog>
 
-    <!-- Confirmación eliminar (solo usuarios deshabilitados) -->
+    <!-- Confirmación eliminar -->
     <AlertDialog :open="!!pendingDeleteUser">
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -555,24 +527,25 @@ function getInitials(user: UserWithRoles): string {
       </AlertDialogContent>
     </AlertDialog>
 
-    <!-- Confirmación remover rol -->
-    <AlertDialog :open="!!pendingRemoveRole">
+    <!-- Confirmación cambio de rol -->
+    <AlertDialog :open="!!pendingRoleChange" @update:open="(v) => { if (!v) pendingRoleChange = null }">
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Remover rol?</AlertDialogTitle>
+          <AlertDialogTitle>¿Cambiar rol?</AlertDialogTitle>
           <AlertDialogDescription>
-            ¿Estás seguro que querés remover el rol "{{ pendingRemoveRole?.roleName }}" de este usuario?
+            Se cambiará el rol de
+            <span class="font-medium">"{{ pendingRoleChange?.user.roles[0]?.name ?? 'Sin rol' }}"</span>
+            a
+            <span class="font-medium">"{{ pendingRoleNewName() }}"</span>
+            para "{{ pendingRoleChange?.user.email }}". El usuario verá los nuevos permisos en su próxima recarga.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel @click="pendingRemoveRole = null">
+          <AlertDialogCancel @click="pendingRoleChange = null">
             Cancelar
           </AlertDialogCancel>
-          <AlertDialogAction
-            class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            @click="confirmRemoveRole"
-          >
-            Remover
+          <AlertDialogAction @click="confirmRoleChange">
+            Cambiar rol
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -618,55 +591,29 @@ function getInitials(user: UserWithRoles): string {
 
         <div v-if="editingUser" class="space-y-3">
           <p class="text-sm font-medium">
-            Roles asignados
+            Rol asignado
           </p>
-
-          <div v-if="editingUser.roles.length === 0" class="text-sm text-muted-foreground italic">
-            Sin roles asignados
-          </div>
-          <div v-else class="flex flex-wrap gap-2">
-            <Badge
-              v-for="role in editingUser.roles"
-              :key="role.id"
-              variant="secondary"
-              class="gap-1.5 pr-1.5"
-            >
-              {{ role.name }}
-              <button
-                class="rounded-sm opacity-70 hover:opacity-100 transition-opacity ml-0.5"
-                :disabled="assigning[editingUser.id]"
-                type="button"
-                @click="handleRemoveRole(editingUser.id, role.id, role.name)"
+          <Select
+            :model-value="editingUser.roles[0]?.id ?? ''"
+            :disabled="assigning[editingUser.id]"
+            @update:model-value="(v) => requestRoleChange(editingUser!, v)"
+          >
+            <SelectTrigger class="w-full">
+              <SelectValue placeholder="Sin rol asignado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">
+                Sin rol
+              </SelectItem>
+              <SelectItem
+                v-for="role in rolesStore.roles"
+                :key="role.id"
+                :value="role.id"
               >
-                <X class="size-3" />
-              </button>
-            </Badge>
-          </div>
-
-          <div v-if="availableRoles(editingUser.id).length > 0" class="flex gap-2 pt-1">
-            <Select v-model="selectedRole[editingUser.id]">
-              <SelectTrigger class="flex-1">
-                <SelectValue placeholder="Agregar rol..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="role in availableRoles(editingUser.id)"
-                  :key="role.id"
-                  :value="role.id"
-                >
-                  {{ role.name }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              type="button"
-              size="sm"
-              :disabled="!selectedRole[editingUser.id] || assigning[editingUser.id]"
-              @click="handleAssignRole(editingUser.id)"
-            >
-              Asignar
-            </Button>
-          </div>
+                {{ role.name }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </SheetContent>
     </Sheet>

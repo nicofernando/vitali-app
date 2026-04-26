@@ -32,7 +32,7 @@ export const useUsersStore = defineStore('users', () => {
     try {
       const [{ data: usersData, error: usersError }, { data: rolesData, error: rolesError }] = await Promise.all([
         supabase.rpc('get_users_with_roles'),
-        supabase.from('user_roles').select('user_id, roles(id, name, description, created_at)'),
+        supabase.from('user_roles').select('user_id, roles(id, name, description, is_system, created_at)'),
       ])
 
       if (usersError)
@@ -102,11 +102,9 @@ export const useUsersStore = defineStore('users', () => {
     if (rpcError)
       throw rpcError
 
-    if (role) {
-      const user = users.value.find(u => u.id === userId)
-      if (user && !user.roles.some(r => r.id === roleId))
-        user.roles.push(role)
-    }
+    const user = users.value.find(u => u.id === userId)
+    if (user)
+      user.roles = role ? [role] : []
   }
 
   async function removeRole(userId: string, roleId: string) {

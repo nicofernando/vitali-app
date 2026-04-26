@@ -85,6 +85,7 @@ export interface Role {
   id: string
   name: string
   description: string | null
+  is_system: boolean
   created_at: string
 }
 
@@ -290,4 +291,40 @@ export interface CalculateQuoteResponse {
   financing_amount: number
   french?: FrenchCreditResult
   smart?: SmartCreditResult
+}
+
+// ============================================================
+// RBAC — Roles con permisos
+// ============================================================
+
+export interface RoleWithPermissions extends Role {
+  is_system: boolean
+  permission_ids: string[]
+  user_count: number
+}
+
+// ============================================================
+// Audit Log
+// ============================================================
+
+export type AuditAction
+  = | 'create' | 'update' | 'delete'
+    | 'role_assigned' | 'role_removed'
+    | 'permission_added' | 'permission_removed'
+    | 'assignment_added' | 'assignment_removed'
+
+export interface AuditLogEntry {
+  id: string
+  entity_type: string
+  entity_id: string
+  action: AuditAction
+  actor_id: string | null
+  actor_name?: string | null
+  payload: {
+    before?: Record<string, unknown>
+    after?: Record<string, unknown>
+    changed_fields?: string[]
+    [key: string]: unknown
+  }
+  created_at: string
 }

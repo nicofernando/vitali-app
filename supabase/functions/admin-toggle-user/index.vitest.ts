@@ -19,6 +19,7 @@ function makeAuthClient(user: object | null, err: object | null = null, hasPerm 
 
 function makeAdminClient(updateError: Error | null = null, profileError: Error | null = null) {
   return {
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
     auth: { admin: { updateUserById: vi.fn().mockResolvedValue({ error: updateError }) } },
     from: vi.fn(() => ({
       update: vi.fn(() => ({

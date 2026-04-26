@@ -135,26 +135,28 @@ describe('useUsersStore', () => {
     expect(supabase.rpc).toHaveBeenCalledWith('assign_role', { p_user_id: 'u1', p_role_id: 'r1' })
   })
 
-  it('assignRole: agrega el rol al usuario en memoria', async () => {
+  it('assignRole: reemplaza el rol del usuario en memoria (no acumula)', async () => {
     const { supabase } = await import('@/lib/supabase')
     vi.mocked(supabase.rpc).mockResolvedValue({ error: null } as any)
 
+    const otherRole = { id: 'r-prev', name: 'Vendedor', description: null, is_system: false, created_at: '' }
     const store = useUsersStore()
-    store.users = [{ ...baseUser, roles: [] }]
+    store.users = [{ ...baseUser, roles: [otherRole] }]
     await store.assignRole('u1', 'r1', role)
 
-    expect(store.users[0].roles).toContainEqual(role)
+    expect(store.users[0].roles).toEqual([role])
+    expect(store.users[0].roles).toHaveLength(1)
   })
 
-  it('assignRole: no duplica el rol si ya estaba asignado', async () => {
+  it('assignRole: setea array vacío si no se provee el objeto role', async () => {
     const { supabase } = await import('@/lib/supabase')
     vi.mocked(supabase.rpc).mockResolvedValue({ error: null } as any)
 
     const store = useUsersStore()
     store.users = [{ ...baseUser, roles: [role] }]
-    await store.assignRole('u1', 'r1', role)
+    await store.assignRole('u1', 'r1')
 
-    expect(store.users[0].roles).toHaveLength(1)
+    expect(store.users[0].roles).toEqual([])
   })
 
   it('assignRole: si falla, relanza el error', async () => {

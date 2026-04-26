@@ -19,6 +19,7 @@ function makeAuthClient(user: object | null, err: object | null = null, hasPerm 
 
 function makeAdminClient(inviteResult: object) {
   return {
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
     auth: { admin: { inviteUserByEmail: vi.fn().mockResolvedValue(inviteResult) } },
     from: vi.fn(() => ({ update: vi.fn(() => ({ eq: vi.fn().mockResolvedValue({ error: null }) })) })),
   }

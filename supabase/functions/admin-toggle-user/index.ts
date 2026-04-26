@@ -27,11 +27,11 @@ export async function handler(req: Request): Promise<Response> {
       })
     }
 
-    const { data: canEdit, error: permError } = await authClient.rpc('has_permission', {
+    const { data: canDisable, error: permError } = await authClient.rpc('has_permission', {
       p_module: 'users',
-      p_action: 'edit',
+      p_action: 'disable',
     })
-    if (permError || !canEdit) {
+    if (permError || !canDisable) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -77,6 +77,7 @@ export async function handler(req: Request): Promise<Response> {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
+    await adminClient.rpc('set_audit_actor', { p_user_id: user.id })
 
     // Banear / desbanear en Supabase Auth (bloquea el login)
     const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(user_id, {
