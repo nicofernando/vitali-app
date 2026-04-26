@@ -3,10 +3,12 @@ import type { Client } from '@/types'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Loader2 } from 'lucide-vue-next'
 import { useForm } from 'vee-validate'
+import { ref } from 'vue'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import PhoneInput from '@/components/ui/phone-input/PhoneInput.vue'
 import { formatRut, normalizeRut, validateRut } from '@/lib/rut'
 
 const props = defineProps<{
@@ -15,7 +17,15 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  submit: [values: { full_name: string, rut: string | null, address: string | null, commune: string | null, phone: string | null, email: string | null }]
+  submit: [values: {
+    full_name: string
+    rut: string | null
+    address: string | null
+    commune: string | null
+    phone_country_code: string
+    phone: string | null
+    email: string | null
+  }]
   cancel: []
 }>()
 
@@ -34,10 +44,13 @@ const schema = toTypedSchema(z.object({
   commune: z.string().optional().transform(v => v || null),
 }))
 
+const phoneCC = ref('+56')
+
 const { handleSubmit, resetForm, setValues, setFieldValue } = useForm({ validationSchema: schema })
 
 function init(client?: Client | null) {
   if (client) {
+    phoneCC.value = client.phone_country_code ?? '+56'
     setValues({
       full_name: client.full_name,
       rut: client.rut ? formatRut(client.rut) : '',
@@ -48,6 +61,7 @@ function init(client?: Client | null) {
     })
   }
   else {
+    phoneCC.value = '+56'
     resetForm()
   }
 }
@@ -61,7 +75,7 @@ function handleRutBlur(e: FocusEvent) {
 }
 
 const onSubmit = handleSubmit((values) => {
-  emit('submit', values)
+  emit('submit', { ...values, phone_country_code: phoneCC.value })
 })
 </script>
 
@@ -92,7 +106,11 @@ const onSubmit = handleSubmit((values) => {
         <FormItem>
           <FormLabel>Teléfono</FormLabel>
           <FormControl>
-            <Input v-bind="componentField" placeholder="+56 9 1234 5678" />
+            <PhoneInput
+              v-bind="componentField"
+              :country-code="phoneCC"
+              @update:country-code="phoneCC = $event"
+            />
           </FormControl>
           <FormMessage />
         </FormItem>

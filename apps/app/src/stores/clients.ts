@@ -4,7 +4,7 @@ import { ref, shallowRef } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
 
-const CLIENT_COLUMNS = 'id, full_name, rut, email, phone, address, commune, created_at, created_by'
+const CLIENT_COLUMNS = 'id, full_name, rut, email, phone, phone_country_code, address, commune, created_at, created_by'
 
 export const useClientsStore = defineStore('clients', () => {
   const clients = shallowRef<Client[]>([])

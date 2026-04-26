@@ -122,6 +122,7 @@ export interface Client {
   rut: string | null
   address: string | null
   commune: string | null
+  phone_country_code: string
   phone: string | null
   email: string | null
   created_by: string | null

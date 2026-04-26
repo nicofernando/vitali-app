@@ -111,12 +111,14 @@ const filteredClients = computed(() => {
   if (!q)
     return clients.value
   const qRut = q.replace(/[.\-]/g, '')
+  const qPhone = q.replace(/[\s\-()]/g, '')
   return clients.value.filter(c =>
     c.full_name.toLowerCase().includes(q)
     || (c.email ?? '').toLowerCase().includes(q)
-    || (c.phone ?? '').toLowerCase().includes(q)
     || (c.commune ?? '').toLowerCase().includes(q)
-    || (c.rut ?? '').replace(/[.\-]/g, '').toLowerCase().includes(qRut),
+    || (c.rut ?? '').replace(/[.\-]/g, '').toLowerCase().includes(qRut)
+    || (c.phone ?? '').replace(/[\s\-()]/g, '').includes(qPhone)
+    || `${c.phone_country_code}${c.phone ?? ''}`.replace(/[\s\-()]/g, '').includes(qPhone),
   )
 })
 
@@ -221,7 +223,8 @@ function toggleSort(key: string) {
             {{ client.email ?? '—' }}
           </TableCell>
           <TableCell class="text-muted-foreground">
-            {{ client.phone ?? '—' }}
+            <span v-if="client.phone">{{ client.phone_country_code }} {{ client.phone }}</span>
+            <span v-else>—</span>
           </TableCell>
           <TableCell class="text-muted-foreground">
             {{ client.commune ?? '—' }}
