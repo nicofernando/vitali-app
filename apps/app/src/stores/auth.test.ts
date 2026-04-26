@@ -2,6 +2,27 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from './auth'
 
+const mockProfile = {
+  id: 'p1',
+  user_id: 'user-1',
+  full_name: 'Test User',
+  phone: null,
+  created_at: '2026-01-01T00:00:00Z',
+}
+
+const mockUser = { id: 'user-1', email: 'test@vitalisuites.com' }
+const mockSession = { user: mockUser, access_token: 'token-123' }
+
+function mockFrom(data: unknown, error: unknown = null) {
+  return {
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data, error }),
+      }),
+    }),
+  }
+}
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
@@ -12,11 +33,9 @@ vi.mock('@/lib/supabase', () => ({
         data: { subscription: { unsubscribe: vi.fn() } },
       }),
     },
+    from: vi.fn().mockReturnValue(mockFrom(null)),
   },
 }))
-
-const mockUser = { id: 'user-1', email: 'test@vitalisuites.com' }
-const mockSession = { user: mockUser, access_token: 'token-123' }
 
 describe('useAuthStore', () => {
   beforeEach(() => {
@@ -24,25 +43,70 @@ describe('useAuthStore', () => {
     vi.clearAllMocks()
   })
 
-  it('comienza sin sesión', () => {
+  // ── Estado inicial ─────────────────────────────────────────────
+  it('comienza sin sesión ni perfil', () => {
     const store = useAuthStore()
     expect(store.user).toBeNull()
     expect(store.session).toBeNull()
+    expect(store.profile).toBeNull()
     expect(store.isAuthenticated).toBe(false)
   })
 
-  it('login exitoso actualiza user y session', async () => {
+  // ── initialize ─────────────────────────────────────────────────
+  it('initialize: carga sesión y perfil cuando hay sesión', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+      data: { session: mockSession as any },
+    } as any)
+    vi.mocked(supabase.from).mockReturnValue(mockFrom(mockProfile) as any)
+
+    const store = useAuthStore()
+    await store.initialize()
+
+    expect(store.session).toEqual(mockSession)
+    expect(store.user).toEqual(mockUser)
+    expect(store.profile?.full_name).toBe('Test User')
+  })
+
+  it('initialize: sin sesión no carga perfil', async () => {
+    const store = useAuthStore()
+    await store.initialize()
+
+    expect(store.user).toBeNull()
+    expect(store.profile).toBeNull()
+  })
+
+  it('initialize: perfil queda null si fetchProfile devuelve error', async () => {
+    const { supabase } = await import('@/lib/supabase')
+    vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+      data: { session: mockSession as any },
+    } as any)
+    vi.mocked(supabase.from).mockReturnValue(
+      mockFrom(null, { message: 'not found' }) as any,
+    )
+
+    const store = useAuthStore()
+    await store.initialize()
+
+    expect(store.user).toEqual(mockUser)
+    expect(store.profile).toBeNull()
+  })
+
+  // ── login ──────────────────────────────────────────────────────
+  it('login exitoso actualiza user, session y perfil', async () => {
     const { supabase } = await import('@/lib/supabase')
     vi.mocked(supabase.auth.signInWithPassword).mockResolvedValueOnce({
       data: { user: mockUser as any, session: mockSession as any },
       error: null,
     })
+    vi.mocked(supabase.from).mockReturnValue(mockFrom(mockProfile) as any)
 
     const store = useAuthStore()
     await store.login('test@vitalisuites.com', 'password')
 
     expect(store.user).toEqual(mockUser)
     expect(store.session).toEqual(mockSession)
+    expect(store.profile?.full_name).toBe('Test User')
     expect(store.isAuthenticated).toBe(true)
     expect(store.error).toBeNull()
   })
@@ -70,6 +134,7 @@ describe('useAuthStore', () => {
         resolveLogin = resolve
       }),
     )
+    vi.mocked(supabase.from).mockReturnValue(mockFrom(null) as any)
 
     const store = useAuthStore()
     const loginPromise = store.login('test@vitalisuites.com', 'password')
@@ -82,28 +147,18 @@ describe('useAuthStore', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('logout limpia user y session', async () => {
+  // ── logout ─────────────────────────────────────────────────────
+  it('logout limpia user, session y perfil', async () => {
     const store = useAuthStore()
     store.user = mockUser as any
     store.session = mockSession as any
+    store.profile = mockProfile as any
 
     await store.logout()
 
     expect(store.user).toBeNull()
     expect(store.session).toBeNull()
+    expect(store.profile).toBeNull()
     expect(store.isAuthenticated).toBe(false)
-  })
-
-  it('initialize carga la sesión existente', async () => {
-    const { supabase } = await import('@/lib/supabase')
-    vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
-      data: { session: mockSession as any },
-    } as any)
-
-    const store = useAuthStore()
-    await store.initialize()
-
-    expect(store.session).toEqual(mockSession)
-    expect(store.user).toEqual(mockUser)
   })
 })

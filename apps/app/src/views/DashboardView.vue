@@ -10,10 +10,9 @@ import { usePermissionsStore } from '@/stores/permissions'
 const authStore = useAuthStore()
 const permissionsStore = usePermissionsStore()
 
-const displayName = computed(() => {
-  const meta = authStore.user?.user_metadata
-  return (meta?.full_name as string | undefined) || (meta?.name as string | undefined) || authStore.user?.email
-})
+const displayName = computed(() =>
+  authStore.profile?.full_name || authStore.user?.email,
+)
 
 interface Stats {
   projects: number | null

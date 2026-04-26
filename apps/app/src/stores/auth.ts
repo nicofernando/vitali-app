@@ -17,32 +17,36 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!session.value)
 
   async function fetchProfile(userId: string): Promise<void> {
-    try {
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('id, user_id, full_name, phone, created_at')
-        .eq('user_id', userId)
-        .single()
-      profile.value = (data as UserProfile) ?? null
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('id, user_id, full_name, phone, created_at')
+      .eq('user_id', userId)
+      .single()
+    if (error) {
+      console.warn('[auth] fetchProfile error:', error.message)
+      return
     }
-    catch {}
+    profile.value = (data as UserProfile) ?? null
   }
 
   async function initialize() {
-    const { data } = await supabase.auth.getSession()
-    session.value = data.session
-    user.value = data.session?.user ?? null
-
-    if (user.value)
-      await fetchProfile(user.value.id)
-
     if (!_subscription) {
-      const { data: listenerData } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      const { data: listenerData } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
         session.value = newSession
         user.value = newSession?.user ?? null
+        if (newSession?.user)
+          await fetchProfile(newSession.user.id)
+        else
+          profile.value = null
       })
       _subscription = listenerData.subscription
     }
+
+    const { data } = await supabase.auth.getSession()
+    session.value = data.session
+    user.value = data.session?.user ?? null
+    if (data.session?.user)
+      await fetchProfile(data.session.user.id)
   }
 
   async function login(email: string, password: string) {
