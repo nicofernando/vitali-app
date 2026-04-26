@@ -4,6 +4,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { z } from 'zod'
 import {
@@ -53,6 +54,8 @@ import { usePermissionsStore } from '@/stores/permissions'
 import { useRolesStore } from '@/stores/roles'
 import { useUsersStore } from '@/stores/users'
 
+const route = useRoute()
+const router = useRouter()
 const usersStore = useUsersStore()
 const rolesStore = useRolesStore()
 const permissionsStore = usePermissionsStore()
@@ -67,6 +70,8 @@ const deleting = ref(false)
 
 const search = ref('')
 const filterStatus = ref('active')
+const filterRole = ref<string | null>(null)
+const filterRoleName = ref<string | null>(null)
 const sortKey = ref<'name' | 'email' | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
 const currentPage = ref(1)
@@ -88,6 +93,10 @@ const filteredUsers = computed(() => {
     list = list.filter(u => u.is_active)
   else if (filterStatus.value === 'disabled')
     list = list.filter(u => !u.is_active)
+
+  // Filtro por rol — activado desde RolesView al hacer click en badge de activos
+  if (filterRole.value)
+    list = list.filter(u => u.roles[0]?.id === filterRole.value)
 
   const q = search.value.toLowerCase().trim()
   if (q)
@@ -113,7 +122,7 @@ const paginatedUsers = computed(() => {
   return filteredUsers.value.slice(start, start + pageSize.value)
 })
 
-watch([search, filterStatus, pageSize], () => {
+watch([search, filterStatus, filterRole, pageSize], () => {
   currentPage.value = 1
 })
 
@@ -130,8 +139,21 @@ function toggleSort(key: string) {
 }
 
 onMounted(async () => {
+  // Leer filtro de rol pasado por query param desde RolesView
+  if (route.query.role) {
+    filterRole.value = String(route.query.role)
+    filterRoleName.value = route.query.roleName ? String(route.query.roleName) : null
+    // Mostrar todos los estados cuando se navega por rol
+    filterStatus.value = 'all'
+  }
   await Promise.all([usersStore.fetchAll(), rolesStore.fetchAll()])
 })
+
+function clearRoleFilter() {
+  filterRole.value = null
+  filterRoleName.value = null
+  router.replace({ query: { ...route.query, role: undefined, roleName: undefined } })
+}
 
 // ── Crear usuario ─────────────────────────────────────────────
 function openCreate() {
@@ -308,6 +330,20 @@ function getInitials(user: UserWithRoles): string {
     <p v-if="error" class="text-sm text-destructive">
       {{ error }}
     </p>
+
+    <!-- Badge filtro por rol activo -->
+    <div v-if="filterRole" class="flex items-center gap-2">
+      <Badge variant="secondary" class="text-sm gap-1.5 px-3 py-1">
+        Filtrando por: {{ filterRoleName ?? 'Rol' }}
+        <button
+          class="ml-1 hover:text-destructive transition-colors"
+          aria-label="Limpiar filtro de rol"
+          @click="clearRoleFilter"
+        >
+          ×
+        </button>
+      </Badge>
+    </div>
 
     <!-- Filtros -->
     <div class="flex flex-wrap gap-3 items-center">

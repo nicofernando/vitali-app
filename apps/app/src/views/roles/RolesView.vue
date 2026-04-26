@@ -2,7 +2,8 @@
 import type { RoleWithPermissions } from '@/types'
 import { Plus, Shield, ShieldCheck, Trash2 } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import RoleForm from '@/components/roles/RoleForm.vue'
 import {
@@ -17,6 +18,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import DataTableColumnHeader from '@/components/ui/data-table/DataTableColumnHeader.vue'
+import DataTablePagination from '@/components/ui/data-table/DataTablePagination.vue'
+import { Input } from '@/components/ui/input'
 import {
   Sheet,
   SheetContent,
@@ -36,6 +40,7 @@ import {
 import { usePermissionsStore } from '@/stores/permissions'
 import { useRolesStore } from '@/stores/roles'
 
+const router = useRouter()
 const rolesStore = useRolesStore()
 const permissionsStore = usePermissionsStore()
 const { roles, loading, error } = storeToRefs(rolesStore)
@@ -44,6 +49,67 @@ const showSheet = ref(false)
 const editingRole = ref<RoleWithPermissions | null>(null)
 const pendingDelete = ref<RoleWithPermissions | null>(null)
 const deleting = ref(false)
+
+// ── Búsqueda, orden y paginación (patrón UsersView) ────────────
+const search = ref('')
+const sortKey = ref<'name' | 'permissions' | 'active_users' | null>(null)
+const sortDir = ref<'asc' | 'desc'>('asc')
+const currentPage = ref(1)
+const pageSize = ref(25)
+
+const filteredRoles = computed(() => {
+  const q = search.value.toLowerCase().trim()
+  if (!q)
+    return roles.value
+  return roles.value.filter(
+    r => r.name.toLowerCase().includes(q) || (r.description?.toLowerCase().includes(q) ?? false),
+  )
+})
+
+const sortedRoles = computed(() => {
+  const list = filteredRoles.value
+  if (!sortKey.value)
+    return list
+  const key = sortKey.value
+  return [...list].sort((a, b) => {
+    let cmp = 0
+    if (key === 'name')
+      cmp = a.name.localeCompare(b.name, 'es')
+    else if (key === 'permissions')
+      cmp = a.permission_ids.length - b.permission_ids.length
+    else if (key === 'active_users')
+      cmp = a.active_user_count - b.active_user_count
+    return sortDir.value === 'asc' ? cmp : -cmp
+  })
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(sortedRoles.value.length / pageSize.value)))
+
+const paginatedRoles = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return sortedRoles.value.slice(start, start + pageSize.value)
+})
+
+watch([search, pageSize], () => {
+  currentPage.value = 1
+})
+
+function toggleSort(key: string) {
+  const k = key as 'name' | 'permissions' | 'active_users'
+  if (sortKey.value === k) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  }
+  else {
+    sortKey.value = k
+    sortDir.value = 'asc'
+  }
+  currentPage.value = 1
+}
+
+// ── Navegación a Users con filtro por rol ─────────────────────
+function goToUsers(role: RoleWithPermissions) {
+  router.push({ name: 'users', query: { role: role.id, roleName: role.name } })
+}
 
 onMounted(async () => {
   await Promise.all([
@@ -63,9 +129,10 @@ function openEdit(role: RoleWithPermissions) {
 }
 
 function onSaved() {
+  const wasEditing = !!editingRole.value
   showSheet.value = false
   editingRole.value = null
-  toast.success(editingRole.value ? 'Rol actualizado' : 'Rol creado')
+  toast.success(wasEditing ? 'Rol actualizado' : 'Rol creado')
 }
 
 async function confirmDelete() {
@@ -83,6 +150,11 @@ async function confirmDelete() {
     deleting.value = false
     pendingDelete.value = null
   }
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function totalUsersForRole(role: RoleWithPermissions): number {
+  return role.active_user_count + role.inactive_user_count
 }
 </script>
 
@@ -110,16 +182,45 @@ async function confirmDelete() {
       {{ error }}
     </div>
 
+    <!-- Barra de búsqueda -->
+    <Input
+      v-model="search"
+      placeholder="Buscar por nombre o descripción..."
+      class="max-w-xs h-9"
+    />
+
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Nombre</TableHead>
+          <TableHead>
+            <DataTableColumnHeader
+              sort-key="name"
+              :current-sort-key="sortKey"
+              :current-sort-order="sortDir"
+              label="Nombre"
+              @sort="toggleSort"
+            />
+          </TableHead>
           <TableHead>Descripción</TableHead>
           <TableHead class="text-center">
-            Permisos
+            <DataTableColumnHeader
+              sort-key="permissions"
+              :current-sort-key="sortKey"
+              :current-sort-order="sortDir"
+              label="Permisos"
+              align="center"
+              @sort="toggleSort"
+            />
           </TableHead>
           <TableHead class="text-center">
-            Usuarios
+            <DataTableColumnHeader
+              sort-key="active_users"
+              :current-sort-key="sortKey"
+              :current-sort-order="sortDir"
+              label="Usuarios"
+              align="center"
+              @sort="toggleSort"
+            />
           </TableHead>
           <TableHead />
         </TableRow>
@@ -130,12 +231,12 @@ async function confirmDelete() {
             <TableCell><Skeleton class="h-4 w-32" /></TableCell>
             <TableCell><Skeleton class="h-4 w-48" /></TableCell>
             <TableCell><Skeleton class="h-4 w-12 mx-auto" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-12 mx-auto" /></TableCell>
+            <TableCell><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
             <TableCell />
           </TableRow>
         </template>
         <template v-else>
-          <TableRow v-for="role in roles" :key="role.id">
+          <TableRow v-for="role in paginatedRoles" :key="role.id">
             <TableCell class="font-medium">
               <div class="flex items-center gap-2">
                 <ShieldCheck v-if="role.is_system" class="h-4 w-4 text-[#D4BE77]" />
@@ -155,9 +256,25 @@ async function confirmDelete() {
               </Badge>
             </TableCell>
             <TableCell class="text-center">
-              <Badge variant="outline">
-                {{ role.user_count }}
-              </Badge>
+              <div class="flex items-center justify-center gap-1.5">
+                <!-- Badge activos: clickeable si hay usuarios activos -->
+                <button
+                  v-if="role.active_user_count > 0"
+                  class="cursor-pointer"
+                  @click="goToUsers(role)"
+                >
+                  <Badge class="hover:opacity-80 transition-opacity">
+                    {{ role.active_user_count }} activos
+                  </Badge>
+                </button>
+                <Badge v-else variant="outline" class="opacity-50">
+                  0 activos
+                </Badge>
+                <!-- Badge inactivos: solo informativo -->
+                <Badge v-if="role.inactive_user_count > 0" variant="outline">
+                  {{ role.inactive_user_count }} inactivos
+                </Badge>
+              </div>
             </TableCell>
             <TableCell class="text-right">
               <template v-if="!role.is_system && permissionsStore.can('settings.edit')">
@@ -175,14 +292,23 @@ async function confirmDelete() {
               </template>
             </TableCell>
           </TableRow>
-          <TableRow v-if="roles.length === 0">
+          <TableRow v-if="paginatedRoles.length === 0">
             <TableCell colspan="5" class="text-center text-muted-foreground py-8">
-              No hay roles configurados
+              {{ search ? 'Sin resultados para esa búsqueda.' : 'No hay roles configurados' }}
             </TableCell>
           </TableRow>
         </template>
       </TableBody>
     </Table>
+
+    <DataTablePagination
+      v-if="!loading"
+      v-model:current-page="currentPage"
+      v-model:page-size="pageSize"
+      :total-items="sortedRoles.length"
+      :total-pages="totalPages"
+      :page-size-options="[10, 25, 50]"
+    />
 
     <!-- Sheet de creación / edición -->
     <Sheet v-model:open="showSheet">
@@ -210,10 +336,10 @@ async function confirmDelete() {
           <AlertDialogTitle>¿Eliminar el rol "{{ pendingDelete?.name }}"?</AlertDialogTitle>
           <AlertDialogDescription>
             Esta acción no se puede deshacer.
-            <template v-if="(pendingDelete?.user_count ?? 0) > 0">
+            <template v-if="pendingDelete && totalUsersForRole(pendingDelete) > 0">
               <br>
               <span class="text-destructive font-medium">
-                Este rol tiene {{ pendingDelete?.user_count }} usuario(s) asignado(s) y no puede eliminarse.
+                Este rol tiene {{ pendingDelete.active_user_count }} activos, {{ pendingDelete.inactive_user_count }} inactivos y no puede eliminarse.
               </span>
             </template>
           </AlertDialogDescription>
@@ -223,7 +349,7 @@ async function confirmDelete() {
             Cancelar
           </AlertDialogCancel>
           <AlertDialogAction
-            :disabled="(pendingDelete?.user_count ?? 0) > 0 || deleting"
+            :disabled="(pendingDelete ? totalUsersForRole(pendingDelete) : 0) > 0 || deleting"
             @click="confirmDelete"
           >
             Eliminar

@@ -18,7 +18,8 @@ const mockRole = {
   is_system: false,
   created_at: '2026-01-01',
   permission_ids: ['p1', 'p2'],
-  user_count: 3,
+  active_user_count: 2,
+  inactive_user_count: 1,
 }
 
 const mockPermission = { id: 'p1', module: 'clients', action: 'read', description: null }

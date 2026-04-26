@@ -300,7 +300,8 @@ export interface CalculateQuoteResponse {
 export interface RoleWithPermissions extends Role {
   is_system: boolean
   permission_ids: string[]
-  user_count: number
+  active_user_count: number
+  inactive_user_count: number
 }
 
 // ============================================================
