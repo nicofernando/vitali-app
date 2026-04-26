@@ -334,7 +334,7 @@ function totalUsersForRole(role: RoleWithPermissions): number {
     </Sheet>
 
     <!-- AlertDialog de eliminación -->
-    <AlertDialog :open="!!pendingDelete" @update:open="(v) => { if (!v) pendingDelete = null }">
+    <AlertDialog :open="!!pendingDelete">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Eliminar el rol "{{ pendingDelete?.name }}"?</AlertDialogTitle>

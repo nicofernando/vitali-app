@@ -564,7 +564,7 @@ function getInitials(user: UserWithRoles): string {
     </AlertDialog>
 
     <!-- Confirmación cambio de rol -->
-    <AlertDialog :open="!!pendingRoleChange" @update:open="(v) => { if (!v) pendingRoleChange = null }">
+    <AlertDialog :open="!!pendingRoleChange">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Cambiar rol?</AlertDialogTitle>

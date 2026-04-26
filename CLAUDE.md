@@ -185,6 +185,41 @@ Este proyecto usa Engram para memoria persistente entre sesiones.
 | `sdd/{change}/spec` | Specs de cada change |
 | `sdd/{change}/tasks` | Tareas de cada change |
 
+## Patrones conocidos
+
+### AlertDialog con reka-ui v2 — patrón correcto
+
+**Problema**: `AlertDialogAction` emite `update:open = false` de forma SÍNCRONA antes de propagar el `@click` al padre. Si el AlertDialog tiene `@update:open="(v) => { if (!v) pendingXxx = null }"`, ese handler nulifica el ref ANTES de que `confirmXxx()` lo lea.
+
+**Patrón correcto** — sin `@update:open`, cierre controlado por el handler:
+
+```html
+<!-- SIN @update:open -->
+<AlertDialog :open="!!pendingXxx">
+  ...
+  <AlertDialogCancel @click="pendingXxx = null">Cancelar</AlertDialogCancel>
+  <AlertDialogAction :disabled="..." @click="confirmXxx">Confirmar</AlertDialogAction>
+```
+
+```typescript
+async function confirmXxx() {
+  const item = pendingXxx.value   // capturar antes del await
+  if (!item) return               // guardia sobre la variable local
+  try {
+    await store.action(item.id)
+    toast.success(...)
+  }
+  catch (e: unknown) {
+    toast.error(...)
+  }
+  finally {
+    pendingXxx.value = null       // cierra el dialog siempre, éxito o error
+  }
+}
+```
+
+**Por qué funciona**: sin `@update:open`, reka-ui emite el cierre pero nadie lo escucha → el ref no cambia entre el click y el handler. El dialog se cierra solo cuando el `finally` nulifica el ref.
+
 ## Ver también
 
 - `docs/REQUIREMENTS.md` — requerimientos de negocio completos

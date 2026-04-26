@@ -131,15 +131,20 @@ async function handleToggle(id: string) {
 }
 
 async function handleDelete() {
-  if (!pendingDelete.value)
+  const item = pendingDelete.value
+  if (!item)
     return
-  const name = pendingDelete.value.name
-  await store.remove(pendingDelete.value.id)
-  if (store.error) {
-    toast.error(store.error)
+  try {
+    await store.remove(item.id)
+    if (store.error)
+      toast.error(store.error)
+    else
+      toast.success(`"${item.name}" eliminado`)
   }
-  else {
-    toast.success(`"${name}" eliminado`)
+  catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : 'Error al eliminar')
+  }
+  finally {
     pendingDelete.value = null
   }
 }

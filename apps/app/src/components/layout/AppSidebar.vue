@@ -66,9 +66,17 @@ const modules: SidebarModule[] = [
     items: [
       { name: 'Proyectos', to: '/projects', icon: Building2, permission: 'projects.read' },
       { name: 'Tipologías', to: '/typologies', icon: Layers, permission: 'typologies.read' },
-      { name: 'Usuarios', to: '/users', icon: Users, permission: 'users.read' },
       { name: 'Monedas', to: '/currencies', icon: Coins, permission: 'settings.read' },
       { name: 'Documentos', to: '/documents', icon: Files, permission: 'settings.read' },
+    ],
+  },
+  {
+    key: 'access',
+    label: 'Acceso',
+    icon: Users,
+    permission: 'users.read',
+    items: [
+      { name: 'Usuarios', to: '/users', icon: Users, permission: 'users.read' },
       { name: 'Roles', to: '/roles', icon: ShieldCheck, permission: 'roles.read' },
       { name: 'Auditoría', to: '/audit', icon: History, permission: 'audit.read' },
     ],
