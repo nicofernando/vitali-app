@@ -50,6 +50,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import CreateUserForm from '@/components/users/CreateUserForm.vue'
 import { supabase } from '@/lib/supabase'
+import { extractErrorMessage } from '@/lib/utils'
 import { useUsersStore } from '@/stores/users'
 
 const usersStore = useUsersStore()
@@ -149,8 +150,8 @@ async function handleCreateSubmit(values: { email: string, full_name: string | n
     toast.success(`Invitación enviada a ${values.email}`)
     showCreateSheet.value = false
   }
-  catch (err: any) {
-    toast.error(err?.message ?? 'No se pudo crear el usuario')
+  catch (err) {
+    toast.error(extractErrorMessage(err, 'No se pudo crear el usuario'))
   }
   finally {
     creating.value = false
@@ -227,8 +228,8 @@ async function confirmDeleteUser() {
     if (editingUserId.value === user.id)
       editingUserId.value = null
   }
-  catch (err: any) {
-    const msg = err?.message?.includes('violates foreign key')
+  catch (err) {
+    const msg = extractErrorMessage(err, '').includes('violates foreign key')
       ? 'No se puede eliminar — el usuario tiene registros asociados'
       : 'No se pudo eliminar el usuario'
     toast.error(msg)

@@ -120,12 +120,14 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function creditTypeLabel(type: string) {
-  if (type === 'french')
-    return 'Francés'
-  if (type === 'smart')
-    return 'Inteligente'
-  return 'Ambos'
+const CREDIT_TYPE_LABELS: Record<string, string> = {
+  french: 'Francés',
+  smart: 'Inteligente',
+  both: 'Ambos',
+}
+
+function creditTypeLabel(type: string): string {
+  return CREDIT_TYPE_LABELS[type] ?? type
 }
 
 async function handleDownload(quote: QuoteSummary) {

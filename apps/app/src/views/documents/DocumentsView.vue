@@ -60,25 +60,28 @@ function labelFor(need: string): string {
   return DATA_BLOCKS.find(b => b.id === need)?.label ?? need
 }
 
-const filtered = computed(() => {
-  let list = templates.value
-
+const filteredByStatus = computed(() => {
   if (statusFilter.value === 'active')
-    list = list.filter(t => t.is_active)
-  else if (statusFilter.value === 'inactive')
-    list = list.filter(t => !t.is_active)
+    return templates.value.filter(t => t.is_active)
+  if (statusFilter.value === 'inactive')
+    return templates.value.filter(t => !t.is_active)
+  return templates.value
+})
 
+const filteredBySearch = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
-  if (q) {
-    list = list.filter(t =>
-      t.name.toLowerCase().includes(q)
-      || (t.description ?? '').toLowerCase().includes(q),
-    )
-  }
+  if (!q)
+    return filteredByStatus.value
+  return filteredByStatus.value.filter(t =>
+    t.name.toLowerCase().includes(q)
+    || (t.description ?? '').toLowerCase().includes(q),
+  )
+})
 
-  return [...list].sort((a, b) => {
-    let av: string | number = ''
-    let bv: string | number = ''
+const filtered = computed(() => {
+  return [...filteredBySearch.value].sort((a, b) => {
+    let av: string | number
+    let bv: string | number
     if (sortKey.value === 'name') {
       av = a.name.toLowerCase()
       bv = b.name.toLowerCase()

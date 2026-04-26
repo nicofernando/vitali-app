@@ -5,6 +5,26 @@ import { ref, shallowRef } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
 
+// Extracts the most informative error message from a FunctionsHttpError.
+// The response body may be JSON with an `error`/`message` field, or plain text.
+// Falls back to the SDK's own message if the body can't be read or parsed.
+async function parseFunctionsHttpError(err: FunctionsHttpError): Promise<string> {
+  try {
+    const text = await err.context.text()
+    if (text) {
+      try {
+        const body = JSON.parse(text)
+        return body.error ?? body.message ?? body.msg ?? text
+      }
+      catch {
+        return text
+      }
+    }
+  }
+  catch {}
+  return err.message
+}
+
 export const useQuotesStore = defineStore('quotes', () => {
   const quotes = shallowRef<QuoteSummary[]>([])
   const loading = ref(false)
@@ -62,31 +82,15 @@ export const useQuotesStore = defineStore('quotes', () => {
     })
     if (fnError) {
       if (fnError instanceof FunctionsHttpError) {
-        const status = fnError.context.status
-        let serverMsg = fnError.message
-        try {
-          const text = await fnError.context.text()
-          if (text) {
-            try {
-              const body = JSON.parse(text)
-              serverMsg = body.error ?? body.message ?? body.msg ?? text
-            }
-            catch {
-              serverMsg = text
-            }
-          }
-        }
-        catch {}
-        throw new Error(`generate-pdf [${status}]: ${serverMsg}`)
+        const msg = await parseFunctionsHttpError(fnError)
+        throw new Error(`generate-pdf [${fnError.context.status}]: ${msg}`)
       }
       throw new Error(fnError.message)
     }
     if (!data || !data.url || !data.pdf_path)
       throw new Error('Respuesta inválida de generate-pdf')
     const result = data as GeneratePdfResponse
-    const idx = quotes.value.findIndex(q => q.id === quoteId)
-    if (idx !== -1)
-      quotes.value = quotes.value.map((q, i) => i === idx ? { ...q, pdf_path: result.pdf_path } : q)
+    quotes.value = quotes.value.map(q => q.id === quoteId ? { ...q, pdf_path: result.pdf_path } : q)
     return result
   }
 

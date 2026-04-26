@@ -123,8 +123,8 @@ router.beforeEach(async (to) => {
       try {
         await permStore.load(authStore.user.id)
       }
-      catch {
-        // If load fails, deny access rather than crashing navigation
+      catch (err) {
+        console.error('[router] Failed to load permissions:', err)
         return { name: 'dashboard' }
       }
     }

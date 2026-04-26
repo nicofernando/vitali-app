@@ -2,6 +2,28 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 
+// Supabase nested joins return object or array depending on cardinality.
+// We normalize both shapes to extract a flat list of "module.action" strings.
+function extractPermissionsFromRoles(data: any[]): string[] {
+  const perms: string[] = []
+  for (const ur of data) {
+    const role = ur.roles as any
+    const rolePermissions = Array.isArray(role?.role_permissions)
+      ? role.role_permissions
+      : role?.role_permissions
+        ? [role.role_permissions]
+        : []
+
+    for (const rp of rolePermissions) {
+      const perm = Array.isArray(rp?.permissions) ? rp.permissions[0] : rp?.permissions
+      const { module, action } = perm ?? {}
+      if (module && action)
+        perms.push(`${module}.${action}`)
+    }
+  }
+  return perms
+}
+
 export const usePermissionsStore = defineStore('permissions', () => {
   const permissions = ref<string[]>([])
   const loaded = ref(false)
@@ -48,26 +70,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
       return
     }
 
-    const data = result.data
-
-    const perms: string[] = []
-    for (const ur of data ?? []) {
-      const role = ur.roles as any
-      const rolePermissions = Array.isArray(role?.role_permissions)
-        ? role.role_permissions
-        : role?.role_permissions
-          ? [role.role_permissions]
-          : []
-
-      for (const rp of rolePermissions) {
-        const perm = Array.isArray(rp?.permissions) ? rp.permissions[0] : rp?.permissions
-        const { module, action } = perm ?? {}
-        if (module && action)
-          perms.push(`${module}.${action}`)
-      }
-    }
-
-    permissions.value = perms
+    permissions.value = extractPermissionsFromRoles(result.data ?? [])
     loaded.value = true
   }
 

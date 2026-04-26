@@ -31,6 +31,7 @@ async function handleSubmit() {
     router.push({ name: 'dashboard' })
   }
   catch {
+    // Generic message — intentional: don't reveal whether the email exists in the system
     errorMessage.value = 'Email o contraseña incorrectos. Verificá tus datos.'
   }
   finally {

@@ -4,6 +4,20 @@ import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { extractErrorMessage } from '@/lib/utils'
 
+// Nulls sort to the bottom — users without a name appear after named users
+function compareUsersByName(
+  a: { full_name: string | null },
+  b: { full_name: string | null },
+): number {
+  if (!a.full_name && !b.full_name)
+    return 0
+  if (!a.full_name)
+    return 1
+  if (!b.full_name)
+    return -1
+  return a.full_name.localeCompare(b.full_name, 'es')
+}
+
 export const useUsersStore = defineStore('users', () => {
   const users = ref<UserWithRoles[]>([])
   const loading = ref(false)
@@ -45,15 +59,7 @@ export const useUsersStore = defineStore('users', () => {
           is_active: u.is_active !== false,
           roles: rolesByUser.get(u.id) ?? [],
         }))
-        .sort((a, b) => {
-          if (!a.full_name && !b.full_name)
-            return 0
-          if (!a.full_name)
-            return 1
-          if (!b.full_name)
-            return -1
-          return a.full_name.localeCompare(b.full_name, 'es')
-        })
+        .sort(compareUsersByName)
       hasFetched.value = true
     }
     catch (err) {
